@@ -1,0 +1,1 @@
+-- Intentionally empty. Keeps `supabase db reset` compatible with config.toml.

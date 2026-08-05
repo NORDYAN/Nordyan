@@ -1,0 +1,82 @@
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View } from 'react-native';
+
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Text } from '@/components/ui/Text';
+import { colors, homeLayout, typography } from '@/theme';
+
+type HomeCoachCardProps = {
+  message: string;
+  onPressPlan?: () => void;
+};
+
+export function HomeCoachCard({ message, onPressPlan }: HomeCoachCardProps) {
+  return (
+    <Card
+      padding={homeLayout.coachCardPadding}
+      borderRadius={homeLayout.coachCardRadius}
+      style={styles.card}
+    >
+      <View style={styles.header}>
+        <View style={styles.avatar}>
+          <Ionicons name="sparkles" size={16} color={colors.onboardingText} />
+        </View>
+        <Text style={styles.title}>NORDYAN Coach</Text>
+      </View>
+
+      <Text style={styles.message}>{message}</Text>
+
+      <Button
+        label="Visa dagens plan"
+        variant="primary"
+        style={styles.actionButton}
+        labelStyle={styles.actionButtonLabel}
+        onPress={onPressPlan}
+      />
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    gap: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 36,
+  },
+  avatar: {
+    width: 36,
+    height: 32,
+    borderRadius: 18,
+    backgroundColor: colors.homeAccentSlate,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    color: colors.onboardingText,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    flex: 1,
+  },
+  message: {
+    color: colors.onboardingText,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.light,
+    lineHeight: typography.fontSize.sm * 1.5,
+  },
+  actionButton: {
+    backgroundColor: colors.homeAccentSlate,
+    borderRadius: 22,
+    height: 44,
+    paddingVertical: 0,
+  },
+  actionButtonLabel: {
+    color: colors.onboardingText,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+  },
+});
