@@ -1,5 +1,6 @@
 import type { FocusType } from '@/lib/domain/focus-engine';
 import type { SnapshotReason } from '@/lib/domain/snapshot';
+import type { ProductionCoachLanguageSource } from '@/lib/services/coach-language';
 
 export type HomeCurrentHealthSource = 'snapshot' | 'profile_fallback';
 
@@ -37,6 +38,8 @@ export type HomeCurrentHealth = {
     title: string | null;
     message: string;
     availability: HomeFieldAvailability;
+    /** Privacy-safe decision surface for async language formulation (no PII). */
+    languageSource: ProductionCoachLanguageSource | null;
   };
 };
 

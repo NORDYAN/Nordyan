@@ -2,6 +2,7 @@ export { generateRecommendation } from './coach-engine';
 export {
   COACH_ENGINE_STATUS,
   COACH_ENGINE_VERSION,
+  COACH_FALLBACK_RECOMMENDATION,
   COACH_FOCUS_CANDIDATES,
 } from './coach-engine.constants';
 export type {

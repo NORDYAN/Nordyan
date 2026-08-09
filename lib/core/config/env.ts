@@ -3,6 +3,8 @@ export const envKeys = {
   supabaseUrl: 'EXPO_PUBLIC_SUPABASE_URL',
   supabasePublishableKey: 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
   supabaseAnonKey: 'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+  /** Public base URL only — never an OpenAI key. */
+  coachLanguageApiUrl: 'EXPO_PUBLIC_COACH_LANGUAGE_API_URL',
   revenueCatAppleApiKey: 'EXPO_PUBLIC_REVENUECAT_APPLE_API_KEY',
   revenueCatGoogleApiKey: 'EXPO_PUBLIC_REVENUECAT_GOOGLE_API_KEY',
 } as const;

@@ -39,7 +39,9 @@
     "db:push": "supabase db push",
     "coach-simulator": "npm run dev --prefix tools/coach-simulator",
     "coach-simulator:test": "npm run test --prefix tools/coach-simulator",
-    "coach-simulator:build": "npm run build --prefix tools/coach-simulator"
+    "coach-simulator:build": "npm run build --prefix tools/coach-simulator",
+    "coach-language": "npm run dev --prefix services/coach-language",
+    "test:coach-language": "npx tsx --test lib/services/coach-language/*.test.ts && npm run test --prefix services/coach-language"
   },
   "private": true
 }

@@ -17,7 +17,7 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
 import { shouldShowBodyMeasurementFollowUp } from '@/lib/domain/profile';
-import { useHomeCurrentHealth } from '@/lib/hooks/home';
+import { useHomeCoachLanguage, useHomeCurrentHealth } from '@/lib/hooks/home';
 import { useHomeProgress } from '@/lib/hooks/progress';
 import { HOME_COACH_UNAVAILABLE_MESSAGE } from '@/lib/services/home';
 import { colors, homeLayout, homeTypography, spacing, typography } from '@/theme';
@@ -88,10 +88,21 @@ export default function HomeScreen() {
     };
   }, [currentHealthState]);
 
-  const coachMessage =
+  const templateCoachMessage =
     currentHealthState.status === 'ready'
       ? currentHealthState.data.coach.message
       : HOME_COACH_UNAVAILABLE_MESSAGE;
+
+  const languageSource =
+    currentHealthState.status === 'ready' ? currentHealthState.data.coach.languageSource : null;
+
+  const { message: coachMessage } = useHomeCoachLanguage({
+    templateMessage: templateCoachMessage,
+    languageSource,
+    enabled:
+      currentHealthState.status === 'ready' &&
+      currentHealthState.data.coach.availability === 'available',
+  });
 
   const displayPriorities = useMemo(() => {
     if (currentHealthState.status !== 'ready') {

@@ -1,8 +1,14 @@
+import {
+  COACH_FALLBACK_RECOMMENDATION,
+  COACH_FOCUS_CANDIDATES,
+  type CoachRecommendationCategory,
+} from '@/lib/domain/coach-engine';
 import type { FocusType } from '@/lib/domain/focus-engine';
 import type { HealthSnapshot } from '@/lib/domain/snapshot';
 import type { UserProfile } from '@/lib/domain/profile';
 import { formatCoachMessage, getCoachPresentation } from '@/lib/services/coach/coach.presentation';
 import { buildHomeCoachState } from '@/lib/services/coach';
+import type { ProductionCoachLanguageSource } from '@/lib/services/coach-language';
 import { getFocusPresentation, buildHomePrimaryFocusState } from '@/lib/services/focus';
 import {
   calculateHomeHealthScoreFromProfile,
@@ -39,12 +45,27 @@ function formatWeightKg(weightKg: number): string {
   return `${weightKg.toFixed(1)} kg`;
 }
 
-function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
-  message: string;
-  title: string | null;
-  recommendationId: string | null;
-  availability: 'available' | 'unavailable';
-} {
+function resolveCategoryForRecommendationId(
+  recommendationId: string,
+): CoachRecommendationCategory {
+  if (recommendationId === COACH_FALLBACK_RECOMMENDATION.recommendationId) {
+    return COACH_FALLBACK_RECOMMENDATION.category;
+  }
+
+  for (const candidates of Object.values(COACH_FOCUS_CANDIDATES)) {
+    const match = candidates.find((item) => item.recommendationId === recommendationId);
+    if (match) {
+      return match.category;
+    }
+  }
+
+  return 'walking';
+}
+
+function buildLanguageSourceFromSnapshot(
+  snapshot: HealthSnapshot,
+  primaryFocus: FocusType,
+): ProductionCoachLanguageSource | null {
   const { coachRecommendationId, coachDurationMinutes, coachFrequencyPerWeek } = snapshot;
 
   if (
@@ -54,11 +75,43 @@ function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
     coachDurationMinutes <= 0 ||
     coachFrequencyPerWeek <= 0
   ) {
+    return null;
+  }
+
+  return {
+    recommendationId: coachRecommendationId,
+    category: resolveCategoryForRecommendationId(coachRecommendationId),
+    durationMinutes: coachDurationMinutes,
+    frequencyPerWeek: coachFrequencyPerWeek,
+    priority: 'medium',
+    confidence: 0.7,
+    primaryFocus,
+  };
+}
+
+function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
+  message: string;
+  title: string | null;
+  recommendationId: string | null;
+  availability: 'available' | 'unavailable';
+  languageSource: ProductionCoachLanguageSource | null;
+} {
+  const { coachRecommendationId, coachDurationMinutes, coachFrequencyPerWeek } = snapshot;
+
+  if (
+    !coachRecommendationId.trim() ||
+    coachDurationMinutes == null ||
+    coachFrequencyPerWeek == null ||
+    coachDurationMinutes <= 0 ||
+    coachFrequencyPerWeek <= 0 ||
+    !isFocusType(snapshot.primaryFocus)
+  ) {
     return {
       message: HOME_COACH_UNAVAILABLE_MESSAGE,
       title: null,
       recommendationId: coachRecommendationId.trim() ? coachRecommendationId : null,
       availability: 'unavailable',
+      languageSource: null,
     };
   }
 
@@ -73,6 +126,7 @@ function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
     title: presentation.title,
     recommendationId: coachRecommendationId,
     availability: 'available',
+    languageSource: buildLanguageSourceFromSnapshot(snapshot, snapshot.primaryFocus),
   };
 }
 
@@ -192,6 +246,15 @@ function buildFromProfileFallback(
         title: coachState.title,
         message: coachState.message,
         availability: 'available',
+        languageSource: {
+          recommendationId: coachState.result.recommendationId,
+          category: coachState.result.category,
+          durationMinutes: coachState.result.durationMinutes,
+          frequencyPerWeek: coachState.result.frequencyPerWeek,
+          priority: coachState.result.priority,
+          confidence: coachState.result.confidence,
+          primaryFocus: primaryFocusState.primaryFocus,
+        },
       },
     },
   };
