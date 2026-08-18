@@ -1,13 +1,5 @@
 import type { ProgressSummary } from '@/lib/domain/progress';
-
-export const HOME_PROGRESS_INSUFFICIENT_LINE_1 =
-  'Din första hälsomätning är sparad.';
-
-export const HOME_PROGRESS_INSUFFICIENT_LINE_2 =
-  'Uppdatera din profil igen för att börja följa din utveckling.';
-
-export const HOME_PROGRESS_UNAVAILABLE_MESSAGE =
-  'Din utveckling kan inte visas just nu.';
+import { t } from '@/lib/i18n';
 
 export function formatHomeProgressDeltaLabel(summary: ProgressSummary): string | null {
   if (summary.trend === 'insufficient_history') {
@@ -15,12 +7,24 @@ export function formatHomeProgressDeltaLabel(summary: ProgressSummary): string |
   }
 
   if (summary.trend === 'improving') {
-    return `↑ +${summary.scoreChange} sedan senaste uppdateringen`;
+    return t('development.score.up', { change: summary.scoreChange });
   }
 
   if (summary.trend === 'declining') {
-    return `↓ ${summary.scoreChange} sedan senaste uppdateringen`;
+    return t('development.score.down', { change: summary.scoreChange });
   }
 
-  return '— Oförändrad sedan senaste uppdateringen';
+  return t('development.score.stable');
+}
+
+export function getHomeProgressInsufficientLine1(): string {
+  return t('home.progress.insufficient1');
+}
+
+export function getHomeProgressInsufficientLine2(): string {
+  return t('home.progress.insufficient2');
+}
+
+export function getHomeProgressUnavailableMessage(): string {
+  return t('home.progress.unavailable');
 }

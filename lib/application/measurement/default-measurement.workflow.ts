@@ -1,16 +1,14 @@
 import type { AppError, Result } from '@/lib/core';
+import { t } from '@/lib/i18n';
 import type { Measurement, MeasurementValidator } from '@/lib/domain/measurement';
 import { measurementValidator } from '@/lib/domain/measurement';
 import type { ProfileRepository } from '@/lib/repositories/profile.repository';
-import { supabaseProfileRepository } from '@/lib/repositories/supabase-profile.repository';
 import type { MeasurementRepository } from '@/lib/repositories/measurement.repository';
-import { supabaseMeasurementRepository } from '@/lib/repositories/supabase-measurement.repository';
 import { mapProfileAndMeasurementToHealthScoreInput } from '@/lib/services/health-score/profile-measurement.mapper';
 import {
   buildCreateSnapshotInputFromPipeline,
   runHealthSnapshotPipeline,
 } from '@/lib/services/snapshots/health-snapshot-pipeline';
-import { snapshotService } from '@/lib/services/snapshots/snapshot.service';
 import type { SnapshotService } from '@/lib/services/snapshots/snapshot.service.types';
 
 import { getTodayLocalDate } from './measurement-date.utils';
@@ -22,10 +20,14 @@ import type {
   SubmitMeasurementInput,
 } from './measurement.workflow.types';
 
+function isDev(): boolean {
+  return typeof __DEV__ !== 'undefined' && __DEV__;
+}
+
 function validationErrorMessage(errors: Array<{ message: string }>): AppError {
   return {
     code: 'VALIDATION',
-    message: errors[0]?.message ?? 'Ogiltiga mätvärden.',
+    message: errors[0]?.message ?? t('health.validation.generic'),
   };
 }
 
@@ -66,7 +68,7 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
 
     const profileResult = await this.profileRepository.getByUserId(input.userId);
     if (!profileResult.ok) {
-      if (__DEV__) {
+      if (isDev()) {
         console.error('[measurement-workflow] profile load failed', profileResult.error);
       }
 
@@ -86,6 +88,12 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
     const profile = profileResult.value;
     const healthScoreInput = mapProfileAndMeasurementToHealthScoreInput(profile, measurement);
     if (!healthScoreInput) {
+      if (isDev()) {
+        console.warn('[measurement-workflow] snapshot skipped', {
+          reason: 'profile_incomplete',
+        });
+      }
+
       return {
         ok: true,
         value: partialSnapshotFailure(measurement, 'profile_incomplete'),
@@ -94,7 +102,7 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
 
     const pipelineResult = runHealthSnapshotPipeline(healthScoreInput, profile.goal);
     if (!pipelineResult.ok) {
-      if (__DEV__) {
+      if (isDev()) {
         console.error('[measurement-workflow] pipeline failed', pipelineResult.error);
       }
 
@@ -115,7 +123,7 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
       'measurement',
     );
     if (!snapshotInputResult.ok) {
-      if (__DEV__) {
+      if (isDev()) {
         console.error('[measurement-workflow] snapshot input failed', snapshotInputResult.error);
       }
 
@@ -127,7 +135,7 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
 
     const snapshotResult = await this.snapshots.createSnapshot(snapshotInputResult.value);
     if (!snapshotResult.ok) {
-      if (__DEV__) {
+      if (isDev()) {
         console.error('[measurement-workflow] snapshot persist failed', snapshotResult.error);
       }
 
@@ -147,9 +155,3 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
     };
   }
 }
-
-export const measurementWorkflow = new DefaultMeasurementWorkflow(
-  supabaseMeasurementRepository,
-  supabaseProfileRepository,
-  snapshotService,
-);

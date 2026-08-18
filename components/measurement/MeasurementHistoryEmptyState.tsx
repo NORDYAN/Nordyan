@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   colors,
   healthNewMeasurementLayout,
@@ -12,6 +14,8 @@ import {
 } from '@/theme';
 
 export function MeasurementHistoryEmptyState() {
+  useI18n();
+
   const handleRegisterMeasurement = () => {
     router.push(routes.healthNewMeasurement);
   };
@@ -19,15 +23,12 @@ export function MeasurementHistoryEmptyState() {
   return (
     <View style={styles.root}>
       <View style={styles.copyBlock}>
-        <Text style={styles.title}>Ingen mäthistorik ännu</Text>
-        <Text style={styles.body}>
-          Dina registrerade kroppsmått visas här så att du enkelt kan följa din utveckling över
-          tid.
-        </Text>
+        <Text style={styles.title}>{t('health.history.emptyTitle')}</Text>
+        <Text style={styles.body}>{t('health.history.emptyBody')}</Text>
       </View>
 
       <Button
-        label="Registrera mätning"
+        label={t('health.history.register')}
         variant="onboarding"
         style={styles.button}
         onPress={handleRegisterMeasurement}

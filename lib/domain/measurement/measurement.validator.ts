@@ -1,4 +1,5 @@
 import type { CreateMeasurementInput } from './measurement.types';
+import { t } from '@/lib/i18n';
 import type {
   MeasurementValidationContext,
   MeasurementValidationError,
@@ -22,25 +23,25 @@ export class DefaultMeasurementValidator implements MeasurementValidator {
     const errors: MeasurementValidationError[] = [];
 
     if (!input.userId.trim()) {
-      errors.push({ field: 'userId', message: 'Användare krävs.' });
+      errors.push({ field: 'userId', message: t('health.validation.userRequired') });
     }
 
     if (!isValidIsoDate(input.measuredAt)) {
-      errors.push({ field: 'measuredAt', message: 'Ogiltigt datum.' });
+      errors.push({ field: 'measuredAt', message: t('health.validation.invalidDate') });
     } else if (input.measuredAt > context.todayLocalDate) {
-      errors.push({ field: 'measuredAt', message: 'Datum får inte ligga i framtiden.' });
+      errors.push({ field: 'measuredAt', message: t('health.validation.futureDate') });
     }
 
     if (!isPositiveFinite(input.weightKg)) {
-      errors.push({ field: 'weightKg', message: 'Ange en giltig vikt.' });
+      errors.push({ field: 'weightKg', message: t('health.validation.weight') });
     }
 
     if (!isPositiveFinite(input.waistCm)) {
-      errors.push({ field: 'waistCm', message: 'Ange ett giltigt midjemått.' });
+      errors.push({ field: 'waistCm', message: t('health.validation.waist') });
     }
 
     if (!isPositiveFinite(input.neckCm)) {
-      errors.push({ field: 'neckCm', message: 'Ange ett giltigt halsmått.' });
+      errors.push({ field: 'neckCm', message: t('health.validation.neck') });
     }
 
     if (errors.length === 0) {

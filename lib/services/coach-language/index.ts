@@ -11,6 +11,7 @@ export {
 } from './client';
 export { getCoachLanguageApiBaseUrl, isCoachLanguageApiConfigured } from './env';
 export { formatLanguageMessageForHome } from './format';
+export { isHomeCoachGeneratedLocaleSupported } from './locale';
 export {
   buildCoachLanguageCacheKey,
   clearCoachLanguageSessionCache,

@@ -1,25 +1,100 @@
 import type { AppError, Result } from '@/lib/core';
-import type { ProfileActivityLevel, ProfileGender, ProfileMeasurements, UserProfile } from '@/lib/domain/profile';
+import {
+  normalizeAccountFirstName,
+  validateAccountFirstName,
+  type ProfileActivityLevel,
+  type ProfileGender,
+  type ProfileMeasurements,
+  type UserProfile,
+} from '@/lib/domain/profile';
+import { t } from '@/lib/i18n';
+import { PROFILE_ACCOUNT_COPY } from '@/lib/presentation/profile-account';
 import { resolveDateOfBirth } from '@/lib/repositories/profile-mappers';
-import { supabaseAuthRepository } from '@/lib/repositories/supabase-auth.repository';
-import { supabaseProfileRepository } from '@/lib/repositories/supabase-profile.repository';
-import type { ProfileService } from '@/lib/services/profile/profile.service.types';
+import type { ProfileRepository } from '@/lib/repositories/profile.repository';
+import type {
+  AccountProfileUpdate,
+  ProfileService,
+} from '@/lib/services/profile/profile.service.types';
 
-class DefaultProfileService implements ProfileService {
+export type ProfileServiceDeps = {
+  getCurrentUser: () => Promise<Result<{ id: string } | null>>;
+  profileRepository: Pick<ProfileRepository, 'getByUserId' | 'update' | 'createFromMeasurements'>;
+};
+
+function toSafeAccountProfileError(error: AppError): AppError {
+  if (error.code === 'VALIDATION') {
+    return error;
+  }
+
+  if (error.code === 'UNAUTHORIZED') {
+    return {
+      code: 'UNAUTHORIZED',
+      message: PROFILE_ACCOUNT_COPY.unauthenticatedMessage,
+      cause: error,
+    };
+  }
+
+  if (error.code === 'NOT_FOUND') {
+    return {
+      code: 'NOT_FOUND',
+      message: PROFILE_ACCOUNT_COPY.notFoundMessage,
+      cause: error,
+    };
+  }
+
+  return {
+    code: error.code,
+    message: PROFILE_ACCOUNT_COPY.saveErrorMessage,
+    cause: error,
+  };
+}
+
+function toSafeProfileReadError(error: AppError): AppError {
+  return {
+    code: error.code,
+    message:
+      error.code === 'UNAUTHORIZED'
+        ? t('profile.validation.unauthenticatedRead')
+        : PROFILE_ACCOUNT_COPY.loadErrorMessage,
+    cause: error,
+  };
+}
+
+function toSafeHealthProfileError(error: AppError): AppError {
+  if (error.code === 'VALIDATION') {
+    return error;
+  }
+
+  return {
+    code: error.code,
+    message:
+      error.code === 'UNAUTHORIZED'
+        ? t('profile.validation.unauthenticatedSave')
+        : t('onboarding.syncError'),
+    cause: error,
+  };
+}
+
+export class DefaultProfileService implements ProfileService {
+  constructor(private readonly deps: ProfileServiceDeps) {}
+
   async getCurrentProfile(): Promise<Result<UserProfile | null>> {
-    const userResult = await supabaseAuthRepository.getCurrentUser();
+    const userResult = await this.deps.getCurrentUser();
     if (!userResult.ok) {
-      return userResult;
+      return { ok: false, error: toSafeProfileReadError(userResult.error) };
     }
 
     if (!userResult.value) {
       return {
         ok: false,
-        error: { code: 'UNAUTHORIZED', message: 'Du måste vara inloggad för att läsa profilen.' },
+        error: { code: 'UNAUTHORIZED', message: t('profile.validation.unauthenticatedRead') },
       };
     }
 
-    return supabaseProfileRepository.getByUserId(userResult.value.id);
+    const profileResult = await this.deps.profileRepository.getByUserId(userResult.value.id);
+    return profileResult.ok
+      ? profileResult
+      : { ok: false, error: toSafeProfileReadError(profileResult.error) };
   }
 
   async completeOnboarding(measurements: ProfileMeasurements): Promise<Result<UserProfile>> {
@@ -28,9 +103,9 @@ class DefaultProfileService implements ProfileService {
       return { ok: false, error: validationError };
     }
 
-    const userResult = await supabaseAuthRepository.getCurrentUser();
+    const userResult = await this.deps.getCurrentUser();
     if (!userResult.ok) {
-      return userResult;
+      return { ok: false, error: toSafeHealthProfileError(userResult.error) };
     }
 
     if (!userResult.value) {
@@ -38,26 +113,32 @@ class DefaultProfileService implements ProfileService {
         ok: false,
         error: {
           code: 'UNAUTHORIZED',
-          message: 'Du måste vara inloggad för att spara din hälsoprofil.',
+          message: t('profile.validation.unauthenticatedSave'),
         },
       };
     }
 
     const userId = userResult.value.id;
-    const existingResult = await supabaseProfileRepository.getByUserId(userId);
+    const existingResult = await this.deps.profileRepository.getByUserId(userId);
     if (!existingResult.ok) {
-      return existingResult;
+      return { ok: false, error: toSafeHealthProfileError(existingResult.error) };
     }
 
     if (!existingResult.value) {
-      return supabaseProfileRepository.createFromMeasurements(userId, measurements);
+      const createResult = await this.deps.profileRepository.createFromMeasurements(
+        userId,
+        measurements,
+      );
+      return createResult.ok
+        ? createResult
+        : { ok: false, error: toSafeHealthProfileError(createResult.error) };
     }
 
     const dateOfBirth =
       resolveDateOfBirth(measurements) ?? existingResult.value.dateOfBirth;
     const existing = existingResult.value;
 
-    return supabaseProfileRepository.update(userId, {
+    const updateResult = await this.deps.profileRepository.update(userId, {
       firstName: measurements.firstName ?? existing.firstName,
       dateOfBirth,
       gender: measurements.gender ?? existing.gender,
@@ -68,6 +149,55 @@ class DefaultProfileService implements ProfileService {
       activityLevel: measurements.activityLevel ?? existing.activityLevel,
       goal: measurements.goal ?? existing.goal,
     });
+    return updateResult.ok
+      ? updateResult
+      : { ok: false, error: toSafeHealthProfileError(updateResult.error) };
+  }
+
+  async updateAccountProfile(update: AccountProfileUpdate): Promise<Result<UserProfile>> {
+    const firstName = normalizeAccountFirstName(update.firstName);
+    const validationError = validateAccountFirstName(firstName);
+    if (validationError) {
+      return { ok: false, error: validationError };
+    }
+
+    const userResult = await this.deps.getCurrentUser();
+    if (!userResult.ok) {
+      return { ok: false, error: toSafeAccountProfileError(userResult.error) };
+    }
+
+    if (!userResult.value) {
+      return {
+        ok: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: PROFILE_ACCOUNT_COPY.unauthenticatedMessage,
+        },
+      };
+    }
+
+    const userId = userResult.value.id;
+    const existingResult = await this.deps.profileRepository.getByUserId(userId);
+    if (!existingResult.ok) {
+      return { ok: false, error: toSafeAccountProfileError(existingResult.error) };
+    }
+
+    if (!existingResult.value) {
+      return {
+        ok: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: PROFILE_ACCOUNT_COPY.notFoundMessage,
+        },
+      };
+    }
+
+    const updateResult = await this.deps.profileRepository.update(userId, { firstName });
+    if (!updateResult.ok) {
+      return { ok: false, error: toSafeAccountProfileError(updateResult.error) };
+    }
+
+    return updateResult;
   }
 }
 
@@ -75,7 +205,7 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   if (!Number.isFinite(measurements.heightCm) || measurements.heightCm <= 0) {
     return {
       code: 'VALIDATION',
-      message: 'Ogiltigt värde för heightCm.',
+      message: t('profile.validation.height'),
     };
   }
 
@@ -85,7 +215,7 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   ) {
     return {
       code: 'VALIDATION',
-      message: 'Ogiltigt värde för weightKg.',
+      message: t('profile.validation.weight'),
     };
   }
 
@@ -95,7 +225,7 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   ) {
     return {
       code: 'VALIDATION',
-      message: 'Ogiltigt värde för waistCm.',
+      message: t('profile.validation.waist'),
     };
   }
 
@@ -105,7 +235,7 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   ) {
     return {
       code: 'VALIDATION',
-      message: 'Ogiltigt värde för neckCm.',
+      message: t('profile.validation.neck'),
     };
   }
 
@@ -115,28 +245,28 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   ) {
     return {
       code: 'VALIDATION',
-      message: 'Ogiltig ålder.',
+      message: t('profile.validation.age'),
     };
   }
 
   if (!resolveDateOfBirth(measurements)) {
     return {
       code: 'VALIDATION',
-      message: 'Ange födelsedatum.',
+      message: t('profile.validation.dateOfBirth'),
     };
   }
 
   if (!isProfileGender(measurements.gender)) {
     return {
       code: 'VALIDATION',
-      message: 'Välj kön.',
+      message: t('profile.validation.gender'),
     };
   }
 
   if (!isProfileActivityLevel(measurements.activityLevel)) {
     return {
       code: 'VALIDATION',
-      message: 'Välj aktivitetsnivå.',
+      message: t('profile.validation.activityLevel'),
     };
   }
 
@@ -159,4 +289,6 @@ function isProfileActivityLevel(
   );
 }
 
-export const profileService = new DefaultProfileService();
+export function createProfileService(deps: ProfileServiceDeps): ProfileService {
+  return new DefaultProfileService(deps);
+}

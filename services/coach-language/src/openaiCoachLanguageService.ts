@@ -6,7 +6,19 @@ import { getCoachInstructionBundle } from './instructions';
 
 export type OpenAiCoachClient = {
   responses: {
-    create: (params: Record<string, unknown>) => Promise<{ output_text?: string }>;
+    create: (params: Record<string, unknown>) => Promise<{
+      output_text?: string;
+      status?: string;
+      incomplete_details?: { reason?: string } | null;
+      usage?: {
+        output_tokens?: number;
+        output_tokens_details?: { reasoning_tokens?: number };
+      };
+      output?: Array<{
+        type?: string;
+        content?: Array<{ type?: string; text?: string }>;
+      }>;
+    }>;
   };
 };
 

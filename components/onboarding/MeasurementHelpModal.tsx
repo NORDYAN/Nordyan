@@ -13,6 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { liveArray, t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import type { TranslationKey } from '@/lib/i18n';
 import {
   colors,
   onboardingLayout,
@@ -26,46 +29,39 @@ export type MeasurementHelpSection = {
 };
 
 /** @deprecated Screen 7 uses bullet cards; kept for onboarding step-4 import compatibility. */
-export const DEFAULT_MEASUREMENT_HELP_SECTIONS: MeasurementHelpSection[] = [
+export const DEFAULT_MEASUREMENT_HELP_SECTIONS: readonly MeasurementHelpSection[] = liveArray(() => [
   {
-    title: 'Midja',
-    body:
-      'Stå avslappnat. Mät mitt emellan nedersta revbenet och höftbenskammen efter en normal utandning. Måttbandet ska ligga plant mot huden utan att dras åt.',
+    title: t('measureHelp.waistHeading'),
+    body: t('measureHelp.waist.body'),
   },
   {
-    title: 'Hals',
-    body:
-      'Mät runt halsen strax under adamsäpplet. Måttbandet ska ligga plant mot huden utan att spänna.',
+    title: t('measureHelp.neckHeading'),
+    body: t('measureHelp.neck.body'),
   },
-];
+]);
 
-export const MEASUREMENT_HELP_TITLE = 'Så mäter du rätt';
+const MEASUREMENT_HELP_MIDJA_ITEM_KEYS = [
+  'measureHelp.waist.1',
+  'measureHelp.waist.2',
+  'measureHelp.waist.3',
+] as const satisfies readonly TranslationKey[];
 
-export const MEASUREMENT_HELP_SUBTITLE =
-  'Dessa mått används för att beräkna din första NORDYAN Health Score och ge en bättre uppskattning av din kroppssammansättning.';
+const MEASUREMENT_HELP_HALS_ITEM_KEYS = [
+  'measureHelp.neck.1',
+  'measureHelp.neck.2',
+] as const satisfies readonly TranslationKey[];
 
-export const MEASUREMENT_HELP_MIDJA_ITEMS = [
-  'Mät runt den smalaste delen av midjan.',
-  'Mät efter en normal utandning.',
-  'Låt måttbandet ligga plant mot huden utan att dra åt.',
-] as const;
-
-export const MEASUREMENT_HELP_HALS_ITEMS = [
-  'Mät runt halsen strax under adamsäpplet.',
-  'Låt måttbandet ligga plant mot huden utan att spännas.',
-] as const;
-
-export const MEASUREMENT_HELP_TIPS_ITEMS = [
-  'Mät direkt mot huden.',
-  'Andas normalt.',
-  'Dra inte åt måttbandet.',
-  'Använd samma måttband varje gång.',
-] as const;
+const MEASUREMENT_HELP_TIPS_ITEM_KEYS = [
+  'measureHelp.tip.1',
+  'measureHelp.tip.2',
+  'measureHelp.tip.3',
+  'measureHelp.tip.4',
+] as const satisfies readonly TranslationKey[];
 
 type MeasurementHelpModalProps = {
   visible: boolean;
   title: string;
-  sections?: MeasurementHelpSection[];
+  sections?: readonly MeasurementHelpSection[];
   onClose: () => void;
 };
 
@@ -74,10 +70,10 @@ const SHEET_SLIDE_OFFSET = 28;
 type GuidelineCardProps = {
   icon: ReactNode;
   title: string;
-  items: readonly string[];
+  itemKeys: readonly TranslationKey[];
 };
 
-function MeasurementHelpGuidelineCard({ icon, title, items }: GuidelineCardProps) {
+function MeasurementHelpGuidelineCard({ icon, title, itemKeys }: GuidelineCardProps) {
   return (
     <Card
       padding={onboardingMeasurementHelpLayout.cardPadding}
@@ -90,10 +86,10 @@ function MeasurementHelpGuidelineCard({ icon, title, items }: GuidelineCardProps
           <Text style={styles.guidelineCardTitle}>{title}</Text>
         </View>
         <View style={styles.bulletList}>
-          {items.map((item) => (
-            <View key={item} style={styles.bulletRow}>
+          {itemKeys.map((key) => (
+            <View key={key} style={styles.bulletRow}>
               <View style={styles.bulletDot} />
-              <Text style={styles.bulletText}>{item}</Text>
+              <Text style={styles.bulletText}>{t(key)}</Text>
             </View>
           ))}
         </View>
@@ -108,6 +104,7 @@ export function MeasurementHelpModal({
   sections: _sections,
   onClose,
 }: MeasurementHelpModalProps) {
+  useI18n();
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(SHEET_SLIDE_OFFSET)).current;
 
@@ -172,7 +169,7 @@ export function MeasurementHelpModal({
               style={styles.backButton}
               onPress={handleClose}
               accessibilityRole="button"
-              accessibilityLabel="Stäng"
+              accessibilityLabel={t('common.close')}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
               <Ionicons
@@ -189,8 +186,8 @@ export function MeasurementHelpModal({
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.titleSection}>
-              <Text style={styles.title}>{MEASUREMENT_HELP_TITLE}</Text>
-              <Text style={styles.subtitle}>{MEASUREMENT_HELP_SUBTITLE}</Text>
+              <Text style={styles.title}>{t('measureHelp.title')}</Text>
+              <Text style={styles.subtitle}>{t('measureHelp.subtitle')}</Text>
             </View>
 
             <View style={styles.cardsSpacer} />
@@ -204,8 +201,8 @@ export function MeasurementHelpModal({
                     color={colors.onboardingMeasurementHelpText}
                   />
                 }
-                title="Midja"
-                items={MEASUREMENT_HELP_MIDJA_ITEMS}
+                title={t('measureHelp.waistHeading')}
+                itemKeys={MEASUREMENT_HELP_MIDJA_ITEM_KEYS}
               />
               <MeasurementHelpGuidelineCard
                 icon={
@@ -215,8 +212,8 @@ export function MeasurementHelpModal({
                     color={colors.onboardingMeasurementHelpText}
                   />
                 }
-                title="Hals"
-                items={MEASUREMENT_HELP_HALS_ITEMS}
+                title={t('measureHelp.neckHeading')}
+                itemKeys={MEASUREMENT_HELP_HALS_ITEM_KEYS}
               />
               <MeasurementHelpGuidelineCard
                 icon={
@@ -226,15 +223,15 @@ export function MeasurementHelpModal({
                     color={colors.onboardingMeasurementHelpText}
                   />
                 }
-                title="Tips"
-                items={MEASUREMENT_HELP_TIPS_ITEMS}
+                title={t('measureHelp.tipsHeading')}
+                itemKeys={MEASUREMENT_HELP_TIPS_ITEM_KEYS}
               />
             </View>
           </ScrollView>
 
           <View style={styles.ctaContainer}>
             <Button
-              label="Jag förstår"
+              label={t('measureHelp.understood')}
               variant="onboarding"
               style={styles.confirmButton}
               labelStyle={styles.confirmButtonLabel}

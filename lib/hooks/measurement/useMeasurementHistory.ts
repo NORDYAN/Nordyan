@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import type { Measurement } from '@/lib/domain/measurement';
+import { t } from '@/lib/i18n';
 import { measurementService } from '@/lib/services/measurement';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -57,7 +58,7 @@ export function useMeasurementHistory(): UseMeasurementHistoryResult {
       if (!result.ok) {
         setState({
           status: 'error',
-          message: result.error.message ?? 'Kunde inte hämta mätningar.',
+          message: t('health.history.loadError'),
         });
         return;
       }

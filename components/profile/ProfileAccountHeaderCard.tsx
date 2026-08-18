@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { PROFILE_ACCOUNT_COPY } from '@/lib/presentation/profile-account';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { colors, profileLayout, profileTypography, typography } from '@/theme';
 
 type ProfileAccountHeaderCardProps = {
@@ -13,10 +15,12 @@ type ProfileAccountHeaderCardProps = {
 };
 
 export function ProfileAccountHeaderCard({ name, email, onPress }: ProfileAccountHeaderCardProps) {
+  useI18n();
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Kontoinformation"
+      accessibilityLabel={PROFILE_ACCOUNT_COPY.title}
       onPress={onPress}
       style={({ pressed }) => [pressed && styles.pressed]}
     >
@@ -37,6 +41,7 @@ export function ProfileAccountHeaderCard({ name, email, onPress }: ProfileAccoun
             name="chevron-forward"
             size={profileLayout.headerChevronSize}
             color={colors.homeTextMuted}
+            style={styles.chevron}
           />
         </View>
       </Card>
@@ -69,10 +74,16 @@ const styles = StyleSheet.create({
     color: colors.onboardingText,
     fontSize: profileTypography.headerNameSize,
     fontWeight: typography.fontWeight.semibold,
+    flexShrink: 1,
   },
   email: {
     color: colors.homeTextMuted,
     fontSize: profileTypography.headerEmailSize,
     fontWeight: typography.fontWeight.regular,
+    flexShrink: 1,
+  },
+  chevron: {
+    flexShrink: 0,
+    marginLeft: 8,
   },
 });

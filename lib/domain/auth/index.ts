@@ -1,1 +1,1 @@
-export type { AuthSession, AuthStatus, AuthUser } from './types';
+export type { AuthSession, AuthStatus, AuthUser, SignUpOutcome } from './types';

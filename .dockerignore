@@ -1,0 +1,32 @@
+# Docker build context = NORDYAN repo root
+# (fly deploy . --config services/coach-language/fly.toml)
+#
+# Docker reads .dockerignore from the context root. The service-level
+# ignorefile is also referenced from fly.toml; keep rules aligned.
+
+.git
+**/.git
+
+**/node_modules
+node_modules
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# Not needed for coach-language image
+app
+assets
+components
+docs
+lib
+supabase
+tools
+.cursor
+.expo
+.vscode
+
+**/*.test.ts
+**/README.md
+**/DEPLOY.md
+**/DATA_CONTROL.md

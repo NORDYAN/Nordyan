@@ -1,3 +1,5 @@
+import { formatDecimal, formatDisplayDate, getActiveLocale, t } from '@/lib/i18n';
+
 function parseIsoDateLocal(isoDate: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
   if (!match) {
@@ -21,17 +23,16 @@ export function formatMeasurementHistoryDate(isoDate: string): string {
     return isoDate;
   }
 
-  return new Intl.DateTimeFormat('sv-SE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
+  return formatDisplayDate(date, getActiveLocale());
 }
 
 export function formatMeasurementHistoryWeight(weightKg: number): string {
-  return `${weightKg.toFixed(1)} kg`;
+  return t('common.kg', { value: formatDecimal(weightKg) });
 }
 
 export function formatMeasurementHistoryCircumference(valueCm: number): string {
-  return `${Math.round(valueCm)} cm`;
+  return t('common.cm', { value: String(Math.round(valueCm)) });
 }
+
+/** No measurement-details destination exists in v1. */
+export const MEASUREMENT_HISTORY_DETAIL_DESTINATION = null;

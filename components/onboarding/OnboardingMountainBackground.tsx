@@ -13,12 +13,15 @@ type OnboardingMountainBackgroundProps = {
   backgroundSource?: ImageSourcePropType;
   overlayColor?: string;
   fogEnabled?: boolean;
+  /** Figma v1.1 brand/value/intro frames use overlay only — no bottom fade/solid. */
+  edgeFadeEnabled?: boolean;
 };
 
 export function OnboardingMountainBackground({
   backgroundSource = onboardingAssets.mountainBackground,
   overlayColor = colors.onboardingOverlay,
   fogEnabled = false,
+  edgeFadeEnabled = true,
 }: OnboardingMountainBackgroundProps) {
   return (
     <View style={styles.root} pointerEvents="none">
@@ -44,34 +47,38 @@ export function OnboardingMountainBackground({
           </Svg>
         </View>
       ) : null}
-      <View
-        style={[
-          styles.bottomFade,
-          { height: onboardingLayout.backgroundBottomFadeHeight },
-        ]}
-      >
-        <Svg width="100%" height="100%" preserveAspectRatio="none">
-          <Defs>
-            <LinearGradient id="onboardingBottomFade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.onboardingBackground} stopOpacity="0" />
-              <Stop offset="1" stopColor={colors.onboardingBackground} stopOpacity="1" />
-            </LinearGradient>
-          </Defs>
-          <Rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="url(#onboardingBottomFade)"
+      {edgeFadeEnabled ? (
+        <>
+          <View
+            style={[
+              styles.bottomFade,
+              { height: onboardingLayout.backgroundBottomFadeHeight },
+            ]}
+          >
+            <Svg width="100%" height="100%" preserveAspectRatio="none">
+              <Defs>
+                <LinearGradient id="onboardingBottomFade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={colors.onboardingBackground} stopOpacity="0" />
+                  <Stop offset="1" stopColor={colors.onboardingBackground} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="url(#onboardingBottomFade)"
+              />
+            </Svg>
+          </View>
+          <View
+            style={[
+              styles.bottomSolid,
+              { height: onboardingLayout.backgroundBottomSolidHeight },
+            ]}
           />
-        </Svg>
-      </View>
-      <View
-        style={[
-          styles.bottomSolid,
-          { height: onboardingLayout.backgroundBottomSolidHeight },
-        ]}
-      />
+        </>
+      ) : null}
     </View>
   );
 }

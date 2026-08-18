@@ -13,6 +13,12 @@ import { Text } from '@/components/ui/Text';
 import type { MeasurementField } from '@/lib/domain/measurement';
 import { measurementValidator } from '@/lib/domain/measurement';
 import { useSubmitMeasurement } from '@/lib/hooks/measurement';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import {
+  MEASUREMENT_PARTIAL_CONTINUE_LABEL,
+  resolveMeasurementSaveNavigation,
+} from '@/lib/presentation/measurement/measurement-save-navigation';
 import {
   colors,
   healthNewMeasurementLayout,
@@ -31,16 +37,16 @@ import {
 type MeasurementFormProps = {
   userId: string;
   variant?: 'default' | 'newMeasurement';
+  onNavigateToHistory?: () => void;
 };
 
 const SAVE_SUCCESS_MS = 2500;
-const MEASUREMENT_HELP_LABEL = 'Hur mäter jag midja och hals?';
 
-const TIPS_BULLETS = [
-  'på morgonen före frukost',
-  'efter toalettbesök',
-  'innan träning',
-  'vid ungefär samma tidpunkt varje gång',
+const TIPS_BULLET_KEYS = [
+  'health.new.tip.morning',
+  'health.new.tip.toilet',
+  'health.new.tip.beforeTraining',
+  'health.new.tip.sameTime',
 ] as const;
 
 function fieldError(
@@ -60,7 +66,12 @@ function clearFormFields(
   setNeckText('');
 }
 
-export function MeasurementForm({ userId, variant = 'default' }: MeasurementFormProps) {
+export function MeasurementForm({
+  userId,
+  variant = 'default',
+  onNavigateToHistory,
+}: MeasurementFormProps) {
+  useI18n();
   const isNewMeasurement = variant === 'newMeasurement';
   const [weightText, setWeightText] = useState('');
   const [waistText, setWaistText] = useState('');
@@ -78,7 +89,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
   const submitError = submitState.status === 'error' ? submitState.message : undefined;
 
   useEffect(() => {
-    if (submitState.status !== 'success') {
+    if (submitState.status !== 'success' || submitState.outcome === 'partial') {
       return;
     }
 
@@ -89,7 +100,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [clearFeedback, submitState.status]);
+  }, [clearFeedback, submitState]);
 
   const allFieldsFilled =
     weightText.trim().length > 0 &&
@@ -156,7 +167,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
       return;
     }
 
-    const success = await submit({
+    const outcome = await submit({
       userId,
       measuredAt: todayLocalDate,
       weightKg,
@@ -164,17 +175,23 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
       neckCm,
     });
 
-    if (success) {
-      clearFormFields(setWeightText, setWaistText, setNeckText);
+    if (!outcome) {
+      return;
+    }
+
+    clearFormFields(setWeightText, setWaistText, setNeckText);
+
+    if (resolveMeasurementSaveNavigation(outcome).action === 'replace') {
+      onNavigateToHistory?.();
     }
   };
 
   const weightInput = isNewMeasurement ? (
     <ProfileMeasurementField
-      label="Vikt"
+      label={t('health.new.weight')}
       unit="kg"
       value={weightText}
-      placeholder="Ange"
+      placeholder={t('health.new.placeholder')}
       editable={!isSubmitting}
       uppercaseLabel={false}
       stacked
@@ -183,7 +200,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     />
   ) : (
     <MeasurementInput
-      label="Vikt"
+      label={t('health.new.weight')}
       unit="kg"
       value={weightText}
       editable={!isSubmitting}
@@ -194,10 +211,10 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
 
   const waistInput = isNewMeasurement ? (
     <ProfileMeasurementField
-      label="Midjemått"
+      label={t('health.new.waist')}
       unit="cm"
       value={waistText}
-      placeholder="Ange"
+      placeholder={t('health.new.placeholder')}
       editable={!isSubmitting}
       uppercaseLabel={false}
       stacked
@@ -206,7 +223,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     />
   ) : (
     <MeasurementInput
-      label="Midja"
+      label={t('health.new.waist')}
       unit="cm"
       value={waistText}
       editable={!isSubmitting}
@@ -217,10 +234,10 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
 
   const neckInput = isNewMeasurement ? (
     <ProfileMeasurementField
-      label="Halsmått"
+      label={t('health.new.neck')}
       unit="cm"
       value={neckText}
-      placeholder="Ange"
+      placeholder={t('health.new.placeholder')}
       editable={!isSubmitting}
       uppercaseLabel={false}
       stacked
@@ -229,7 +246,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     />
   ) : (
     <MeasurementInput
-      label="Hals"
+      label={t('health.new.neck')}
       unit="cm"
       value={neckText}
       editable={!isSubmitting}
@@ -242,7 +259,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     <View style={styles.saveSection}>
       <View style={styles.saveButtonContainer}>
         <Button
-          label={isSubmitting ? ' ' : 'Spara mätning'}
+          label={isSubmitting ? ' ' : t('health.new.save')}
           variant={isNewMeasurement ? 'onboarding' : 'primary'}
           style={[styles.saveButton, isNewMeasurement && styles.newMeasurementSaveButton]}
           disabled={!canSave}
@@ -268,6 +285,16 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
         </View>
       ) : null}
 
+      {isNewMeasurement && isPartialSuccess && onNavigateToHistory ? (
+        <Button
+          label={MEASUREMENT_PARTIAL_CONTINUE_LABEL()}
+          variant="onboarding"
+          style={[styles.saveButton, styles.newMeasurementSaveButton]}
+          onPress={onNavigateToHistory}
+          accessibilityLabel={MEASUREMENT_PARTIAL_CONTINUE_LABEL()}
+        />
+      ) : null}
+
       {submitError ? (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{submitError}</Text>
@@ -280,7 +307,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
     return (
       <>
         <View style={styles.newMeasurementSection}>
-          <Text style={styles.sectionLabel}>Kroppsmått</Text>
+          <Text style={styles.sectionLabel}>{t('health.new.section')}</Text>
           <Card
             padding={onboardingProfileLayout.formCardPadding}
             borderRadius={onboardingProfileLayout.formCardRadius}
@@ -298,13 +325,11 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
               <Text style={styles.tipsIconLabel}>i</Text>
             </View>
             <View style={styles.tipsTextBlock}>
-              <Text style={styles.tipsTitle}>Tips för tillförlitliga mätningar</Text>
-              <Text style={styles.tipsIntro}>
-                För att få så tillförlitliga resultat som möjligt rekommenderar vi att du mäter:
-              </Text>
-              {TIPS_BULLETS.map((bullet) => (
-                <Text key={bullet} style={styles.tipsBullet}>
-                  • {bullet}
+              <Text style={styles.tipsTitle}>{t('health.new.tipsTitle')}</Text>
+              <Text style={styles.tipsIntro}>{t('health.new.tipsIntro')}</Text>
+              {TIPS_BULLET_KEYS.map((key) => (
+                <Text key={key} style={styles.tipsBullet}>
+                  • {t(key)}
                 </Text>
               ))}
             </View>
@@ -318,7 +343,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
           ]}
           onPress={() => setMeasurementHelpVisible(true)}
           accessibilityRole="button"
-          accessibilityLabel={MEASUREMENT_HELP_LABEL}
+          accessibilityLabel={t('health.new.help')}
         >
           <View style={styles.measurementHelpLabelGroup}>
             <Ionicons
@@ -327,7 +352,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
               color={colors.onboardingAccent}
             />
             <Text style={styles.measurementHelpLinkText} numberOfLines={1}>
-              {MEASUREMENT_HELP_LABEL}
+              {t('health.new.help')}
             </Text>
           </View>
           <Ionicons
@@ -343,7 +368,7 @@ export function MeasurementForm({ userId, variant = 'default' }: MeasurementForm
 
         <MeasurementHelpModal
           visible={measurementHelpVisible}
-          title="Så mäter du"
+          title={t('onboarding.howToMeasure')}
           sections={DEFAULT_MEASUREMENT_HELP_SECTIONS}
           onClose={() => setMeasurementHelpVisible(false)}
         />

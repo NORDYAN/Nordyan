@@ -10,6 +10,7 @@ import {
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
+import { t } from '@/lib/i18n';
 import { useMeasurementHistory } from '@/lib/hooks/measurement';
 import {
   colors,
@@ -41,7 +42,7 @@ export default function MeasurementHistoryScreen() {
             <View style={styles.headerTopSpacer} />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ny mätning"
+              accessibilityLabel={t('health.new.add')}
               onPress={handleNewMeasurement}
               style={({ pressed }) => [styles.newMeasurementAction, pressed && styles.newMeasurementActionPressed]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -51,8 +52,8 @@ export default function MeasurementHistoryScreen() {
           </View>
 
           <View style={styles.headerBlock}>
-            <Text style={styles.title}>Mäthistorik</Text>
-            <Text style={styles.subtitle}>Följ din utveckling över tid.</Text>
+            <Text style={styles.title}>{t('health.history.title')}</Text>
+            <Text style={styles.subtitle}>{t('health.history.subtitle')}</Text>
           </View>
         </View>
 

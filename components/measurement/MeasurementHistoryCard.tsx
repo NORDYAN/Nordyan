@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import type { Measurement } from '@/lib/domain/measurement';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   formatMeasurementHistoryCircumference,
   formatMeasurementHistoryDate,
@@ -11,7 +12,6 @@ import {
 } from '@/lib/presentation/measurement/measurement-history.presentation';
 import {
   colors,
-  healthNewMeasurementLayout,
   onboardingProfileLayout,
   spacing,
   typography,
@@ -19,8 +19,6 @@ import {
 
 type MeasurementHistoryCardProps = {
   measurement: Measurement;
-  /** Wire in a future sprint when measurement detail is implemented. */
-  onDetailPress?: (measurementId: string) => void;
 };
 
 type MeasurementRowProps = {
@@ -37,52 +35,9 @@ function MeasurementRow({ label, value }: MeasurementRowProps) {
   );
 }
 
-function MeasurementHistoryDetailLabel({
-  onDetailPress,
-  measurementId,
-}: {
-  onDetailPress?: (measurementId: string) => void;
-  measurementId: string;
-}) {
-  if (onDetailPress) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Detaljer"
-        onPress={() => onDetailPress(measurementId)}
-        style={({ pressed }) => [styles.detailRow, pressed && styles.detailRowPressed]}
-      >
-        <Text style={styles.detailLabelActive}>Detaljer</Text>
-        <Ionicons
-          name="chevron-forward"
-          size={healthNewMeasurementLayout.helpChevronSize}
-          color={colors.onboardingAccent}
-        />
-      </Pressable>
-    );
-  }
+export function MeasurementHistoryCard({ measurement }: MeasurementHistoryCardProps) {
+  useI18n();
 
-  return (
-    <View
-      style={styles.detailRow}
-      accessibilityRole="text"
-      accessibilityState={{ disabled: true }}
-      importantForAccessibility="yes"
-    >
-      <Text style={styles.detailLabelDisabled}>Detaljer</Text>
-      <Ionicons
-        name="chevron-forward"
-        size={healthNewMeasurementLayout.helpChevronSize}
-        color={colors.onboardingProfileLabel}
-      />
-    </View>
-  );
-}
-
-export function MeasurementHistoryCard({
-  measurement,
-  onDetailPress,
-}: MeasurementHistoryCardProps) {
   return (
     <Card
       padding={onboardingProfileLayout.formCardPadding}
@@ -93,23 +48,18 @@ export function MeasurementHistoryCard({
 
       <View style={styles.measurementsBlock}>
         <MeasurementRow
-          label="Vikt"
+          label={t('onboarding.weight')}
           value={formatMeasurementHistoryWeight(measurement.weightKg)}
         />
         <MeasurementRow
-          label="Midjemått"
+          label={t('onboarding.waist')}
           value={formatMeasurementHistoryCircumference(measurement.waistCm)}
         />
         <MeasurementRow
-          label="Halsmått"
+          label={t('onboarding.neck')}
           value={formatMeasurementHistoryCircumference(measurement.neckCm)}
         />
       </View>
-
-      <MeasurementHistoryDetailLabel
-        measurementId={measurement.id}
-        onDetailPress={onDetailPress}
-      />
     </Card>
   );
 }
@@ -150,30 +100,5 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     lineHeight: typography.fontSize.sm * typography.lineHeight.normal,
     textAlign: 'right',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: onboardingProfileLayout.fieldLabelGap,
-    minHeight: onboardingProfileLayout.fieldHeight - spacing.lgAlt,
-    paddingVertical: spacing.sm,
-    width: '100%',
-  },
-  detailRowPressed: {
-    opacity: 0.75,
-  },
-  detailLabelActive: {
-    color: colors.onboardingAccent,
-    fontSize: healthNewMeasurementLayout.helpLinkFontSize,
-    fontWeight: typography.fontWeight.semibold,
-    lineHeight: healthNewMeasurementLayout.helpLinkFontSize * typography.lineHeight.normal,
-  },
-  detailLabelDisabled: {
-    color: colors.onboardingProfileLabel,
-    fontSize: healthNewMeasurementLayout.helpLinkFontSize,
-    fontWeight: typography.fontWeight.semibold,
-    lineHeight: healthNewMeasurementLayout.helpLinkFontSize * typography.lineHeight.normal,
-    opacity: 0.72,
   },
 });

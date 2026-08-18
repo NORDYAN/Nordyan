@@ -6,11 +6,15 @@ import {
   getLocalCalendarDate,
   mapProfileToHealthScoreInput,
 } from './health-score.mapper';
-import { getHealthScoreBandLabel } from './health-score.presentation';
+import { getHealthScoreBandDisplayLabel, t } from '@/lib/i18n';
 import type { HomeHealthScoreState } from './health-score.service.types';
 
-export const HOME_HEALTH_SCORE_UNAVAILABLE_MESSAGE =
-  'Din hälsopoäng kan inte beräknas ännu.';
+export function getHomeHealthScoreUnavailableMessage(): string {
+  return t('home.healthScore.unavailable');
+}
+
+/** Swedish source string; prefer getHomeHealthScoreUnavailableMessage() at runtime. */
+export const HOME_HEALTH_SCORE_UNAVAILABLE_MESSAGE = 'Din hälsopoäng kan inte beräknas ännu.';
 
 export type CalculatedHomeHealthScore = {
   score: number;
@@ -39,7 +43,7 @@ export function calculateHomeHealthScoreFromProfile(
 
   return {
     score: engineResult.value.score,
-    subtitle: getHealthScoreBandLabel(engineResult.value.score),
+    subtitle: getHealthScoreBandDisplayLabel(engineResult.value.score),
     input,
     result: engineResult.value,
   };
@@ -58,7 +62,7 @@ export function buildHomeHealthScoreState(
   if (!calculated) {
     return {
       status: 'unavailable',
-      message: HOME_HEALTH_SCORE_UNAVAILABLE_MESSAGE,
+      message: getHomeHealthScoreUnavailableMessage(),
     };
   }
 

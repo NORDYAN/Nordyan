@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeIndicator, OnboardingMountainBackground } from '@/components/onboarding';
@@ -8,21 +8,27 @@ import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { onboardingAssets } from '@/assets/images/onboarding';
 import { routes } from '@/constants/routes';
-import { colors, onboardingLayout, typography } from '@/theme';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { colors, typography } from '@/theme';
+import { initialLifestyleColors } from '@/theme/initial-lifestyle';
 
-const PROMISE_BODY_LINE_HEIGHT = 1.58;
-/** ~12% lighter overlay vs theme token so mountains read clearer on screen 2 only. */
-const PROMISE_MOUNTAIN_OVERLAY = 'rgba(18, 20, 22, 0.44)';
+/** Figma 199:77 — nordyan-onboarding-v11-product-value */
+const HORIZONTAL_PADDING = 32;
+const HEADLINE_GAP = 12;
+const SECTION_GAP = 32;
+const FOOTER_GAP = 20;
+const TITLE_SIZE = 32;
+const TITLE_LINE_HEIGHT = 38;
+const BODY_SIZE = 18;
+const BODY_LINE_HEIGHT = 31;
+const OVERLINE_SIZE = 12;
 
-const PROMISE_MOUNTAIN_LOGO = require('../../assets/logos/nordyan-logo-transparent-final.png');
-const PROMISE_MOUNTAIN_LOGO_WIDTH = 70;
-const PROMISE_MOUNTAIN_LOGO_HEIGHT = PROMISE_MOUNTAIN_LOGO_WIDTH * (212 / 440);
-const PROMISE_LOGO_TO_OVERLINE_GAP = 16;
-const PROMISE_TITLE_FONT_SIZE = typography.fontSize.xxl * 0.95;
+export default function OnboardingProductValueScreen() {
+  useI18n();
 
-export default function OnboardingPromiseScreen() {
   const handleContinue = () => {
-    router.push(routes.onboardingStep3);
+    router.push(routes.onboardingLifestyleIntro);
   };
 
   return (
@@ -30,37 +36,30 @@ export default function OnboardingPromiseScreen() {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground
         backgroundSource={onboardingAssets.mountainBackgroundPromise}
-        overlayColor={PROMISE_MOUNTAIN_OVERLAY}
-        fogEnabled
+        overlayColor={initialLifestyleColors.productValueOverlay}
+        edgeFadeEnabled={false}
       />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={styles.content}>
-          <View style={styles.introText}>
-            <View style={styles.headerBlock}>
-              <Image
-                source={PROMISE_MOUNTAIN_LOGO}
-                style={styles.mountainLogo}
-                resizeMode="contain"
-                accessibilityLabel="NORDYAN mountain mark"
-              />
-              <View style={styles.headlineGroup}>
-                <Text style={styles.overline}>VÅRT LÖFTE</Text>
-                <Text style={styles.title}>{'Inte ännu en\nhälsoapp'}</Text>
-              </View>
+        <View style={styles.stage}>
+          <View style={styles.hero}>
+            <View style={styles.headline}>
+              <Text style={styles.overline} maxFontSizeMultiplier={1.1}>
+                {t('onboarding.step2.overline')}
+              </Text>
+              <Text style={styles.title} maxFontSizeMultiplier={1.1}>
+                {t('onboarding.step2.title')}
+              </Text>
             </View>
-            <Text style={styles.body}>
-              {
-                'Vi hjälper dig inte bara att samla data.\nVi hjälper dig att förstå vad den faktiskt betyder för din långsiktiga hälsa, styrka och vitalitet.'
-              }
+            <Text style={styles.body} maxFontSizeMultiplier={1.1}>
+              {t('onboarding.step2.body')}
             </Text>
           </View>
 
           <View style={styles.footer}>
             <Button
-              label="Fortsätt"
+              label={t('common.continue')}
               variant="onboarding"
               style={styles.button}
-              labelStyle={styles.buttonLabel}
               onPress={handleContinue}
             />
             <HomeIndicator />
@@ -79,60 +78,50 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
+  stage: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: onboardingLayout.contentPaddingBottom,
   },
-  introText: {
-    paddingTop: onboardingLayout.promiseIntroPaddingTop - 24,
-    paddingHorizontal: onboardingLayout.promiseIntroPaddingHorizontal,
-    alignItems: 'flex-start',
+  hero: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    gap: SECTION_GAP,
   },
-  headerBlock: {
-    alignItems: 'flex-start',
-    marginBottom: onboardingLayout.promiseIntroGap,
-    width: '100%',
-  },
-  mountainLogo: {
-    width: PROMISE_MOUNTAIN_LOGO_WIDTH,
-    height: PROMISE_MOUNTAIN_LOGO_HEIGHT,
-    marginBottom: PROMISE_LOGO_TO_OVERLINE_GAP,
-    opacity: 1,
-  },
-  headlineGroup: {
-    gap: onboardingLayout.promiseHeaderGap,
+  headline: {
+    gap: HEADLINE_GAP,
     alignItems: 'flex-start',
     width: '100%',
   },
   overline: {
     color: colors.onboardingAccent,
-    fontSize: typography.fontSize.xs,
+    fontSize: OVERLINE_SIZE,
     fontWeight: typography.fontWeight.semibold,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
+    includeFontPadding: false,
   },
   title: {
     color: colors.onboardingText,
-    fontSize: PROMISE_TITLE_FONT_SIZE,
+    fontSize: TITLE_SIZE,
     fontWeight: typography.fontWeight.bold,
-    lineHeight: PROMISE_TITLE_FONT_SIZE * typography.lineHeight.tight,
+    lineHeight: TITLE_LINE_HEIGHT,
+    includeFontPadding: false,
+    width: '100%',
   },
   body: {
     color: colors.onboardingTextMuted,
-    fontSize: typography.fontSize.lg,
+    fontSize: BODY_SIZE,
     fontWeight: typography.fontWeight.regular,
-    lineHeight: typography.fontSize.lg * PROMISE_BODY_LINE_HEIGHT,
+    lineHeight: BODY_LINE_HEIGHT,
+    includeFontPadding: false,
     width: '100%',
   },
   footer: {
-    gap: onboardingLayout.footerGap,
-    paddingHorizontal: onboardingLayout.horizontalPadding,
+    width: '100%',
+    gap: FOOTER_GAP,
+    paddingHorizontal: HORIZONTAL_PADDING,
   },
   button: {
     width: '100%',
-  },
-  buttonLabel: {
-    color: colors.onboardingText,
   },
 });

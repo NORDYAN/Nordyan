@@ -1,24 +1,53 @@
 import type { AppError } from '@/lib/core';
+import { liveCopy, t } from '@/lib/i18n';
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export { MIN_PASSWORD_LENGTH };
 
-export const authMessages = {
-  signingIn: 'Loggar in…',
-  signingUp: 'Skapar konto…',
-  invalidCredentials: 'Fel e-post eller lösenord.',
-  emailAlreadyRegistered: 'E-postadressen är redan registrerad.',
-  passwordTooShort: `Lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`,
-  invalidEmail: 'Ange en giltig e-postadress.',
-  missingFields: 'Fyll i e-post och lösenord.',
-  emailNotConfirmed:
-    'Bekräfta din e-postadress innan du loggar in. E-postverifiering krävs i produktion.',
-  missingConfig:
-    'Supabase är inte konfigurerat. Lägg till EXPO_PUBLIC_SUPABASE_URL och EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (eller EXPO_PUBLIC_SUPABASE_ANON_KEY) i .env.',
-  generic: 'Något gick fel. Försök igen.',
-  signOutFailed: 'Kunde inte logga ut. Försök igen.',
-} as const;
+export const authMessages = liveCopy({
+  signingIn: () => t('auth.signIn.loading'),
+  signingUp: () => t('auth.signUp.loading'),
+  invalidCredentials: () => t('auth.error.invalidCredentials'),
+  emailAlreadyRegistered: () => t('auth.error.emailAlreadyRegistered'),
+  passwordTooShort: () => t('auth.error.passwordTooShort', { min: MIN_PASSWORD_LENGTH }),
+  invalidEmail: () => t('auth.error.invalidEmail'),
+  missingFields: () => t('auth.error.missingFields'),
+  emailNotConfirmed: () => t('auth.error.emailNotConfirmed'),
+  callbackExpired: () => t('auth.error.callbackExpired'),
+  callbackGeneric: () => t('auth.error.callbackGeneric'),
+  missingConfig: () => t('auth.error.missingConfig'),
+  generic: () => t('auth.error.generic'),
+  signOutFailed: () => t('auth.error.signOutFailed'),
+  passwordMismatch: () => t('auth.recovery.error.passwordMismatch'),
+  recoveryInvalid: () => t('auth.recovery.error.invalidLink'),
+  recoverySessionRequired: () => t('auth.recovery.error.sessionRequired'),
+  recoveryMissingPasswords: () => t('auth.recovery.error.missingPasswords'),
+});
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+export function validateRecoveryEmail(email: string): AppError | null {
+  if (!isValidEmail(email)) {
+    return { code: 'VALIDATION', message: authMessages.invalidEmail };
+  }
+  return null;
+}
+
+export function validateNewPassword(password: string, confirmation: string): AppError | null {
+  if (!password || !confirmation) {
+    return { code: 'VALIDATION', message: authMessages.recoveryMissingPasswords };
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { code: 'VALIDATION', message: authMessages.passwordTooShort };
+  }
+  if (password !== confirmation) {
+    return { code: 'VALIDATION', message: authMessages.passwordMismatch };
+  }
+  return null;
+}
 
 export function validateAuthInput(email: string, password: string): AppError | null {
   const trimmedEmail = email.trim();
@@ -27,7 +56,7 @@ export function validateAuthInput(email: string, password: string): AppError | n
     return { code: 'VALIDATION', message: authMessages.missingFields };
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+  if (!isValidEmail(trimmedEmail)) {
     return { code: 'VALIDATION', message: authMessages.invalidEmail };
   }
 
@@ -62,7 +91,7 @@ export function mapSupabaseAuthError(error: unknown): AppError {
     return { code: 'VALIDATION', message: authMessages.emailAlreadyRegistered, cause: error };
   }
 
-  if (message.includes('email not confirmed')) {
+  if (code === 'email_not_confirmed' || message.includes('email not confirmed')) {
     return { code: 'UNAUTHORIZED', message: authMessages.emailNotConfirmed, cause: error };
   }
 
@@ -78,4 +107,31 @@ export function mapSupabaseAuthError(error: unknown): AppError {
   }
 
   return { code: 'UNKNOWN', message: authMessages.generic, cause: error };
+}
+
+export function mapAuthCallbackError(error: unknown): AppError {
+  if (!error || typeof error !== 'object') {
+    return { code: 'UNKNOWN', message: authMessages.callbackGeneric, cause: error };
+  }
+
+  const authError = error as { message?: string; code?: string; status?: number };
+  const message = authError.message?.toLowerCase() ?? '';
+  const code = authError.code?.toLowerCase() ?? '';
+
+  if (
+    code === 'otp_expired' ||
+    message.includes('otp_expired') ||
+    message.includes('expired') ||
+    message.includes('invalid token') ||
+    message.includes('invalid or has expired') ||
+    authError.status === 403
+  ) {
+    return { code: 'UNAUTHORIZED', message: authMessages.callbackExpired, cause: error };
+  }
+
+  if (code === 'email_not_confirmed' || message.includes('email not confirmed')) {
+    return { code: 'UNAUTHORIZED', message: authMessages.emailNotConfirmed, cause: error };
+  }
+
+  return { code: 'UNKNOWN', message: authMessages.callbackGeneric, cause: error };
 }

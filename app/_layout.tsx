@@ -7,24 +7,30 @@ import { colors } from '@/theme';
 export default function RootLayout() {
   return (
     <AppProviders>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
+          contentStyle: { backgroundColor: colors.onboardingBackground },
         }}
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="auth/callback" />
+        <Stack.Screen name="auth/recovery-callback" />
+        <Stack.Screen name="auth/reset-password" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="health-score"
           options={{
-            headerShown: true,
-            title: 'Health Score',
-            headerTintColor: colors.textPrimary,
-            headerStyle: { backgroundColor: colors.background },
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="weekly-check-in"
+          options={{
+            headerShown: false,
           }}
         />
       </Stack>

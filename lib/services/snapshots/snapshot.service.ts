@@ -10,6 +10,8 @@ import type { Database } from '@/lib/supabase/database.types';
 
 import {
   DEFAULT_SNAPSHOT_HISTORY_LIMIT,
+  DEFAULT_SNAPSHOT_RANGE_LIMIT,
+  type SnapshotHistoryRangeOptions,
   type SnapshotService,
 } from './snapshot.service.types';
 
@@ -225,6 +227,69 @@ class DefaultSnapshotService implements SnapshotService {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      return { ok: false, error: mapSnapshotError(error) };
+    }
+
+    const snapshots: HealthSnapshot[] = [];
+
+    for (const row of data ?? []) {
+      const snapshot = mapSnapshotRow(row);
+      if (!snapshot) {
+        return {
+          ok: false,
+          error: {
+            code: 'INTEGRATION',
+            message: 'En eller flera snapshots returnerades i ett ogiltigt format.',
+          },
+        };
+      }
+
+      snapshots.push(snapshot);
+    }
+
+    return { ok: true, value: snapshots };
+  }
+
+  async getSnapshotHistoryInRange(
+    userId: string,
+    options: SnapshotHistoryRangeOptions,
+  ): Promise<Result<HealthSnapshot[]>> {
+    if (!userId.trim()) {
+      return { ok: false, error: { code: 'VALIDATION', message: 'userId krävs.' } };
+    }
+
+    if (!options.since.trim()) {
+      return { ok: false, error: { code: 'VALIDATION', message: 'since krävs.' } };
+    }
+
+    const limit = options.limit ?? DEFAULT_SNAPSHOT_RANGE_LIMIT;
+    if (!Number.isInteger(limit) || limit <= 0) {
+      return {
+        ok: false,
+        error: { code: 'VALIDATION', message: 'limit måste vara ett positivt heltal.' },
+      };
+    }
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return { ok: false, error: missingSupabaseConfigError() };
+    }
+
+    let query = supabase
+      .from('health_snapshots')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('created_at', options.since);
+
+    if (options.until?.trim()) {
+      query = query.lte('created_at', options.until.trim());
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: true })
       .limit(limit);
 
     if (error) {

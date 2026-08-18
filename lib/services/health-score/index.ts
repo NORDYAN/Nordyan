@@ -10,3 +10,4 @@ export {
   mapProfileActivityLevel,
   mapProfileToHealthScoreInput,
 } from './health-score.mapper';
+export { canPresentBodyFatEstimate } from './body-fat-presentation';

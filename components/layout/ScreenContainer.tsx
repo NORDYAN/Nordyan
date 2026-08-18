@@ -5,7 +5,7 @@ import { colors, spacing } from '@/theme';
 
 type ScreenContainerProps = ViewProps & {
   children: React.ReactNode;
-  variant?: 'default' | 'dark' | 'home' | 'profile' | 'healthDataSources';
+  variant?: 'default' | 'dark' | 'home' | 'profile' | 'healthDataSources' | 'development';
 };
 
 export function ScreenContainer({
@@ -18,35 +18,42 @@ export function ScreenContainer({
   const isHome = variant === 'home';
   const isProfile = variant === 'profile';
   const isHealthDataSources = variant === 'healthDataSources';
+  const isDevelopment = variant === 'development';
 
   return (
     <SafeAreaView
       style={[
         styles.safeArea,
-        isHealthDataSources
-          ? styles.safeAreaHealthDataSources
-          : isProfile
-            ? styles.safeAreaProfile
-            : isHome
-              ? styles.safeAreaHome
-              : isDark
-                ? styles.safeAreaDark
-                : styles.safeAreaDefault,
+        isDevelopment
+          ? styles.safeAreaDevelopment
+          : isHealthDataSources
+            ? styles.safeAreaHealthDataSources
+            : isProfile
+              ? styles.safeAreaProfile
+              : isHome
+                ? styles.safeAreaHome
+                : isDark
+                  ? styles.safeAreaDark
+                  : styles.safeAreaDefault,
       ]}
-      edges={isHome || isProfile || isHealthDataSources ? ['top'] : undefined}
+      edges={
+        isHome || isProfile || isHealthDataSources || isDevelopment ? ['top'] : undefined
+      }
     >
       <View
         style={[
           styles.container,
-          isHealthDataSources
-            ? styles.containerHealthDataSources
-            : isProfile
-              ? styles.containerProfile
-              : isHome
-                ? styles.containerHome
-                : isDark
-                  ? styles.containerDark
-                  : styles.containerDefault,
+          isDevelopment
+            ? styles.containerDevelopment
+            : isHealthDataSources
+              ? styles.containerHealthDataSources
+              : isProfile
+                ? styles.containerProfile
+                : isHome
+                  ? styles.containerHome
+                  : isDark
+                    ? styles.containerDark
+                    : styles.containerDefault,
           style,
         ]}
         {...props}
@@ -76,6 +83,9 @@ const styles = StyleSheet.create({
   safeAreaHealthDataSources: {
     backgroundColor: colors.profileHealthDataSourcesBackground,
   },
+  safeAreaDevelopment: {
+    backgroundColor: colors.developmentBackground,
+  },
   container: {
     flex: 1,
     padding: spacing.md,
@@ -100,6 +110,12 @@ const styles = StyleSheet.create({
   },
   containerHealthDataSources: {
     backgroundColor: colors.profileHealthDataSourcesBackground,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  containerDevelopment: {
+    backgroundColor: colors.developmentBackground,
     paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 0,

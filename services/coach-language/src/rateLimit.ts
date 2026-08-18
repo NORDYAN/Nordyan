@@ -80,4 +80,6 @@ export function createMemoryRateLimiter(limits: RateLimitConfig = DEFAULT_LIMITS
   };
 }
 
+/** Shared user cost/abuse bucket for /generate and /ask (identical limits). */
 export const coachGenerateRateLimiter = createMemoryRateLimiter();
+export const coachLanguageRateLimiter = coachGenerateRateLimiter;

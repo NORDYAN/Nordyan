@@ -1,0 +1,58 @@
+/**
+ * Figma: nordyan-health-score-explained
+ * Optical scale tuned for system fonts so density matches the Figma artboard on device
+ * (same approach as approved Development Home / Trends).
+ */
+export const healthScoreExplainedLayout = {
+  horizontalPadding: 24,
+  scrollPaddingBottom: 24,
+  headerPaddingTop: 6,
+  headerGap: 12,
+  headerTitleGap: 3,
+  backButtonSize: 32,
+  backButtonRadius: 16,
+  backIconSize: 15,
+  contentGap: 10,
+  summaryCardPadding: 12,
+  summaryCardRadius: 16,
+  summaryCardGap: 10,
+  summaryLabelsGap: 6,
+  gaugeSize: 128,
+  changePillRadius: 12,
+  changePillPaddingHorizontal: 10,
+  changePillPaddingVertical: 3,
+  sectionHeadingGap: 8,
+  sectionHeadingPaddingBottom: 2,
+  factorCardRadius: 14,
+  factorCardPaddingHorizontal: 12,
+  factorCardPaddingVertical: 10,
+  factorCardGap: 8,
+  factorCardInnerGap: 10,
+  factorContentGap: 2,
+  factorDotSize: 6,
+  coachCardRadius: 14,
+  coachCardPadding: 12,
+  coachCardGap: 6,
+  learnMoreRadius: 14,
+  learnMorePaddingHorizontal: 12,
+  learnMorePaddingVertical: 10,
+  learnMoreTextGap: 2,
+  learnMoreIconSize: 16,
+} as const;
+
+export const healthScoreExplainedTypography = {
+  titleSize: 22,
+  subtitleSize: 11,
+  scoreSize: 36,
+  scoreMaxSize: 9,
+  bandSize: 11,
+  changePillSize: 10,
+  sectionHeadingSize: 10,
+  factorLabelSize: 13,
+  factorStatusSize: 9,
+  factorBodySize: 11,
+  coachTitleSize: 12,
+  coachBodySize: 11,
+  learnMoreTitleSize: 12,
+  learnMoreSubtitleSize: 10,
+} as const;

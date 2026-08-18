@@ -1,52 +1,83 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 
-import { isProfileComplete, type UserProfile } from '@/lib/domain/profile';
+import type { UserProfile } from '@/lib/domain/profile';
+import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
 import {
-  buildOnboardingResultFromMeasurements,
-  buildOnboardingResultFromProfile,
+  healthScoreInputReadyFromPending,
+  resolveOnboardingResultState,
+  unavailableReasonFromResult,
 } from '@/lib/onboarding/onboarding-result.service';
 import type { OnboardingResultState } from '@/lib/onboarding/onboarding-result.types';
-import { getPendingProfileMeasurements } from '@/lib/onboarding/pending-profile-storage';
+import { getVisiblePendingProfileMeasurements } from '@/lib/onboarding/pending-profile-storage';
 import { getLocalCalendarDate } from '@/lib/services/health-score';
+import { useAuth } from '@/providers/auth-provider';
 
 type UseOnboardingResultOptions = {
   profile: UserProfile | null;
+  visit?: string;
 };
 
-export function useOnboardingResult({ profile }: UseOnboardingResultOptions): OnboardingResultState {
+export function useOnboardingResult({
+  profile,
+  visit,
+}: UseOnboardingResultOptions): OnboardingResultState {
+  const { status, session } = useAuth();
+  const authenticated = status === 'authenticated';
+  const userId = authenticated ? session?.user.id ?? null : null;
+  const profileFallback = userId ? profile : null;
   const [state, setState] = useState<OnboardingResultState>({ status: 'loading' });
 
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
+      const requestId = { current: true };
       const asOfDate = getLocalCalendarDate();
+      const visitIdPresent = Boolean(visit);
 
       void (async () => {
         setState({ status: 'loading' });
 
-        const pending = await getPendingProfileMeasurements();
-        if (cancelled) {
+        await emitOnboardingForensics({
+          event: 'step-5-mount',
+          authenticated,
+          viewerUserId: userId,
+          profileWriteResult: 'not_attempted',
+          lifestyleWriteResult: 'not_attempted',
+          visitIdPresent,
+          onboardingResultStatus: 'loading',
+          unavailableReason: null,
+          healthScoreInputReady: null,
+        });
+
+        if (!requestId.current) {
           return;
         }
 
-        if (pending) {
-          setState(buildOnboardingResultFromMeasurements(pending, asOfDate));
+        const pending = await getVisiblePendingProfileMeasurements(userId);
+
+        if (!requestId.current) {
           return;
         }
 
-        if (profile && isProfileComplete(profile)) {
-          setState(buildOnboardingResultFromProfile(profile, asOfDate));
-          return;
-        }
-
-        setState({ status: 'unavailable' });
+        const next = resolveOnboardingResultState(pending, profileFallback, asOfDate);
+        await emitOnboardingForensics({
+          event: 'step-5-load-complete',
+          authenticated,
+          viewerUserId: userId,
+          profileWriteResult: 'not_attempted',
+          lifestyleWriteResult: 'not_attempted',
+          visitIdPresent,
+          onboardingResultStatus: next.status,
+          unavailableReason: unavailableReasonFromResult(next) ?? null,
+          healthScoreInputReady: healthScoreInputReadyFromPending(pending, asOfDate),
+        });
+        setState(next);
       })();
 
       return () => {
-        cancelled = true;
+        requestId.current = false;
       };
-    }, [profile]),
+    }, [authenticated, profileFallback, userId, visit]),
   );
 
   return state;

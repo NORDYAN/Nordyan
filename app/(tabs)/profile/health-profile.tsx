@@ -13,6 +13,7 @@ import {
 
 import {
   ActivityHelpModal,
+  ProfileDateOfBirthField,
   ProfileMeasurementField,
   ProfileSingleChoiceGroup,
 } from '@/components/onboarding';
@@ -20,23 +21,24 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
 import type { ProfileActivityLevel, ProfileGender } from '@/lib/domain/profile';
 import {
   PROFILE_ACTIVITY_LEVEL_OPTIONS,
   PROFILE_GENDER_OPTIONS,
 } from '@/lib/domain/profile';
 import { useCurrentProfile } from '@/lib/hooks/profile';
-import { profileService } from '@/lib/services/profile/profile.service';
+import { healthProfilePersonalFields } from '@/lib/presentation/health-profile';
+import { profileService } from '@/lib/services/profile';
 import { createHealthSnapshotFromProfile } from '@/lib/services/snapshots';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   colors,
   onboardingProfileLayout,
   profileHealthProfileLayout,
   typography,
 } from '@/theme';
-
-/** Figma: nordyan-profile-health-profile (design frozen) */
-const ACTIVITY_HELP_LABEL = 'Hur väljer jag aktivitetsnivå?';
 
 const PROFILE_GENDER_ICONS: Partial<
   Record<ProfileGender, keyof typeof Ionicons.glyphMap>
@@ -46,16 +48,12 @@ const PROFILE_GENDER_ICONS: Partial<
   other: 'person',
 };
 
-function isValidMeasurement(value: string): boolean {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0;
-}
-
 function isValidDateOfBirth(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 }
 
 export default function HealthProfileScreen() {
+  useI18n();
   const { profile, isLoading, refresh } = useCurrentProfile();
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [height, setHeight] = useState('');
@@ -87,14 +85,15 @@ export default function HealthProfileScreen() {
     }
   }, [profile]);
 
+  const heightCm = parseMeasurementNumericInput(height);
   const canSave =
     isValidDateOfBirth(dateOfBirth) &&
-    isValidMeasurement(height) &&
+    isPositiveMeasurementInput(height) &&
     gender !== null &&
     activityLevel !== null;
 
   const handleSave = async () => {
-    if (!profile || !canSave || !gender || !activityLevel || isSaving) {
+    if (!profile || !canSave || !gender || !activityLevel || isSaving || heightCm === null) {
       return;
     }
 
@@ -105,7 +104,7 @@ export default function HealthProfileScreen() {
       dateOfBirth: dateOfBirth.trim(),
       gender,
       activityLevel,
-      heightCm: Number(height),
+      heightCm,
       firstName: profile.firstName,
       goal: profile.goal,
     });
@@ -138,7 +137,7 @@ export default function HealthProfileScreen() {
         <View style={styles.navBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tillbaka"
+            accessibilityLabel={t('common.back')}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -162,14 +161,14 @@ export default function HealthProfileScreen() {
           {!isLoading && profile ? (
             <>
               <View style={styles.headerBlock}>
-                <Text style={styles.title}>Hälsoprofil</Text>
+                <Text style={styles.title}>{t('profile.healthProfile.screenTitle')}</Text>
                 <Text style={styles.subtitle}>
-                  Hantera personliga uppgifter som används för att beräkna din NORDYAN Health Score.
+                  {t('profile.healthProfile.screenSubtitle')}
                 </Text>
               </View>
 
               <ProfileSingleChoiceGroup
-                label="Kön"
+                label={t('onboarding.profile.gender')}
                 value={gender}
                 options={PROFILE_GENDER_OPTIONS}
                 onChange={setGender}
@@ -178,42 +177,40 @@ export default function HealthProfileScreen() {
               />
 
               <View style={styles.measurementsSection}>
-                <Text style={styles.sectionLabel}>Personlig profil</Text>
+                <Text style={styles.sectionLabel}>{t('onboarding.profile.sectionLabel')}</Text>
                 <Card
                   padding={onboardingProfileLayout.formCardPadding}
                   borderRadius={onboardingProfileLayout.formCardRadius}
                   style={styles.measurementsCard}
                 >
-                  <ProfileMeasurementField
-                    label="Födelsedatum"
+                  <ProfileDateOfBirthField
+                    label={t('onboarding.dateOfBirth')}
                     value={dateOfBirth}
-                    unit=""
-                    placeholder="ÅÅÅÅ-MM-DD"
                     uppercaseLabel={false}
-                    stacked
-                    onChangeText={setDateOfBirth}
+                    stacked={healthProfilePersonalFields.dateOfBirth.stacked}
+                    onChange={setDateOfBirth}
                   />
                   <ProfileMeasurementField
-                    label="Längd"
+                    label={t('onboarding.height')}
                     value={height}
                     unit="cm"
-                    placeholder="Ange"
+                    placeholder={t('health.new.placeholder')}
                     uppercaseLabel={false}
-                    stacked
+                    stacked={healthProfilePersonalFields.height.stacked}
                     onChangeText={setHeight}
                   />
                 </Card>
               </View>
 
               <View style={styles.activitySection}>
-                <Text style={styles.sectionLabel}>Aktivitet</Text>
+                <Text style={styles.sectionLabel}>{t('onboarding.profile.activitySection')}</Text>
                 <Card
                   padding={onboardingProfileLayout.formCardPadding}
                   borderRadius={onboardingProfileLayout.formCardRadius}
                   style={styles.measurementsCard}
                 >
                   <ProfileSingleChoiceGroup
-                    label="Aktivitetsnivå"
+                    label={t('onboarding.activityLevel')}
                     value={activityLevel}
                     options={PROFILE_ACTIVITY_LEVEL_OPTIONS}
                     onChange={setActivityLevel}
@@ -226,7 +223,7 @@ export default function HealthProfileScreen() {
                     ]}
                     onPress={() => setActivityHelpVisible(true)}
                     accessibilityRole="button"
-                    accessibilityLabel={ACTIVITY_HELP_LABEL}
+                    accessibilityLabel={t('profile.activityHelp.linkLabel')}
                   >
                     <View style={styles.activityHelpLabelGroup}>
                       <Ionicons
@@ -235,7 +232,7 @@ export default function HealthProfileScreen() {
                         color={colors.onboardingAccent}
                       />
                       <Text style={styles.activityHelpLinkText} numberOfLines={1}>
-                        {ACTIVITY_HELP_LABEL}
+                        {t('profile.activityHelp.linkLabel')}
                       </Text>
                     </View>
                     <Ionicons
@@ -248,7 +245,7 @@ export default function HealthProfileScreen() {
               </View>
 
               <Button
-                label={isSaving ? 'Sparar…' : 'Spara ändringar'}
+                label={isSaving ? t('profile.account.saving') : t('profile.account.save')}
                 variant="onboarding"
                 style={styles.saveButton}
                 onPress={handleSave}

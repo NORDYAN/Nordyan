@@ -1,4 +1,5 @@
 export { HealthSourceCard, type HealthSourceStatus } from './HealthSourceCard';
+export { ProfileAccountField } from './ProfileAccountField';
 export { ProfileAccountHeaderCard } from './ProfileAccountHeaderCard';
 export { ProfileAvatar } from './ProfileAvatar';
 export { ProfileMountainHeader } from './ProfileMountainHeader';

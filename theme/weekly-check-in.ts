@@ -1,0 +1,66 @@
+/**
+ * Figma: veckokoll-intro → veckokoll-completion (Sprint 26D).
+ * Module tokens only — do not change global brand colors.
+ */
+export const weeklyCheckInColors = {
+  background: '#0A0B0D',
+  card: '#14161A',
+  border: '#23262D',
+  primary: '#C9A45C',
+  supportingGold: '#C5A880',
+  title: '#F3F4F6',
+  muted: '#8E939E',
+  selectedFill: '#2A2418',
+  successIconFill: '#2A241F',
+  buttonText: '#0A0B0D',
+} as const;
+
+export const weeklyCheckInLayout = {
+  horizontalPadding: 24,
+  introCopyPadding: 32,
+  backButtonSize: 40,
+  backButtonRadius: 20,
+  backIconSize: 18,
+  backHeaderPaddingTop: 8,
+  progressGap: 8,
+  progressPaddingVertical: 16,
+  progressTrackHeight: 4,
+  progressTrackRadius: 2,
+  questionHeaderGap: 8,
+  questionHeaderPaddingVertical: 12,
+  optionsGap: 12,
+  optionsPaddingVertical: 12,
+  optionRadius: 16,
+  optionPaddingHorizontal: 20,
+  optionPaddingVertical: 18,
+  optionMinHeight: 56,
+  radioSize: 20,
+  radioRadius: 10,
+  radioBorderWidth: 2,
+  radioDotSize: 8,
+  ctaHeight: 56,
+  ctaRadius: 28,
+  illustrationSize: 140,
+  illustrationRadius: 70,
+  illustrationInnerSize: 76,
+  illustrationInnerRadius: 38,
+  illustrationIconSize: 28,
+  headerLogoSize: 20,
+  clockIconSize: 14,
+  bottomPadding: 24,
+} as const;
+
+export const weeklyCheckInTypography = {
+  brandSize: 13,
+  introTitleSize: 36,
+  introTitleLineHeight: 44,
+  introSupportingSize: 18,
+  introBodySize: 14,
+  timeHintSize: 13,
+  progressSize: 12,
+  questionTitleSize: 24,
+  questionSupportSize: 14,
+  optionSize: 16,
+  ctaSize: 16,
+  secondaryLinkSize: 14,
+} as const;

@@ -1,11 +1,15 @@
 import type { Express, Response } from 'express';
 
-import { DEFAULT_NORDYAN_COACH_PROMPT_VERSION } from '../../../../shared/coach-language';
+import {
+  DEFAULT_NORDYAN_COACH_PROMPT_VERSION,
+  NORDYAN_COACH_ASK_PROMPT_VERSION,
+} from '../../../../shared/coach-language';
 import {
   createRequireSupabaseAuth,
   type AccessTokenVerifier,
   type AuthenticatedCoachRequest,
 } from '../auth';
+import { generateCoachAskAnswer } from '../coachAskOrchestrator';
 import { generateCoachLanguage } from '../coachLanguageOrchestrator';
 import {
   DOCUMENTED_DEFAULT_MODEL,
@@ -16,9 +20,10 @@ import {
 import { listCoachInstructionVersions } from '../instructions';
 import { createRequestId, logCoachRequest } from '../logger';
 import {
-  coachGenerateRateLimiter,
+  coachLanguageRateLimiter,
   createMemoryRateLimiter,
 } from '../rateLimit';
+import { validateCoachAskRequest } from '../validation/askRequestValidation';
 import {
   CoachRequestValidationError,
   validateCoachGenerateRequest,
@@ -37,7 +42,8 @@ export function registerCoachRoutes(
   const requireAuth = createRequireSupabaseAuth(config, {
     verifyAccessToken: options.verifyAccessToken,
   });
-  const rateLimiter = options.rateLimiter ?? coachGenerateRateLimiter;
+  /** Shared bucket for /generate and /ask — same numeric limits, no generate behavior change. */
+  const rateLimiter = options.rateLimiter ?? coachLanguageRateLimiter;
 
   app.get('/health', (_request, response) => {
     response.json({ ok: true, service: 'nordyan-coach-language' });
@@ -77,6 +83,7 @@ export function registerCoachRoutes(
           latencyMs: Date.now() - started,
           category: 'rate_limited',
           usedFallback: true,
+          endpoint: 'generate',
         });
         response.status(429).json({ error: 'Too many requests.' });
         return;
@@ -95,6 +102,7 @@ export function registerCoachRoutes(
             latencyMs: Date.now() - started,
             category: 'validation_error',
             usedFallback: true,
+            endpoint: 'generate',
           });
           response.status(400).json({ error: error.message });
           return;
@@ -102,6 +110,57 @@ export function registerCoachRoutes(
 
         // Generic only — never forward OpenAI or internal error details.
         response.status(500).json({ error: 'Coach language generation failed.' });
+      }
+    },
+  );
+
+  app.post(
+    '/api/coach/ask',
+    requireAuth,
+    async (request: AuthenticatedCoachRequest, response: Response) => {
+      const started = Date.now();
+      const userId = request.coachAuthUserId;
+
+      if (!userId) {
+        response.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const rate = rateLimiter.check(userId);
+      if (!rate.ok) {
+        logCoachRequest({
+          requestId: createRequestId(),
+          promptVersion: NORDYAN_COACH_ASK_PROMPT_VERSION,
+          provider: 'fallback',
+          latencyMs: Date.now() - started,
+          category: 'rate_limited',
+          usedFallback: true,
+          endpoint: 'ask',
+        });
+        response.status(429).json({ error: 'Too many requests.' });
+        return;
+      }
+
+      try {
+        const askRequest = validateCoachAskRequest(request.body);
+        const result = await generateCoachAskAnswer(askRequest, { config });
+        response.json(result);
+      } catch (error) {
+        if (error instanceof CoachRequestValidationError) {
+          logCoachRequest({
+            requestId: createRequestId(),
+            promptVersion: NORDYAN_COACH_ASK_PROMPT_VERSION,
+            provider: 'fallback',
+            latencyMs: Date.now() - started,
+            category: 'validation_error',
+            usedFallback: true,
+            endpoint: 'ask',
+          });
+          response.status(400).json({ error: error.message });
+          return;
+        }
+
+        response.status(500).json({ error: 'Coach ask failed.' });
       }
     },
   );

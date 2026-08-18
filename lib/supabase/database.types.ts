@@ -168,6 +168,112 @@ export type Database = {
           },
         ];
       };
+      weekly_check_ins: {
+        Row: {
+          id: string;
+          user_id: string;
+          week_start_date: string;
+          sleep_quality: number;
+          energy: number;
+          stress: number;
+          training_frequency: string;
+          everyday_activity: number;
+          eating_quality: number;
+          alcohol_consumption: string;
+          plan_adherence: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          week_start_date: string;
+          sleep_quality: number;
+          energy: number;
+          stress: number;
+          training_frequency: string;
+          everyday_activity: number;
+          eating_quality: number;
+          alcohol_consumption: string;
+          plan_adherence: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          week_start_date?: string;
+          sleep_quality?: number;
+          energy?: number;
+          stress?: number;
+          training_frequency?: string;
+          everyday_activity?: number;
+          eating_quality?: number;
+          alcohol_consumption?: string;
+          plan_adherence?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'weekly_check_ins_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      initial_lifestyle_checks: {
+        Row: {
+          id: string;
+          user_id: string;
+          sleep_quality: number;
+          energy: number;
+          stress: number;
+          less_healthy_food_frequency: string | null;
+          everyday_activity: number;
+          eating_quality: number;
+          alcohol_consumption: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          sleep_quality: number;
+          energy: number;
+          stress: number;
+          less_healthy_food_frequency: string | null;
+          everyday_activity: number;
+          eating_quality: number;
+          alcohol_consumption: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          sleep_quality?: number;
+          energy?: number;
+          stress?: number;
+          less_healthy_food_frequency?: string | null;
+          everyday_activity?: number;
+          eating_quality?: number;
+          alcohol_consumption?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'initial_lifestyle_checks_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

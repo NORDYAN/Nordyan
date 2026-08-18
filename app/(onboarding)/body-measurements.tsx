@@ -22,11 +22,18 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
 import { routes } from '@/constants/routes';
+import { onboardingResultHref } from '@/lib/onboarding/onboarding-result-navigation';
+import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
 import {
-  getPendingProfileMeasurements,
+  getPendingProfileOwnerState,
+  getVisiblePendingProfileMeasurements,
   updatePendingProfileMeasurements,
 } from '@/lib/onboarding/pending-profile-storage';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { useAuth } from '@/providers/auth-provider';
 import {
   colors,
   onboardingLayout,
@@ -36,13 +43,7 @@ import {
 } from '@/theme';
 
 /** Onboarding body measurement step — waist and neck only. */
-const MEASUREMENT_HELP_LABEL = 'Hur mäter jag midja och hals?';
 const PROFILE_INTRO_TOP_OFFSET = 22;
-
-function isValidMeasurement(value: string): boolean {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0;
-}
 
 function setMeasurementField(
   value: number | undefined,
@@ -54,34 +55,55 @@ function setMeasurementField(
 }
 
 export default function OnboardingBodyMeasurementsScreen() {
+  useI18n();
+  const { status, session } = useAuth();
+  const userId = status === 'authenticated' ? session?.user.id ?? null : null;
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
   const [measurementHelpVisible, setMeasurementHelpVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    void getPendingProfileMeasurements().then((pending) => {
+    void getVisiblePendingProfileMeasurements(userId).then((pending) => {
       if (!pending) {
+        setWaist('');
+        setNeck('');
         return;
       }
 
       setMeasurementField(pending.waistCm, setWaist);
       setMeasurementField(pending.neckCm, setNeck);
     });
-  }, []);
+  }, [userId]);
 
-  const canContinue = isValidMeasurement(waist) && isValidMeasurement(neck);
+  const waistCm = parseMeasurementNumericInput(waist);
+  const neckCm = parseMeasurementNumericInput(neck);
+  const canContinue = isPositiveMeasurementInput(waist) && isPositiveMeasurementInput(neck);
 
   const handleContinue = async () => {
-    if (!canContinue || isSubmitting) {
+    if (!canContinue || isSubmitting || waistCm === null || neckCm === null) {
       return;
     }
 
     setIsSubmitting(true);
 
     const updated = await updatePendingProfileMeasurements({
-      waistCm: Number(waist),
-      neckCm: Number(neck),
+      waistCm,
+      neckCm,
+    });
+    const profileOwnerState = await getPendingProfileOwnerState();
+
+    await emitOnboardingForensics({
+      event: 'measurement-save',
+      authenticated: status === 'authenticated',
+      viewerUserId: userId,
+      profileWriteResult: updated
+        ? 'written'
+        : profileOwnerState === 'bound'
+          ? 'ignored_bound'
+          : 'not_attempted',
+      lifestyleWriteResult: 'not_attempted',
+      visitIdPresent: false,
     });
 
     setIsSubmitting(false);
@@ -91,11 +113,11 @@ export default function OnboardingBodyMeasurementsScreen() {
       return;
     }
 
-    router.push(routes.onboardingStep5);
+    router.push(onboardingResultHref());
   };
 
   const handleSkipLater = () => {
-    router.push(routes.onboardingStep5);
+    router.push(onboardingResultHref());
   };
 
   return (
@@ -116,37 +138,32 @@ export default function OnboardingBodyMeasurementsScreen() {
             automaticallyAdjustKeyboardInsets
           >
             <View style={styles.headerBlock}>
-              <Text style={styles.title}>Kroppsmått</Text>
-              <Text style={styles.subtitle}>
-                Ange midje- och halsmått för en mer träffsäker första NORDYAN Health Score.
-              </Text>
+              <Text style={styles.title}>{t('onboarding.bodyMeasurements.title')}</Text>
+              <Text style={styles.subtitle}>{t('onboarding.bodyMeasurements.subtitle')}</Text>
             </View>
 
             <View style={styles.formSection}>
-              <Text style={styles.helperText}>
-                Har du inget måttband just nu? Du kan alltid registrera kroppsmåtten senare under
-                Hälsa.
-              </Text>
-              <Text style={styles.sectionLabel}>Kroppsmått</Text>
+              <Text style={styles.helperText}>{t('onboarding.bodyMeasurements.helperText')}</Text>
+              <Text style={styles.sectionLabel}>{t('onboarding.bodyMeasurements.sectionLabel')}</Text>
               <Card
                 padding={onboardingProfileLayout.formCardPadding}
                 borderRadius={onboardingProfileLayout.formCardRadius}
                 style={styles.measurementCard}
               >
                 <ProfileMeasurementField
-                  label="Midjemått"
+                  label={t('onboarding.waist')}
                   value={waist}
                   unit="cm"
-                  placeholder="Ange"
+                  placeholder={t('health.new.placeholder')}
                   uppercaseLabel={false}
                   stacked
                   onChangeText={setWaist}
                 />
                 <ProfileMeasurementField
-                  label="Halsmått"
+                  label={t('onboarding.neck')}
                   value={neck}
                   unit="cm"
-                  placeholder="Ange"
+                  placeholder={t('health.new.placeholder')}
                   uppercaseLabel={false}
                   stacked
                   onChangeText={setNeck}
@@ -161,7 +178,7 @@ export default function OnboardingBodyMeasurementsScreen() {
               ]}
               onPress={() => setMeasurementHelpVisible(true)}
               accessibilityRole="button"
-              accessibilityLabel={MEASUREMENT_HELP_LABEL}
+              accessibilityLabel={t('onboarding.measureHelp')}
             >
               <View style={styles.measurementHelpLabelGroup}>
                 <Ionicons
@@ -170,7 +187,7 @@ export default function OnboardingBodyMeasurementsScreen() {
                   color={colors.onboardingAccent}
                 />
                 <Text style={styles.measurementHelpLinkText} numberOfLines={1}>
-                  {MEASUREMENT_HELP_LABEL}
+                  {t('onboarding.measureHelp')}
                 </Text>
               </View>
               <Ionicons
@@ -182,7 +199,7 @@ export default function OnboardingBodyMeasurementsScreen() {
 
             <View style={styles.footer}>
               <Button
-                label={isSubmitting ? ' ' : 'Registrera kroppsmått'}
+                label={isSubmitting ? ' ' : t('onboarding.registerMeasurements')}
                 variant="onboarding"
                 style={styles.button}
                 disabled={!canContinue || isSubmitting}
@@ -192,14 +209,14 @@ export default function OnboardingBodyMeasurementsScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Gör detta senare"
+                accessibilityLabel={t('onboarding.doThisLater')}
                 onPress={handleSkipLater}
                 style={({ pressed }) => [
                   styles.secondaryTextButton,
                   pressed && styles.secondaryTextButtonPressed,
                 ]}
               >
-                <Text style={styles.secondaryTextButtonLabel}>Gör detta senare</Text>
+                <Text style={styles.secondaryTextButtonLabel}>{t('onboarding.doThisLater')}</Text>
               </Pressable>
               <HomeIndicator />
             </View>
@@ -209,7 +226,7 @@ export default function OnboardingBodyMeasurementsScreen() {
 
       <MeasurementHelpModal
         visible={measurementHelpVisible}
-        title="Så mäter du"
+        title={t('onboarding.howToMeasure')}
         sections={DEFAULT_MEASUREMENT_HELP_SECTIONS}
         onClose={() => setMeasurementHelpVisible(false)}
       />

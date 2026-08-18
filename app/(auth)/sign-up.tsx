@@ -2,11 +2,15 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { AuthForm } from '@/components/auth/AuthForm';
+import { AuthLayout } from '@/components/auth/AuthLayout';
 import { routes } from '@/constants/routes';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function SignUpScreen() {
+  useI18n();
   const { signUpWithEmail, isConfigured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,25 +35,38 @@ export default function SignUpScreen() {
       return;
     }
 
+    if (result.outcome.kind === 'pending_verification') {
+      router.replace({
+        pathname: routes.authCheckEmail,
+        params: { email: result.outcome.email },
+      });
+      return;
+    }
+
     router.replace(routes.root);
   };
 
   return (
-    <AuthForm
-      title="Skapa konto"
-      subtitle="Registrera dig med e-post och lösenord."
-      submitLabel="Skapa konto"
-      loadingLabel={authMessages.signingUp}
-      alternatePrompt="Har du redan ett konto?"
-      alternateHref={routes.authSignIn}
-      alternateLabel="Logga in"
-      email={email}
-      password={password}
-      errorMessage={errorMessage ?? (!isConfigured ? authMessages.missingConfig : null)}
-      isSubmitting={isSubmitting}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onSubmit={handleSubmit}
-    />
+    <AuthLayout>
+      <AuthForm
+        title={t('auth.signUp.title')}
+        submitLabel={t('auth.signUp.submit')}
+        loadingLabel={authMessages.signingUp}
+        alternatePrompt={t('auth.signUp.alternatePrompt')}
+        alternateHref={routes.authSignIn}
+        alternateLabel={t('auth.signUp.alternateLabel')}
+        email={email}
+        password={password}
+        errorMessage={errorMessage ?? (!isConfigured ? authMessages.missingConfig : null)}
+        invalid={errorMessage !== null}
+        isSubmitting={isSubmitting}
+        passwordHint={t('auth.signUp.passwordHint')}
+        passwordAutoComplete="new-password"
+        passwordTextContentType="newPassword"
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleSubmit}
+      />
+    </AuthLayout>
   );
 }

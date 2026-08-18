@@ -4,7 +4,7 @@ import { measurementWorkflow } from '@/lib/application/measurement';
 import type { MeasurementSnapshotFailureReason } from '@/lib/application/measurement';
 import type { AppError } from '@/lib/core';
 import type { CreateMeasurementInput } from '@/lib/domain/measurement';
-import { MEASUREMENT_SAVE_ERROR_MESSAGE } from '@/lib/repositories/measurement-mappers';
+import { t } from '@/lib/i18n';
 
 export type SubmitMeasurementSuccessOutcome = 'completed' | 'partial';
 
@@ -14,18 +14,11 @@ export type SubmitMeasurementState =
   | { status: 'success'; outcome: SubmitMeasurementSuccessOutcome; message: string }
   | { status: 'error'; message: string };
 
-const SUBMIT_SUCCESS_COMPLETED_MESSAGE =
-  'Mätningen och hälsosnapshoten har sparats.';
-
-const PARTIAL_SUCCESS_MESSAGES: Record<MeasurementSnapshotFailureReason, string> = {
-  profile_unavailable:
-    'Mätningen har sparats, men din profil kunde inte läsas. Hälsosnapshoten kunde inte skapas.',
-  profile_incomplete:
-    'Mätningen har sparats. Komplettera din profil för att beräkna hälsosnapshot.',
-  pipeline_failed:
-    'Mätningen har sparats, men hälsodata kunde inte beräknas.',
-  snapshot_persist_failed:
-    'Mätningen har sparats, men hälsosnapshoten kunde inte sparas.',
+const PARTIAL_SUCCESS_KEYS: Record<MeasurementSnapshotFailureReason, Parameters<typeof t>[0]> = {
+  profile_unavailable: 'health.new.partial.profileUnavailable',
+  profile_incomplete: 'health.new.partial.profileIncomplete',
+  pipeline_failed: 'health.new.partial.pipelineFailed',
+  snapshot_persist_failed: 'health.new.partial.snapshotPersistFailed',
 };
 
 function toUserFacingError(error: AppError): string {
@@ -33,13 +26,15 @@ function toUserFacingError(error: AppError): string {
     return error.message;
   }
 
-  return MEASUREMENT_SAVE_ERROR_MESSAGE;
+  return t('health.saveError');
 }
 
 export function useSubmitMeasurement() {
   const [state, setState] = useState<SubmitMeasurementState>({ status: 'idle' });
 
-  const submit = useCallback(async (input: CreateMeasurementInput): Promise<boolean> => {
+  const submit = useCallback(async (
+    input: CreateMeasurementInput,
+  ): Promise<SubmitMeasurementSuccessOutcome | false> => {
     setState({ status: 'submitting' });
 
     const result = await measurementWorkflow.submit(input);
@@ -52,23 +47,23 @@ export function useSubmitMeasurement() {
       setState({
         status: 'success',
         outcome: 'completed',
-        message: SUBMIT_SUCCESS_COMPLETED_MESSAGE,
+        message: t('health.new.success'),
       });
-      return true;
+      return 'completed';
     }
 
     if (result.value.status === 'measurement_persisted_snapshot_failed') {
       setState({
         status: 'success',
         outcome: 'partial',
-        message: PARTIAL_SUCCESS_MESSAGES[result.value.reason],
+        message: t(PARTIAL_SUCCESS_KEYS[result.value.reason]),
       });
-      return true;
+      return 'partial';
     }
 
     setState({
       status: 'error',
-      message: MEASUREMENT_SAVE_ERROR_MESSAGE,
+      message: t('health.saveError'),
     });
     return false;
   }, []);

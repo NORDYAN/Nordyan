@@ -5,11 +5,14 @@ import { describe, it, beforeEach } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { runCoachVectorTests } from '../../domain/coach-engine/coach-engine.test-vectors';
+import { getLocalizedCoachPresentation, setActiveLocale } from '../../i18n';
+import { adaptCoachEngineResultToLanguagePayload } from './adapter';
 import {
   isSuccessfulOpenAiLanguageResponse,
   requestCoachLanguage,
 } from './client';
 import { getCoachLanguageApiBaseUrl, isCoachLanguageApiConfigured } from './env';
+import { isHomeCoachGeneratedLocaleSupported } from './locale';
 import {
   buildCoachLanguageCacheKey,
   clearCoachLanguageSessionCache,
@@ -60,6 +63,7 @@ const openaiSuccess: CoachGenerateResponse = {
 describe('Home coach language flow contracts', () => {
   beforeEach(() => {
     clearCoachLanguageSessionCache();
+    setActiveLocale('sv');
   });
 
   it('does not call language service when access token is missing (logged out)', async () => {
@@ -186,6 +190,47 @@ describe('Home coach language flow contracts', () => {
     // Language URL must not gate Home readiness.
     assert.doesNotMatch(source, /EXPO_PUBLIC_COACH_LANGUAGE_API_URL/);
     assert.doesNotMatch(source, /OPENAI_API_KEY/);
+  });
+
+  it('identifies Home /generate as Swedish-only and uses Bokmål deterministic copy', () => {
+    const adapted = adaptCoachEngineResultToLanguagePayload({
+      recommendationId: 'waist_walk_after_dinner_v1',
+      category: 'walking',
+      durationMinutes: 30,
+      frequencyPerWeek: 4,
+      priority: 'medium',
+      confidence: 0.7,
+      primaryFocus: 'reduce_waist',
+    });
+
+    assert.equal(adapted.ok, true);
+    if (adapted.ok) {
+      assert.equal(adapted.payload.version, 'coach-simulator-v2');
+      assert.equal(adapted.payload.locale, 'sv-SE');
+    }
+    assert.equal(isHomeCoachGeneratedLocaleSupported('sv'), true);
+    assert.equal(isHomeCoachGeneratedLocaleSupported('nb'), false);
+
+    setActiveLocale('nb');
+    const deterministic = getLocalizedCoachPresentation(
+      'waist_walk_after_dinner_v1',
+      30,
+      4,
+    );
+    assert.equal(deterministic.title, 'Gåtur etter middagen');
+    assert.match(deterministic.description, /Gå 30 minutter etter middagen/);
+  });
+
+  it('does not show cached Swedish /generate copy while the UI locale is nb', () => {
+    const hookPath = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../../hooks/home/useHomeCoachLanguage.ts',
+    );
+    const source = readFileSync(hookPath, 'utf8');
+
+    assert.match(source, /isHomeCoachGeneratedLocaleSupported\(locale\)/);
+    assert.match(source, /if \(!generatedLanguageEnabled \|\| !source \|\| silence\)/);
+    assert.match(source, /setAiMessage\(null\)/);
   });
 
   it('coach-engine vectors remain unchanged', () => {

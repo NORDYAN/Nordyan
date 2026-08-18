@@ -2,8 +2,9 @@ import { Redirect, Stack } from 'expo-router';
 
 import { routes } from '@/constants/routes';
 import { useAuth } from '@/providers/auth-provider';
+import { colors } from '@/theme';
 
-export default function AuthLayout() {
+export default function AuthGroupLayout() {
   const { status, isReady } = useAuth();
 
   // Let the root gate decide home vs onboarding from the user's profile.
@@ -15,6 +16,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        contentStyle: { backgroundColor: colors.onboardingBackground },
       }}
     />
   );

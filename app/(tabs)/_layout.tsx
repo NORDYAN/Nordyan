@@ -4,17 +4,20 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { routes } from '@/constants/routes';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   resolveAuthenticatedOnboardingGate,
-  type OnboardingGateDestination,
+  type AuthenticatedOnboardingGateDestination,
 } from '@/lib/onboarding/resolve-app-gate';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme';
 
 export default function TabsLayout() {
+  useI18n();
   const { status, isReady, session } = useAuth();
   const [gateDestination, setGateDestination] = useState<
-    OnboardingGateDestination | 'loading' | 'allowed'
+    AuthenticatedOnboardingGateDestination | 'loading' | 'allowed'
   >('loading');
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export default function TabsLayout() {
   }
 
   if (status === 'unauthenticated') {
-    return <Redirect href={routes.authSignIn} />;
+    return <Redirect href={routes.root} />;
   }
 
   if (gateDestination === 'onboarding') {
@@ -89,7 +92,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Hem',
+          title: t('tabs.home'),
           tabBarLabelStyle: {
             fontSize: 10,
             fontWeight: '600',
@@ -102,7 +105,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="coach"
         options={{
-          title: 'Coach',
+          title: t('tabs.coach'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-outline" size={size} color={color as string} />
           ),
@@ -111,7 +114,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Utveckling',
+          title: t('tabs.progress'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trending-up-outline" size={size} color={color as string} />
           ),
@@ -120,7 +123,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="health"
         options={{
-          title: 'Hälsa',
+          title: t('tabs.health'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="pulse-outline" size={size} color={color as string} />
           ),
@@ -129,7 +132,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('tabs.profile'),
           tabBarLabelStyle: {
             fontSize: 10,
             fontWeight: '600',

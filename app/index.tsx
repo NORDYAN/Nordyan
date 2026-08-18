@@ -1,18 +1,20 @@
 import { Redirect } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { routes } from '@/constants/routes';
 import {
   resolveAppGate,
-  type OnboardingGateDestination,
+  type AppGateResult,
 } from '@/lib/onboarding/resolve-app-gate';
+import { getPendingSignupVerification } from '@/lib/onboarding/pending-signup-verification-storage';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme';
 
 export default function Index() {
   const { status, isReady, session } = useAuth();
-  const [destination, setDestination] = useState<OnboardingGateDestination | 'loading'>('loading');
+  const [gate, setGate] = useState<AppGateResult>({ destination: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
@@ -22,10 +24,11 @@ export default function Index() {
         isReady,
         isAuthenticated: status === 'authenticated',
         userId: session?.user.id ?? null,
+        getPendingSignupVerification,
       });
 
       if (!cancelled) {
-        setDestination(next);
+        setGate(next);
       }
     };
 
@@ -36,27 +39,39 @@ export default function Index() {
     };
   }, [isReady, status, session?.user.id]);
 
-  if (destination === 'loading') {
+  if (gate.destination === 'loading') {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <StatusBar style="light" />
+        <ActivityIndicator color={colors.onboardingAccent} size="large" />
       </View>
     );
   }
 
-  if (destination === 'onboarding') {
+  if (gate.destination === 'onboarding') {
     return <Redirect href={routes.onboarding} />;
   }
 
-  if (destination === 'onboarding-step-4') {
+  if (gate.destination === 'onboarding-step-4') {
     return <Redirect href={routes.onboardingStep4} />;
   }
 
-  if (destination === 'home') {
+  if (gate.destination === 'home') {
     return <Redirect href={routes.home} />;
   }
 
-  return <Redirect href={routes.authSignIn} />;
+  if (gate.destination === 'check-email') {
+    return (
+      <Redirect
+        href={{
+          pathname: routes.authCheckEmail,
+          params: { email: gate.email },
+        }}
+      />
+    );
+  }
+
+  return <Redirect href={routes.onboarding} />;
 }
 
 const styles = StyleSheet.create({
@@ -64,6 +79,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.onboardingBackground,
   },
 });

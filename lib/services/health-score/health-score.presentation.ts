@@ -1,3 +1,5 @@
+import { formatDecimal } from '@/lib/i18n';
+
 /** UX interpretation bands from the approved Health Score design spec. */
 export function getHealthScoreBandLabel(score: number): string {
   if (score >= 85) {
@@ -21,6 +23,6 @@ export function getHealthScoreBandLabel(score: number): string {
 
 export function formatBodyFatPercent(bodyFatPct: number): string {
   const rounded = Math.round(bodyFatPct * 10) / 10;
-  const display = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-  return `${display}%`;
+  const fractionDigits = Number.isInteger(rounded) ? 0 : 1;
+  return `${formatDecimal(rounded, undefined, fractionDigits)}%`;
 }

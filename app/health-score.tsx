@@ -1,27 +1,12 @@
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { Text } from '@/components/ui/Text';
-import { spacing } from '@/theme';
+import { HealthScoreExplainedView } from '@/components/health-score-explained';
+import { useHealthScoreExplained } from '@/lib/hooks/health-score-explained';
 
 export default function HealthScoreScreen() {
+  const { state } = useHealthScoreExplained();
+
   return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        <Text variant="title">Health Score</Text>
-        <Text variant="subtitle">Your overall health snapshot</Text>
-        <Text style={styles.mock}>Mock: Score calculation coming later</Text>
-      </View>
-    </ScreenContainer>
+    <HealthScoreExplainedView state={state} onBackPress={() => router.back()} />
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  mock: {
-    marginTop: spacing.md,
-  },
-});

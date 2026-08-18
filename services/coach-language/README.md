@@ -2,7 +2,16 @@
 
 Production HTTP bridge that turns an approved coach **decision payload** into short Swedish coach copy via OpenAI (with deterministic fallback).
 
-**Hosting (Sprint 21B):** long-lived **Node/Express** process. See [DEPLOY.md](./DEPLOY.md). Supabase Edge Functions were not chosen — no existing Edge Functions surface, and Express would need a Deno rewrite.
+**Hosting:** long-lived **Node/Express** on **Fly.io**.  
+**Production status:** **VERIFIED & FROZEN** — see [DEPLOY.md](./DEPLOY.md).
+
+| | |
+|--|--|
+| URL | `https://coach-language.fly.dev` |
+| App / region | `coach-language` / `arn` |
+| Internal port | `8788` |
+
+Supabase Edge Functions were not chosen — no existing Edge Functions surface, and Express would need a Deno rewrite.
 
 The Expo app calls this service over HTTP(S) with a Supabase access token. The app must never hold `OPENAI_API_KEY`.
 
@@ -12,7 +21,8 @@ The Expo app calls this service over HTTP(S) with a Supabase access token. The a
 |--------|------|------|---------|
 | `GET` | `/health` | none | Liveness (no secrets, no payload logging) |
 | `GET` | `/api/coach/status` | Bearer JWT | Config / prompt version status (no secrets) |
-| `POST` | `/api/coach/generate` | Bearer JWT | Validate payload → generate language |
+| `POST` | `/api/coach/generate` | Bearer JWT | Validate payload → generate Home language |
+| `POST` | `/api/coach/ask` | Bearer JWT | Coach Ask Q&A (`coach-ask-v1.1` dual-accept + `coach-ask-v1.2`) |
 
 Shared request/response contracts live in [`../../shared/coach-language`](../../shared/coach-language).
 
@@ -64,9 +74,9 @@ In-memory per authenticated user: 6/minute and 40/day (UTC). Resets on process r
 
 ## Observability
 
-Metadata-only logs (`coach.generate`): requestId, provider, promptVersion, latencyMs, category, usedFallback.
+Metadata-only logs (`coach.generate` / `coach.ask`): requestId, provider, promptVersion, latencyMs, category, usedFallback.
 
-Never logged: PII, raw measurements, coach message text, prompt contents, API keys.
+Never logged: PII, raw measurements, coach message text, prompt contents, Weekly Check-in values, API keys.
 
 ## Safety invariants
 

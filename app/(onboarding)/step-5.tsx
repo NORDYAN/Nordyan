@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,19 +17,31 @@ import { isProfileComplete } from '@/lib/domain/profile';
 import { useOnboardingResult } from '@/lib/hooks/onboarding';
 import { useCurrentProfile } from '@/lib/hooks/profile';
 import { setOnboardingCompleteForUser } from '@/lib/onboarding/completion-storage';
-import { syncPendingProfileAfterAuth } from '@/lib/onboarding/sync-pending-profile';
-import { profileService } from '@/lib/services/profile/profile.service';
+import { persistPendingInitialLifestyleAfterAuth } from '@/lib/onboarding/pending-initial-lifestyle-storage';
+import {
+  bindPendingOnboardingToUser,
+  clearCompletedOnboardingLocalData,
+} from '@/lib/onboarding/pending-onboarding-ownership';
+import { syncPendingProfileAfterAuth } from '@/lib/onboarding/sync-pending-profile-runtime';
+import { getInitialLifestyleSyncErrorMessage } from '@/lib/presentation/initial-lifestyle';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { profileService } from '@/lib/services/profile';
 import { useAuth } from '@/providers/auth-provider';
 import { colors, onboardingLayout, onboardingResultLayout, typography } from '@/theme';
 
-const SYNC_ERROR_MESSAGE = 'Det gick inte att spara din profil. Försök igen.';
+const SYNC_ERROR_MESSAGE = () => t('onboarding.syncError');
 
 export default function OnboardingResultScreen() {
+  useI18n();
+  const { visit } = useLocalSearchParams<{ visit?: string | string[] }>();
+  const visitKey = Array.isArray(visit) ? visit[0] : visit;
   const { status, session } = useAuth();
   const { profile } = useCurrentProfile();
-  const resultState = useOnboardingResult({ profile });
+  const resultState = useOnboardingResult({ profile, visit: visitKey });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const profileSyncSucceededRef = useRef(false);
 
   const bodyFatValue =
     resultState.status === 'ready'
@@ -37,6 +49,10 @@ export default function OnboardingResultScreen() {
       : resultState.status === 'loading'
         ? '…'
         : '—';
+  const bodyFatCaption =
+    resultState.status === 'ready' && !resultState.bodyFatAvailable
+      ? t('onboarding.bodyFatUnavailable')
+      : t('onboarding.bodyFatCaption');
 
   const healthScoreValue =
     resultState.status === 'ready'
@@ -68,40 +84,67 @@ export default function OnboardingResultScreen() {
     setErrorMessage(null);
 
     if (status === 'authenticated' && session?.user.id) {
-      const syncResult = await syncPendingProfileAfterAuth();
-
-      if (__DEV__) {
-        console.log('[onboarding/step-5] sync result', syncResult);
+      try {
+        const ownership = await bindPendingOnboardingToUser(session.user.id);
+        if (!ownership.ok) {
+          setErrorMessage(SYNC_ERROR_MESSAGE());
+          setIsSubmitting(false);
+          return;
+        }
+      } catch {
+        setErrorMessage(SYNC_ERROR_MESSAGE());
+        setIsSubmitting(false);
+        return;
       }
 
-      if (!syncResult.ok) {
-        if (syncResult.reason === 'missing_pending') {
-          const profileResult = await profileService.getCurrentProfile();
-          if (
-            profileResult.ok &&
-            profileResult.value &&
-            isProfileComplete(profileResult.value)
-          ) {
-            await setOnboardingCompleteForUser(session.user.id, true);
-            setIsSubmitting(false);
-            router.replace(routes.home);
-            return;
-          }
+      if (!profileSyncSucceededRef.current) {
+        const syncResult = await syncPendingProfileAfterAuth();
+
+        if (__DEV__) {
+          console.log('[onboarding/step-5] sync result', syncResult);
         }
 
-        setErrorMessage(SYNC_ERROR_MESSAGE);
+        if (!syncResult.ok) {
+          if (syncResult.reason === 'missing_pending') {
+            const profileResult = await profileService.getCurrentProfile();
+            if (
+              profileResult.ok &&
+              profileResult.value &&
+              isProfileComplete(profileResult.value)
+            ) {
+              await setOnboardingCompleteForUser(session.user.id, true);
+              profileSyncSucceededRef.current = true;
+            } else {
+              setErrorMessage(SYNC_ERROR_MESSAGE());
+              setIsSubmitting(false);
+              return;
+            }
+          } else {
+            setErrorMessage(SYNC_ERROR_MESSAGE());
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          profileSyncSucceededRef.current = true;
+        }
+      }
+
+      const lifestyleResult = await persistPendingInitialLifestyleAfterAuth(session.user.id);
+      if (!lifestyleResult.ok) {
+        setErrorMessage(getInitialLifestyleSyncErrorMessage());
         setIsSubmitting(false);
         return;
       }
 
       await setOnboardingCompleteForUser(session.user.id, true);
+      await clearCompletedOnboardingLocalData(session.user.id);
       setIsSubmitting(false);
       router.replace(routes.home);
       return;
     }
 
     setIsSubmitting(false);
-    router.replace(routes.authSignIn);
+    router.replace(routes.authSignUp);
   };
 
   return (
@@ -116,20 +159,20 @@ export default function OnboardingResultScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.headerBlock}>
-              <Text style={styles.overline}>Analys Klar</Text>
-              <Text style={styles.title}>Ditt utgångsläge</Text>
+              <Text style={styles.overline}>{t('onboarding.result.overline')}</Text>
+              <Text style={styles.title}>{t('onboarding.result.title')}</Text>
             </View>
 
             <View style={styles.resultsCards}>
               <OnboardingResultMetricCard
-                label="Kroppsfett"
-                caption="Uppskattad nivå"
+                label={t('onboarding.bodyFat')}
+                caption={bodyFatCaption}
                 value={bodyFatValue}
                 valueVariant="bodyFat"
               />
               <OnboardingResultMetricCard
-                label="NORDYAN Health Score"
-                caption="Baserat på din åldersgrupp"
+                label={t('onboarding.healthScore')}
+                caption={t('onboarding.healthScoreCaption')}
                 value={healthScoreValue}
                 valueSuffix="/100"
                 valueVariant="healthScore"
@@ -142,7 +185,7 @@ export default function OnboardingResultScreen() {
           <View style={styles.footer}>
             {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
             <Button
-              label="Öppna NORDYAN"
+              label={t('onboarding.openApp')}
               variant="onboarding"
               style={styles.button}
               onPress={handleOpenNordyan}

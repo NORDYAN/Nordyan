@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import {
   formatHomeProgressDeltaLabel,
-  HOME_PROGRESS_INSUFFICIENT_LINE_1,
-  HOME_PROGRESS_INSUFFICIENT_LINE_2,
+  getHomeProgressInsufficientLine1,
+  getHomeProgressInsufficientLine2,
   type HomeProgressFetchState,
 } from '@/lib/presentation/home';
 import { colors, homeLayout, homeTypography, typography } from '@/theme';
@@ -51,8 +51,8 @@ export function HomeProgressCard({ state }: HomeProgressCardProps) {
         style={styles.card}
       >
         <View style={styles.insufficientBlock}>
-          <Text style={styles.message}>{HOME_PROGRESS_INSUFFICIENT_LINE_1}</Text>
-          <Text style={styles.message}>{HOME_PROGRESS_INSUFFICIENT_LINE_2}</Text>
+          <Text style={styles.message}>{getHomeProgressInsufficientLine1()}</Text>
+          <Text style={styles.message}>{getHomeProgressInsufficientLine2()}</Text>
         </View>
       </Card>
     );

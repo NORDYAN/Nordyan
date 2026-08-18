@@ -1,0 +1,32 @@
+# Used when build context is the NORDYAN repository root
+# (fly deploy . --config services/coach-language/fly.toml)
+#
+# Patterns are relative to the context root. Do not exclude this service's
+# Dockerfile — Fly requires it present in the build context.
+
+.git
+**/.git
+
+**/node_modules
+node_modules
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# Keep the Docker context small — Dockerfile only COPYs service + shared
+app
+assets
+components
+docs
+lib
+supabase
+tools
+.cursor
+.expo
+.vscode
+
+**/*.test.ts
+**/README.md
+**/DEPLOY.md
+**/DATA_CONTROL.md

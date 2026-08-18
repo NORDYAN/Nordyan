@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { UserProfile } from '@/lib/domain/profile';
-import type { HomeProgressFetchState } from '@/lib/presentation/home';
-import { HOME_PROGRESS_UNAVAILABLE_MESSAGE } from '@/lib/presentation/home';
+import { getHomeProgressUnavailableMessage, type HomeProgressFetchState } from '@/lib/presentation/home';
 import { progressService } from '@/lib/services/progress';
 
 type UseHomeProgressOptions = {
@@ -29,7 +28,7 @@ export function useHomeProgress({
 
       setState({
         status: 'unavailable',
-        message: HOME_PROGRESS_UNAVAILABLE_MESSAGE,
+        message: getHomeProgressUnavailableMessage(),
       });
       return;
     }
@@ -60,7 +59,7 @@ export function useHomeProgress({
 
         setState({
           status: 'unavailable',
-          message: result.error.message,
+          message: getHomeProgressUnavailableMessage(),
         });
         return;
       }

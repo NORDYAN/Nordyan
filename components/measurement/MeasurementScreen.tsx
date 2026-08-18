@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
+import { t } from '@/lib/i18n';
 import { useAuth } from '@/providers/auth-provider';
 import { colors, spacing, typography } from '@/theme';
 
@@ -20,8 +21,8 @@ export function MeasurementScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Ny mätning</Text>
-          <Text style={styles.subtitle}>Registrera dina senaste kroppsmått.</Text>
+          <Text style={styles.title}>{t('health.new.title')}</Text>
+          <Text style={styles.subtitle}>{t('health.new.subtitle')}</Text>
         </View>
 
         <MeasurementForm userId={userId} />

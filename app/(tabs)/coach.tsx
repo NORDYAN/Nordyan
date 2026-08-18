@@ -1,27 +1,39 @@
-import { StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { Text } from '@/components/ui/Text';
-import { spacing } from '@/theme';
+import { CoachHomeView } from '@/components/coach';
+import { useCoachHome, useCoachQuestion } from '@/lib/hooks/coach';
 
 export default function CoachScreen() {
+  const { state } = useCoachHome();
+  const { askState, submitQuestion, resetAsk } = useCoachQuestion();
+  const [askVisitKey, setAskVisitKey] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        resetAsk();
+        setAskVisitKey((current) => current + 1);
+      };
+    }, [resetAsk]),
+  );
+
+  const handleSubmitQuestion = useCallback(
+    (question: string) => {
+      if (state.status !== 'ready' || !state.model.ask.canAsk) {
+        return;
+      }
+      void submitQuestion(question);
+    },
+    [state, submitQuestion],
+  );
+
   return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        <Text variant="title">Coach</Text>
-        <Text variant="subtitle">AI health coaching</Text>
-        <Text style={styles.mock}>Mock: Coach chat coming soon</Text>
-      </View>
-    </ScreenContainer>
+    <CoachHomeView
+      state={state}
+      askState={askState}
+      askVisitKey={askVisitKey}
+      onSubmitQuestion={handleSubmitQuestion}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  mock: {
-    marginTop: spacing.md,
-  },
-});

@@ -1,5 +1,5 @@
 export { AccentLine } from './AccentLine';
-export { ActivityHelpModal, ACTIVITY_HELP_SUBTITLE, ACTIVITY_HELP_TITLE } from './ActivityHelpModal';
+export { ActivityHelpModal } from './ActivityHelpModal';
 export { HomeIndicator } from './HomeIndicator';
 export { MeasurementHelpModal, DEFAULT_MEASUREMENT_HELP_SECTIONS } from './MeasurementHelpModal';
 export type { MeasurementHelpSection } from './MeasurementHelpModal';

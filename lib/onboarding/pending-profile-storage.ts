@@ -2,45 +2,70 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { ProfileMeasurements } from '@/lib/domain/profile';
 
-const PENDING_PROFILE_KEY = '@nordyan/pending_profile_measurements';
+import type { PendingUnownedWriteResult } from './onboarding-forensics';
+import { selectVisiblePendingValue } from './pending-onboarding-visible';
+import { createPendingProfileStore } from './pending-profile-store';
 
-export async function getPendingProfileMeasurements(): Promise<ProfileMeasurements | null> {
-  const raw = await AsyncStorage.getItem(PENDING_PROFILE_KEY);
-  if (!raw) {
-    return null;
-  }
+const pendingProfileStore = createPendingProfileStore(AsyncStorage);
 
-  try {
-    const parsed = JSON.parse(raw) as ProfileMeasurements;
-    if (typeof parsed.heightCm !== 'number' || typeof parsed.weightKg !== 'number') {
-      return null;
-    }
+export function getPendingProfileMeasurements(): Promise<ProfileMeasurements | null> {
+  return pendingProfileStore.getUnowned();
+}
 
-    return parsed;
-  } catch {
-    return null;
-  }
+export async function getVisiblePendingProfileMeasurements(
+  userId: string | null,
+): Promise<ProfileMeasurements | null> {
+  const ownedByViewer = userId ? await pendingProfileStore.getForUser(userId) : null;
+  const unowned = await pendingProfileStore.getUnowned();
+  return selectVisiblePendingValue({
+    viewerUserId: userId,
+    ownedByViewer,
+    unowned,
+  });
+}
+
+export function getPendingProfileMeasurementsForUser(
+  userId: string,
+): Promise<ProfileMeasurements | null> {
+  return pendingProfileStore.getForUser(userId);
+}
+
+export function getPendingProfileOwnerState() {
+  return pendingProfileStore.getOwnerState();
+}
+
+export function getPendingProfileBindState(userId: string) {
+  return pendingProfileStore.getBindState(userId);
 }
 
 export async function setPendingProfileMeasurements(
   measurements: ProfileMeasurements,
-): Promise<void> {
-  await AsyncStorage.setItem(PENDING_PROFILE_KEY, JSON.stringify(measurements));
+): Promise<PendingUnownedWriteResult> {
+  return pendingProfileStore.saveUnowned(measurements);
 }
 
 export async function updatePendingProfileMeasurements(
   patch: Partial<ProfileMeasurements>,
 ): Promise<ProfileMeasurements | null> {
-  const existing = await getPendingProfileMeasurements();
-  if (!existing) {
-    return null;
-  }
+  return pendingProfileStore.updateUnowned(patch);
+}
 
-  const next: ProfileMeasurements = { ...existing, ...patch };
-  await setPendingProfileMeasurements(next);
-  return next;
+export function bindPendingProfileMeasurementsToUser(userId: string) {
+  return pendingProfileStore.bindToUser(userId);
+}
+
+export function releasePendingProfileMeasurementsBinding(userId: string): Promise<void> {
+  return pendingProfileStore.releaseBinding(userId);
 }
 
 export async function clearPendingProfileMeasurements(): Promise<void> {
-  await AsyncStorage.removeItem(PENDING_PROFILE_KEY);
+  await pendingProfileStore.clear();
+}
+
+export function clearPendingProfileMeasurementsForUser(userId: string): Promise<void> {
+  return pendingProfileStore.clearForUser(userId);
+}
+
+export function clearUnownedPendingProfileMeasurements(): Promise<void> {
+  return pendingProfileStore.clearUnowned();
 }

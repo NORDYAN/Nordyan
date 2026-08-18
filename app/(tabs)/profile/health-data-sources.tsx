@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { HealthSourceCard } from '@/components/profile/HealthSourceCard';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
+import { t } from '@/lib/i18n';
 import { colors, profileHealthDataSourcesLayout, typography } from '@/theme';
 
 function handleConnectPress(sourceName: string) {
@@ -13,7 +14,7 @@ function handleConnectPress(sourceName: string) {
     console.warn(`[health-data-sources] ${sourceName} integration coming in next version`);
   }
 
-  Alert.alert('Kommer i nästa version', 'Den här integrationen är inte tillgänglig ännu.');
+  Alert.alert(t('health.sources.nextVersionTitle'), t('health.sources.nextVersionBody'));
 }
 
 export default function HealthDataSourcesScreen() {
@@ -28,7 +29,7 @@ export default function HealthDataSourcesScreen() {
         <View style={styles.navRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Tillbaka"
+            accessibilityLabel={t('common.back')}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -42,34 +43,31 @@ export default function HealthDataSourcesScreen() {
         </View>
 
         <View style={styles.headerBlock}>
-          <Text style={styles.title}>Hälsodatakällor</Text>
-          <Text style={styles.subtitle}>
-            Koppla dina hälsodatakällor för att ge NORDYAN ett bättre underlag för personliga
-            insikter.
-          </Text>
+          <Text style={styles.title}>{t('health.sources.title')}</Text>
+          <Text style={styles.subtitle}>{t('health.sources.subtitle')}</Text>
         </View>
 
         <View style={styles.sourcesList}>
           <HealthSourceCard
             icon="heart-outline"
             title="Apple Health"
-            description="Aktivitet, puls, sömn och annan hälsodata från Apple-enheter och anslutna appar."
+            description={t('health.sources.apple.description')}
             status="disconnected"
-            actionLabel="Anslut"
+            actionLabel={t('health.sources.connect')}
             onActionPress={() => handleConnectPress('Apple Health')}
           />
           <HealthSourceCard
             icon="git-network-outline"
             title="Health Connect (Android)"
-            description="Samla hälsodata från kompatibla appar och enheter på Android."
+            description={t('health.sources.healthConnect.description')}
             status="disconnected"
-            actionLabel="Anslut"
+            actionLabel={t('health.sources.connect')}
             onActionPress={() => handleConnectPress('Health Connect')}
           />
           <HealthSourceCard
             icon="watch-outline"
             title="Garmin Connect"
-            description="Aktivitet, puls, sömn, träning och återhämtning från Garmin."
+            description={t('health.sources.garmin.description')}
             status="comingSoon"
           />
         </View>
@@ -83,17 +81,12 @@ export default function HealthDataSourcesScreen() {
             />
           </View>
           <View style={styles.privacyTextBlock}>
-            <Text style={styles.privacyTitle}>Så använder NORDYAN din data</Text>
-            <Text style={styles.privacyBody}>
-              Ansluten hälsodata används för att förbättra dina insikter, din utveckling och
-              framtida coachrekommendationer.
-            </Text>
+            <Text style={styles.privacyTitle}>{t('health.sources.privacyTitle')}</Text>
+            <Text style={styles.privacyBody}>{t('health.sources.privacyBody')}</Text>
           </View>
         </View>
 
-        <Text style={styles.footerNote}>
-          Du bestämmer vilka datakällor som är anslutna och kan när som helst koppla från dem.
-        </Text>
+        <Text style={styles.footerNote}>{t('health.sources.footer')}</Text>
       </ScrollView>
     </ScreenContainer>
   );

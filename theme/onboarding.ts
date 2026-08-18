@@ -90,7 +90,7 @@ export const onboardingMeasurementHelpLayout = {
 
 /** Figma: nordyan-onboarding-5-result (design frozen) */
 export const onboardingResultLayout = {
-  mountainOverlay: 'rgba(18, 20, 22, 0.7)',
+  mountainOverlay: 'rgba(18, 20, 22, 0.84)',
   areaPaddingTop: spacing.md,
   areaGap: spacing.xl,
   headerGap: spacing.sm,

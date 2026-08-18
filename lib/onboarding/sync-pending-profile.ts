@@ -1,13 +1,5 @@
-import type { AppError } from '@/lib/core';
-import { isProfileComplete, type UserProfile } from '@/lib/domain/profile';
-import { setOnboardingCompleteForUser } from '@/lib/onboarding/completion-storage';
-import {
-  clearPendingProfileMeasurements,
-  getPendingProfileMeasurements,
-} from '@/lib/onboarding/pending-profile-storage';
-import { supabaseAuthRepository } from '@/lib/repositories/supabase-auth.repository';
-import { profileService } from '@/lib/services/profile/profile.service';
-import { createHealthSnapshotFromProfile } from '@/lib/services/snapshots';
+import type { AppError, Result } from '@/lib/core';
+import { isProfileComplete, type ProfileMeasurements, type UserProfile } from '@/lib/domain/profile';
 
 export type SyncPendingProfileReason =
   | 'missing_pending'
@@ -16,17 +8,35 @@ export type SyncPendingProfileReason =
   | 'sync_failed';
 
 export type SyncPendingProfileResult =
-  | { ok: true; profile: UserProfile }
+  | {
+      ok: true;
+      profile: UserProfile;
+      persistedPending: boolean;
+      snapshotCreated: boolean;
+    }
   | { ok: false; reason: SyncPendingProfileReason; error?: AppError };
 
-async function resolveProfileForSync(userId: string): Promise<
-  | { ok: true; profile: UserProfile }
+export type SyncPendingProfileDeps = {
+  getCurrentUser: () => Promise<Result<{ id: string } | null>>;
+  getPendingProfileMeasurements: (userId: string) => Promise<ProfileMeasurements | null>;
+  clearPendingProfileMeasurements: (userId: string) => Promise<void>;
+  completeOnboarding: (measurements: ProfileMeasurements) => Promise<Result<UserProfile>>;
+  getCurrentProfile: () => Promise<Result<UserProfile | null>>;
+  createOnboardingSnapshot: (profile: UserProfile) => Promise<Result<unknown>>;
+  setOnboardingCompleteForUser: (userId: string, complete: boolean) => Promise<void>;
+};
+
+async function resolveProfileForSync(
+  userId: string,
+  deps: SyncPendingProfileDeps,
+): Promise<
+  | { ok: true; profile: UserProfile; persistedPending: boolean }
   | { ok: false; reason: SyncPendingProfileReason; error?: AppError }
 > {
-  const pending = await getPendingProfileMeasurements();
+  const pending = await deps.getPendingProfileMeasurements(userId);
 
   if (pending) {
-    const result = await profileService.completeOnboarding(pending);
+    const result = await deps.completeOnboarding(pending);
     if (!result.ok) {
       return { ok: false, reason: 'sync_failed', error: result.error };
     }
@@ -35,11 +45,11 @@ async function resolveProfileForSync(userId: string): Promise<
       return { ok: false, reason: 'incomplete_profile' };
     }
 
-    await clearPendingProfileMeasurements();
-    return { ok: true, profile: result.value };
+    await deps.clearPendingProfileMeasurements(userId);
+    return { ok: true, profile: result.value, persistedPending: true };
   }
 
-  const existingResult = await profileService.getCurrentProfile();
+  const existingResult = await deps.getCurrentProfile();
   if (!existingResult.ok) {
     return { ok: false, reason: 'sync_failed', error: existingResult.error };
   }
@@ -48,16 +58,18 @@ async function resolveProfileForSync(userId: string): Promise<
     return { ok: false, reason: 'missing_pending' };
   }
 
-  return { ok: true, profile: existingResult.value };
+  return { ok: true, profile: existingResult.value, persistedPending: false };
 }
 
 /**
- * After sign-in/sign-up (and step 5 when authenticated),
+ * After sign-in/verified callback (and step 5 when authenticated),
  * persist pending onboarding measurements to the user's Supabase profile.
- * Snapshot creation is best-effort and must not block onboarding completion.
+ * An onboarding snapshot is created only when pending data was persisted in this call.
  */
-export async function syncPendingProfileAfterAuth(): Promise<SyncPendingProfileResult> {
-  const userResult = await supabaseAuthRepository.getCurrentUser();
+export async function runSyncPendingProfile(
+  deps: SyncPendingProfileDeps,
+): Promise<SyncPendingProfileResult> {
+  const userResult = await deps.getCurrentUser();
   if (!userResult.ok) {
     return { ok: false, reason: 'sync_failed', error: userResult.error };
   }
@@ -66,22 +78,27 @@ export async function syncPendingProfileAfterAuth(): Promise<SyncPendingProfileR
     return { ok: false, reason: 'unauthenticated' };
   }
 
-  const profileResult = await resolveProfileForSync(userResult.value.id);
+  const profileResult = await resolveProfileForSync(userResult.value.id, deps);
   if (!profileResult.ok) {
     return profileResult;
   }
 
-  const snapshotResult = await createHealthSnapshotFromProfile(
-    profileResult.profile,
-    'onboarding',
-  );
-  if (!snapshotResult.ok) {
-    if (__DEV__) {
+  let snapshotCreated = false;
+  if (profileResult.persistedPending) {
+    const snapshotResult = await deps.createOnboardingSnapshot(profileResult.profile);
+    if (snapshotResult.ok) {
+      snapshotCreated = true;
+    } else if (__DEV__) {
       console.warn('[sync-pending-profile] snapshot failed', snapshotResult.error);
     }
   }
 
-  await setOnboardingCompleteForUser(userResult.value.id, true);
+  await deps.setOnboardingCompleteForUser(userResult.value.id, true);
 
-  return { ok: true, profile: profileResult.profile };
+  return {
+    ok: true,
+    profile: profileResult.profile,
+    persistedPending: profileResult.persistedPending,
+    snapshotCreated,
+  };
 }

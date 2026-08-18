@@ -3,9 +3,21 @@ import {
   getOnboardingCompleteForUser,
   setOnboardingCompleteForUser,
 } from '@/lib/onboarding/completion-storage';
-import { profileService } from '@/lib/services/profile/profile.service';
+import {
+  resolveUnauthenticatedAppGate,
+  type UnauthenticatedAppGateResult,
+} from '@/lib/onboarding/resolve-unauthenticated-app-gate';
+import { profileService } from '@/lib/services/profile';
 
-export type OnboardingGateDestination = 'sign-in' | 'onboarding' | 'onboarding-step-4' | 'home';
+export type AuthenticatedOnboardingGateDestination = 'onboarding' | 'onboarding-step-4' | 'home';
+
+export type OnboardingGateDestination =
+  | AuthenticatedOnboardingGateDestination
+  | 'check-email';
+
+export type AppGateResult =
+  | UnauthenticatedAppGateResult
+  | { destination: AuthenticatedOnboardingGateDestination };
 
 /**
  * Resolves where an authenticated user should go.
@@ -13,7 +25,7 @@ export type OnboardingGateDestination = 'sign-in' | 'onboarding' | 'onboarding-s
  */
 export async function resolveAuthenticatedOnboardingGate(
   userId: string,
-): Promise<'onboarding' | 'onboarding-step-4' | 'home'> {
+): Promise<AuthenticatedOnboardingGateDestination> {
   const profileResult = await profileService.getCurrentProfile();
 
   if (profileResult.ok) {
@@ -44,14 +56,19 @@ export async function resolveAppGate(input: {
   isReady: boolean;
   isAuthenticated: boolean;
   userId: string | null;
-}): Promise<OnboardingGateDestination | 'loading'> {
-  if (!input.isReady) {
-    return 'loading';
-  }
-
+  getPendingSignupVerification: () => Promise<{ email: string } | null>;
+}): Promise<AppGateResult> {
   if (!input.isAuthenticated || !input.userId) {
-    return 'sign-in';
+    return resolveUnauthenticatedAppGate({
+      isReady: input.isReady,
+      pendingVerificationEmail: (await input.getPendingSignupVerification())?.email,
+    });
   }
 
-  return resolveAuthenticatedOnboardingGate(input.userId);
+  if (!input.isReady) {
+    return { destination: 'loading' };
+  }
+
+  const destination = await resolveAuthenticatedOnboardingGate(input.userId);
+  return { destination };
 }

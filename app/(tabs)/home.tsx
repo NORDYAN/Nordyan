@@ -12,48 +12,28 @@ import {
   HomePriorityItem,
   HomeProgressCard,
   HomeSectionHeading,
+  HomeWeeklyCheckInCard,
 } from '@/components/home';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
 import { shouldShowBodyMeasurementFollowUp } from '@/lib/domain/profile';
-import { useHomeCoachLanguage, useHomeCurrentHealth } from '@/lib/hooks/home';
+import { useHomeCoachLanguage, useHomeCurrentHealth, useHomeWeeklyCheckIn } from '@/lib/hooks/home';
 import { useHomeProgress } from '@/lib/hooks/progress';
-import { HOME_COACH_UNAVAILABLE_MESSAGE } from '@/lib/services/home';
+import { buildHomeDailyPriorities, shouldShowHomeWeeklyCheckInCard } from '@/lib/presentation/home';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { getLocalCalendarDate } from '@/lib/services/health-score';
 import { colors, homeLayout, homeTypography, spacing, typography } from '@/theme';
 
 const HOME_LOGO = require('../../assets/logos/nordyan-logo-transparent-final.png');
 const HOME_LOGO_SIZE = 36;
 const HOME_LOGO_WORDMARK_SIZE = 17;
 
-const INITIAL_PRIORITIES: Array<{
-  id: string;
-  title: string;
-  subtitle: string;
-  completed: boolean;
-}> = [
-  {
-    id: 'walk',
-    title: '30 min promenad',
-    subtitle: 'Lugnt tempo, fokus på andning',
-    completed: false,
-  },
-  {
-    id: 'sleep',
-    title: 'Lägg dig före 22:30',
-    subtitle: 'Skärmfri tid 30 min innan',
-    completed: false,
-  },
-  {
-    id: 'water',
-    title: 'Drick 2L vatten',
-    subtitle: '4 glas kvar att dricka',
-    completed: false,
-  },
-];
-
 export default function HomeScreen() {
-  const [priorities, setPriorities] = useState(INITIAL_PRIORITIES);
+  useI18n();
+  const [completedById, setCompletedById] = useState<Record<string, boolean>>({});
+  const dayKey = useMemo(() => getLocalCalendarDate(), []);
   const { state: currentHealthState, snapshotRefreshKey, isProfileLoading, profile, latestSnapshot } =
     useHomeCurrentHealth();
   const progressState = useHomeProgress({
@@ -61,9 +41,11 @@ export default function HomeScreen() {
     isProfileLoading,
     snapshotRefreshKey,
   });
+  const { state: weeklyCheckInState } = useHomeWeeklyCheckIn();
 
   const showMeasurementFollowUp =
     !isProfileLoading && shouldShowBodyMeasurementFollowUp(profile, latestSnapshot);
+  const showWeeklyCheckIn = shouldShowHomeWeeklyCheckInCard(weeklyCheckInState);
 
   const healthScoreCardState = useMemo((): HomeHealthScoreCardState => {
     if (currentHealthState.status === 'loading') {
@@ -84,14 +66,14 @@ export default function HomeScreen() {
 
     return {
       status: 'unavailable',
-      message: 'Din hälsopoäng kan inte beräknas ännu.',
+      message: t('home.healthScore.unavailable'),
     };
   }, [currentHealthState]);
 
   const templateCoachMessage =
     currentHealthState.status === 'ready'
       ? currentHealthState.data.coach.message
-      : HOME_COACH_UNAVAILABLE_MESSAGE;
+      : t('home.coachUnavailable');
 
   const languageSource =
     currentHealthState.status === 'ready' ? currentHealthState.data.coach.languageSource : null;
@@ -105,30 +87,31 @@ export default function HomeScreen() {
   });
 
   const displayPriorities = useMemo(() => {
-    if (currentHealthState.status !== 'ready') {
-      return priorities;
-    }
-
-    return priorities.map((item, index) =>
-      index === 0
+    const personal =
+      currentHealthState.status === 'ready'
         ? {
-            ...item,
             title: currentHealthState.data.focus.title,
             subtitle: currentHealthState.data.focus.subtitle,
           }
-        : item,
-    );
-  }, [currentHealthState, priorities]);
+        : null;
+
+    return buildHomeDailyPriorities({
+      dayKey,
+      personal,
+      completedById,
+    });
+  }, [completedById, currentHealthState, dayKey]);
 
   const togglePriority = (id: string, completed: boolean) => {
-    setPriorities((current) =>
-      current.map((item) => (item.id === id ? { ...item, completed } : item)),
-    );
+    setCompletedById((current) => ({
+      ...current,
+      [id]: completed,
+    }));
   };
 
   const greetingTitle = profile?.firstName
-    ? `Hej ${profile.firstName}`
-    : 'Din hälsoplan för idag';
+    ? t('home.greeting.named', { name: profile.firstName })
+    : t('home.greeting.default');
 
   const weightValue =
     currentHealthState.status === 'loading'
@@ -141,8 +124,8 @@ export default function HomeScreen() {
     currentHealthState.status === 'ready'
       ? currentHealthState.data.metrics.weightSourceLabel
       : currentHealthState.status === 'loading'
-        ? 'Hämtar data…'
-        : 'Ingen profilvikt ännu';
+        ? t('home.fetching')
+        : t('home.noProfileWeight');
 
   const bodyFatValue =
     currentHealthState.status === 'loading'
@@ -155,8 +138,8 @@ export default function HomeScreen() {
     currentHealthState.status === 'ready'
       ? currentHealthState.data.metrics.bodyFatSourceLabel
       : currentHealthState.status === 'loading'
-        ? 'Hämtar data…'
-        : 'Ingen profildata ännu';
+        ? t('home.fetching')
+        : t('home.noProfileData');
 
   return (
     <ScreenContainer variant="home">
@@ -179,7 +162,7 @@ export default function HomeScreen() {
           <Pressable
             style={styles.profileTrigger}
             accessibilityRole="button"
-            accessibilityLabel="Profil"
+            accessibilityLabel={t('profile.title')}
             onPress={() => router.push(routes.profile)}
           >
             <Ionicons name="person-outline" size={16} color={colors.homeTextMuted} />
@@ -188,12 +171,14 @@ export default function HomeScreen() {
 
         <View style={styles.greetingBlock}>
           <Text style={styles.greetingTitle}>{greetingTitle}</Text>
-          <Text style={styles.greetingSubtitle}>
-            Personligt anpassad utifrån din hälsa, aktivitet och återhämtning.
-          </Text>
+          <Text style={styles.greetingSubtitle}>{t('home.greeting.subtitle')}</Text>
         </View>
 
         <HomeHealthScoreCard state={healthScoreCardState} />
+
+        {showWeeklyCheckIn ? (
+          <HomeWeeklyCheckInCard onPress={() => router.push(routes.weeklyCheckIn)} />
+        ) : null}
 
         {showMeasurementFollowUp ? (
           <HomeMeasurementFollowUpCard onPress={() => router.push(routes.healthNewMeasurement)} />
@@ -201,10 +186,13 @@ export default function HomeScreen() {
 
         <HomeProgressCard state={progressState} />
 
-        <HomeCoachCard message={coachMessage} />
+        <HomeCoachCard
+          message={coachMessage}
+          onPressPlan={() => router.push(routes.coach)}
+        />
 
         <View style={styles.section}>
-          <HomeSectionHeading title="Dagens prioriteringar" />
+          <HomeSectionHeading title={t('home.priorities.heading')} />
           <View style={styles.priorityList}>
             {displayPriorities.map((item) => (
               <HomePriorityItem
@@ -219,29 +207,29 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.section}>
-          <HomeSectionHeading title="Hälsoöversikt" />
+          <HomeSectionHeading title={t('home.overview.heading')} />
           <View style={styles.metricGrid}>
             <View style={styles.metricRow}>
               <HomeMetricTile
-                label="Vikt"
+                label={t('home.metric.weight')}
                 value={weightValue}
                 changeLabel={weightChangeLabel}
               />
               <HomeMetricTile
-                label="Kroppsfett"
+                label={t('home.metric.bodyFat')}
                 value={bodyFatValue}
                 changeLabel={bodyFatChangeLabel}
               />
             </View>
             <View style={styles.metricRow}>
               <HomeMetricTile
-                label="Sömn"
-                value="Ingen data"
+                label={t('home.metric.sleep')}
+                value={t('home.metric.noData')}
                 changeLabel="—"
               />
               <HomeMetricTile
-                label="Steg"
-                value="Ingen data"
+                label={t('home.metric.steps')}
+                value={t('home.metric.noData')}
                 changeLabel="—"
               />
             </View>

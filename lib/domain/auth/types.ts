@@ -10,3 +10,7 @@ export type AuthSession = {
   accessToken: string;
   expiresAt: number | null;
 };
+
+export type SignUpOutcome =
+  | { kind: 'authenticated'; session: AuthSession }
+  | { kind: 'pending_verification'; email: string; ownerId: string };

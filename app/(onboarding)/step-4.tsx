@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,21 +23,27 @@ import {
 } from '@/components/onboarding';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
+import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
 import { routes } from '@/constants/routes';
 import type { ProfileActivityLevel, ProfileGender } from '@/lib/domain/profile';
 import {
   PROFILE_ACTIVITY_LEVEL_OPTIONS,
   PROFILE_GENDER_OPTIONS,
 } from '@/lib/domain/profile';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { useCurrentProfile } from '@/lib/hooks/profile';
+import { resolveOnboardingProfileFormPrefill } from '@/lib/onboarding/onboarding-profile-form-prefill';
+import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
 import {
-  getPendingProfileMeasurements,
+  getVisiblePendingProfileMeasurements,
   setPendingProfileMeasurements,
 } from '@/lib/onboarding/pending-profile-storage';
-import { useCurrentProfile } from '@/lib/hooks/profile';
+import { onboardingProfileDobHeightLayout } from '@/lib/presentation/onboarding-profile';
+import { useAuth } from '@/providers/auth-provider';
 import { colors, onboardingLayout, onboardingProfileLayout, typography } from '@/theme';
 
 /** Figma: nordyan-onboarding-personal-profile-v2 (design frozen) */
-const ACTIVITY_HELP_LABEL = 'Hur väljer jag aktivitetsnivå?';
 const PROFILE_INTRO_TOP_OFFSET = 22;
 const ACTIVITY_HELP_LINK_FONT_SIZE = 13;
 
@@ -48,25 +55,14 @@ const PROFILE_GENDER_ICONS: Partial<
   other: 'person',
 };
 
-function isValidMeasurement(value: string): boolean {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0;
-}
-
 function isValidDateOfBirth(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 }
 
-function setMeasurementField(
-  value: number | undefined,
-  setter: (next: string) => void,
-): void {
-  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-    setter(String(value));
-  }
-}
-
 export default function OnboardingProfileScreen() {
+  useI18n();
+  const { status, session } = useAuth();
+  const userId = status === 'authenticated' ? session?.user.id ?? null : null;
   const { profile } = useCurrentProfile();
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [height, setHeight] = useState('');
@@ -74,65 +70,90 @@ export default function OnboardingProfileScreen() {
   const [gender, setGender] = useState<ProfileGender | null>(null);
   const [activityLevel, setActivityLevel] = useState<ProfileActivityLevel | null>(null);
   const [activityHelpVisible, setActivityHelpVisible] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    void getPendingProfileMeasurements().then((pending) => {
-      if (pending) {
-        if (pending.dateOfBirth) {
-          setDateOfBirth(pending.dateOfBirth);
-        }
-        setMeasurementField(pending.heightCm, setHeight);
-        setMeasurementField(pending.weightKg, setWeight);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-        if (pending.gender) {
-          setGender(pending.gender);
+      void getVisiblePendingProfileMeasurements(userId).then((pending) => {
+        if (cancelled) {
+          return;
         }
 
-        if (pending.activityLevel) {
-          setActivityLevel(pending.activityLevel);
-        }
-        return;
-      }
+        const next = resolveOnboardingProfileFormPrefill({
+          pending,
+          authenticatedProfile: profile,
+          userId,
+        });
+        setDateOfBirth(next.dateOfBirth);
+        setHeight(next.height);
+        setWeight(next.weight);
+        setGender(next.gender);
+        setActivityLevel(next.activityLevel);
+      });
 
-      if (!profile) {
-        return;
-      }
+      return () => {
+        cancelled = true;
+      };
+    }, [profile, userId]),
+  );
 
-      if (profile.dateOfBirth) {
-        setDateOfBirth(profile.dateOfBirth.slice(0, 10));
-      }
-
-      setMeasurementField(profile.heightCm ?? undefined, setHeight);
-      setMeasurementField(profile.weightKg ?? undefined, setWeight);
-      if (profile.gender) {
-        setGender(profile.gender);
-      }
-      if (profile.activityLevel) {
-        setActivityLevel(profile.activityLevel);
-      }
-    });
-  }, [profile]);
-
+  const heightCm = parseMeasurementNumericInput(height);
+  const weightKg = parseMeasurementNumericInput(weight);
   const canContinue =
     isValidDateOfBirth(dateOfBirth) &&
-    isValidMeasurement(height) &&
-    isValidMeasurement(weight) &&
+    isPositiveMeasurementInput(height) &&
+    isPositiveMeasurementInput(weight) &&
     gender !== null &&
     activityLevel !== null;
 
   const handleCalculateProfile = async () => {
-    if (!canContinue || !gender || !activityLevel) {
+    if (
+      !canContinue ||
+      isSaving ||
+      !gender ||
+      !activityLevel ||
+      heightCm === null ||
+      weightKg === null
+    ) {
       return;
     }
 
-    await setPendingProfileMeasurements({
-      dateOfBirth: dateOfBirth.trim(),
-      gender,
-      activityLevel,
-      heightCm: Number(height),
-      weightKg: Number(weight),
+    setIsSaving(true);
+    setSaveError(null);
+    let profileWriteResult: Awaited<ReturnType<typeof setPendingProfileMeasurements>>;
+    try {
+      profileWriteResult = await setPendingProfileMeasurements({
+        dateOfBirth: dateOfBirth.trim(),
+        gender,
+        activityLevel,
+        heightCm,
+        weightKg,
+      });
+    } catch {
+      setSaveError(t('onboarding.syncError'));
+      setIsSaving(false);
+      return;
+    }
+
+    await emitOnboardingForensics({
+      event: 'step-4-save',
+      authenticated: status === 'authenticated',
+      viewerUserId: userId,
+      profileWriteResult,
+      lifestyleWriteResult: 'not_attempted',
+      visitIdPresent: false,
     });
 
+    if (profileWriteResult !== 'written') {
+      setSaveError(t('onboarding.syncError'));
+      setIsSaving(false);
+      return;
+    }
+
+    setIsSaving(false);
     router.push(routes.onboardingMeasurementChoice);
   };
 
@@ -154,17 +175,15 @@ export default function OnboardingProfileScreen() {
             automaticallyAdjustKeyboardInsets
           >
             <View style={styles.headerBlock}>
-              <Text style={styles.title}>Din personliga profil</Text>
-              <Text style={styles.subtitle}>
-                Ange dina grunduppgifter så att vi kan skapa din första NORDYAN Health Score.
-              </Text>
+              <Text style={styles.title}>{t('onboarding.profile.title')}</Text>
+              <Text style={styles.subtitle}>{t('onboarding.profile.subtitle')}</Text>
             </View>
 
             <View style={styles.formCard}>
-              <Text style={styles.sectionLabel}>Personlig profil</Text>
+              <Text style={styles.sectionLabel}>{t('onboarding.profile.sectionLabel')}</Text>
 
               <ProfileSingleChoiceGroup
-                label="Kön"
+                label={t('onboarding.profile.gender')}
                 value={gender}
                 options={PROFILE_GENDER_OPTIONS}
                 onChange={setGender}
@@ -172,28 +191,28 @@ export default function OnboardingProfileScreen() {
                 optionIcons={PROFILE_GENDER_ICONS}
               />
 
-              <View style={styles.formRow}>
-                <ProfileDateOfBirthField
-                  label="Födelsedatum"
-                  value={dateOfBirth}
-                  uppercaseLabel={false}
-                  onChange={setDateOfBirth}
-                />
-                <ProfileMeasurementField
-                  label="Längd"
-                  value={height}
-                  unit="cm"
-                  placeholder="Ange"
-                  uppercaseLabel={false}
-                  onChangeText={setHeight}
-                />
-              </View>
+              <ProfileDateOfBirthField
+                label={t('onboarding.dateOfBirth')}
+                value={dateOfBirth}
+                uppercaseLabel={false}
+                stacked={onboardingProfileDobHeightLayout.dateOfBirthStacked}
+                onChange={setDateOfBirth}
+              />
+              <ProfileMeasurementField
+                label={t('onboarding.height')}
+                value={height}
+                unit="cm"
+                placeholder={t('health.new.placeholder')}
+                uppercaseLabel={false}
+                stacked={onboardingProfileDobHeightLayout.heightStacked}
+                onChangeText={setHeight}
+              />
 
               <ProfileMeasurementField
-                label="Vikt"
+                label={t('onboarding.weight')}
                 value={weight}
                 unit="kg"
-                placeholder="Ange"
+                placeholder={t('health.new.placeholder')}
                 uppercaseLabel={false}
                 stacked
                 onChangeText={setWeight}
@@ -201,10 +220,10 @@ export default function OnboardingProfileScreen() {
             </View>
 
             <View style={styles.activitySection}>
-              <Text style={styles.sectionLabel}>Aktivitet</Text>
+              <Text style={styles.sectionLabel}>{t('onboarding.profile.activitySection')}</Text>
               <View style={styles.activityCard}>
                 <ProfileSingleChoiceGroup
-                  label="Aktivitetsnivå"
+                  label={t('onboarding.activityLevel')}
                   value={activityLevel}
                   options={PROFILE_ACTIVITY_LEVEL_OPTIONS}
                   onChange={setActivityLevel}
@@ -217,7 +236,7 @@ export default function OnboardingProfileScreen() {
                   ]}
                   onPress={() => setActivityHelpVisible(true)}
                   accessibilityRole="button"
-                  accessibilityLabel={ACTIVITY_HELP_LABEL}
+                  accessibilityLabel={t('onboarding.activityHelp')}
                 >
                   <View style={styles.activityHelpLabelGroup}>
                     <Ionicons
@@ -226,7 +245,7 @@ export default function OnboardingProfileScreen() {
                       color={colors.onboardingAccent}
                     />
                     <Text style={styles.activityHelpLinkText} numberOfLines={1}>
-                      {ACTIVITY_HELP_LABEL}
+                      {t('onboarding.activityHelp')}
                     </Text>
                   </View>
                   <Ionicons
@@ -239,12 +258,17 @@ export default function OnboardingProfileScreen() {
             </View>
 
             <View style={styles.footer}>
+              {saveError ? (
+                <Text style={styles.saveError} accessibilityLiveRegion="polite">
+                  {saveError}
+                </Text>
+              ) : null}
               <Button
-                label="Beräkna min hälsoprofil"
+                label={t('onboarding.calculateProfile')}
                 variant="onboarding"
                 style={styles.button}
                 onPress={handleCalculateProfile}
-                disabled={!canContinue}
+                disabled={!canContinue || isSaving}
               />
               <HomeIndicator />
             </View>
@@ -316,11 +340,6 @@ const styles = StyleSheet.create({
     gap: onboardingProfileLayout.formCardGap,
     width: '100%',
   },
-  formRow: {
-    flexDirection: 'row',
-    gap: onboardingProfileLayout.formRowGap,
-    width: '100%',
-  },
   activitySection: {
     width: '100%',
     gap: 12,
@@ -364,6 +383,11 @@ const styles = StyleSheet.create({
     gap: onboardingLayout.footerGap,
     marginTop: onboardingProfileLayout.footerTopSpacing,
     paddingTop: onboardingProfileLayout.footerTopPadding,
+  },
+  saveError: {
+    color: colors.onboardingErrorText,
+    fontSize: typography.fontSize.sm,
+    textAlign: 'center',
   },
   button: {
     width: '100%',

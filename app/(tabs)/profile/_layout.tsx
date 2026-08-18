@@ -11,6 +11,8 @@ export default function ProfileLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="account" />
+      <Stack.Screen name="language" />
       <Stack.Screen name="health-profile" />
       <Stack.Screen name="health-data-sources" />
     </Stack>

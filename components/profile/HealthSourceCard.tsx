@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
+import { t } from '@/lib/i18n';
 import { colors, profileHealthDataSourcesLayout, typography } from '@/theme';
 
 export type HealthSourceStatus = 'disconnected' | 'connecting' | 'connected' | 'comingSoon';
@@ -16,12 +17,18 @@ type HealthSourceCardProps = {
   disabled?: boolean;
 };
 
-const STATUS_LABELS: Record<HealthSourceStatus, string> = {
-  disconnected: 'Inte ansluten',
-  connecting: 'Ansluter…',
-  connected: 'Ansluten',
-  comingSoon: 'Kommer snart',
-};
+function statusLabel(status: HealthSourceStatus): string {
+  switch (status) {
+    case 'disconnected':
+      return t('health.sources.disconnected');
+    case 'connecting':
+      return t('health.sources.connecting');
+    case 'connected':
+      return t('health.sources.connected');
+    case 'comingSoon':
+      return t('common.comingSoon');
+  }
+}
 
 export function HealthSourceCard({
   icon,
@@ -79,7 +86,7 @@ export function HealthSourceCard({
         <View style={styles.statusGroup}>
           <View style={[styles.statusDot, { backgroundColor: statusDotColor }]} />
           <Text style={[styles.statusLabel, { color: statusTextColor }]}>
-            {STATUS_LABELS[status]}
+            {statusLabel(status)}
           </Text>
         </View>
 

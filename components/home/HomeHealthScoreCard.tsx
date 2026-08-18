@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { HomeHealthScoreGauge } from '@/components/home/HomeHealthScoreGauge';
+import { t } from '@/lib/i18n';
 import { colors, homeLayout, typography } from '@/theme';
 
 export type HomeHealthScoreCardState =
@@ -38,7 +39,7 @@ export function HomeHealthScoreCard({ state }: HomeHealthScoreCardProps) {
     >
       <HomeHealthScoreGauge {...gaugeProps} />
       <View style={styles.labels}>
-        <Text style={styles.title}>NORDYAN Health Score</Text>
+        <Text style={styles.title}>{t('home.healthScore.title')}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
     </Card>

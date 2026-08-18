@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   adaptCoachEngineResultToLanguagePayload,
   formatLanguageMessageForHome,
+  isHomeCoachGeneratedLocaleSupported,
   isCoachLanguageApiConfigured,
   isSuccessfulOpenAiLanguageResponse,
   requestCoachLanguage,
@@ -17,6 +18,7 @@ import {
   setCachedCoachLanguageMessage,
   setInflightCoachLanguageRequest,
 } from '@/lib/services/coach-language/sessionCache';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useAuth } from '@/providers/auth-provider';
 
 type UseHomeCoachLanguageArgs = {
@@ -43,6 +45,9 @@ export function useHomeCoachLanguage({
   enabled,
 }: UseHomeCoachLanguageArgs): UseHomeCoachLanguageResult {
   const { session } = useAuth();
+  const { locale } = useI18n();
+  const generatedLanguageEnabled =
+    enabled && isHomeCoachGeneratedLocaleSupported(locale);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [isFormulating, setIsFormulating] = useState(false);
   const activeKeyRef = useRef<string | null>(null);
@@ -59,7 +64,7 @@ export function useHomeCoachLanguage({
   useEffect(() => {
     const source = languageSourceRef.current;
 
-    if (!enabled || !source || silence) {
+    if (!generatedLanguageEnabled || !source || silence) {
       activeKeyRef.current = null;
       setAiMessage(null);
       setIsFormulating(false);
@@ -162,7 +167,8 @@ export function useHomeCoachLanguage({
       cancelled = true;
     };
   }, [
-    enabled,
+    generatedLanguageEnabled,
+    locale,
     silence,
     recommendationId,
     durationMinutes,

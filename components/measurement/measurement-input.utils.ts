@@ -1,6 +1,6 @@
 /**
  * Normalizes user-entered decimal text for display and parsing.
- * Accepts both "." and "," as decimal separators.
+ * Accepts both "." and "," as decimal separators. Does not round.
  */
 export function normalizeMeasurementDecimalInput(text: string): string {
   const trimmed = text.trim();
@@ -23,6 +23,11 @@ export function parseMeasurementNumericInput(text: string): number | null {
   }
 
   return parsed;
+}
+
+export function isPositiveMeasurementInput(text: string): boolean {
+  const parsed = parseMeasurementNumericInput(text);
+  return parsed !== null && parsed > 0;
 }
 
 export function getTodayLocalDate(): string {

@@ -6,28 +6,25 @@ import {
 import type { FocusType } from '@/lib/domain/focus-engine';
 import type { HealthSnapshot } from '@/lib/domain/snapshot';
 import type { UserProfile } from '@/lib/domain/profile';
-import { formatCoachMessage, getCoachPresentation } from '@/lib/services/coach/coach.presentation';
+import {
+  formatDecimal,
+  getHealthScoreBandDisplayLabel,
+  getLocalizedCoachPresentation,
+  getLocalizedFocusPresentation,
+  t,
+} from '@/lib/i18n';
+import { formatCoachMessage } from '@/lib/services/coach/coach.presentation';
 import { buildHomeCoachState } from '@/lib/services/coach';
 import type { ProductionCoachLanguageSource } from '@/lib/services/coach-language';
-import { getFocusPresentation, buildHomePrimaryFocusState } from '@/lib/services/focus';
+import { buildHomePrimaryFocusState } from '@/lib/services/focus';
 import {
+  canPresentBodyFatEstimate,
   calculateHomeHealthScoreFromProfile,
   formatBodyFatPercent,
-  getHealthScoreBandLabel,
   getLocalCalendarDate,
 } from '@/lib/services/health-score';
 
-import {
-  HOME_BODY_FAT_PROFILE_LABEL,
-  HOME_BODY_FAT_SNAPSHOT_LABEL,
-  HOME_BODY_FAT_UNAVAILABLE_LABEL,
-  HOME_COACH_UNAVAILABLE_MESSAGE,
-  HOME_CURRENT_HEALTH_EMPTY_MESSAGE,
-  HOME_WEIGHT_PROFILE_LABEL,
-  HOME_WEIGHT_SNAPSHOT_LABEL,
-  type HomeCurrentHealth,
-  type HomeCurrentHealthState,
-} from './home-current-health.types';
+import type { HomeCurrentHealth, HomeCurrentHealthState } from './home-current-health.types';
 
 const FOCUS_TYPES: readonly FocusType[] = [
   'reduce_waist',
@@ -42,7 +39,7 @@ function isFocusType(value: string): value is FocusType {
 }
 
 function formatWeightKg(weightKg: number): string {
-  return `${weightKg.toFixed(1)} kg`;
+  return t('common.kg', { value: formatDecimal(weightKg) });
 }
 
 function resolveCategoryForRecommendationId(
@@ -107,7 +104,7 @@ function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
     !isFocusType(snapshot.primaryFocus)
   ) {
     return {
-      message: HOME_COACH_UNAVAILABLE_MESSAGE,
+      message: t('home.coachUnavailable'),
       title: null,
       recommendationId: coachRecommendationId.trim() ? coachRecommendationId : null,
       availability: 'unavailable',
@@ -115,7 +112,7 @@ function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
     };
   }
 
-  const presentation = getCoachPresentation(
+  const presentation = getLocalizedCoachPresentation(
     coachRecommendationId,
     coachDurationMinutes,
     coachFrequencyPerWeek,
@@ -130,17 +127,26 @@ function buildSnapshotCoachMessage(snapshot: HealthSnapshot): {
   };
 }
 
-function buildSnapshotBodyFat(snapshot: HealthSnapshot): {
+function buildSnapshotBodyFat(snapshot: HealthSnapshot, profile: UserProfile | null): {
   bodyFatPct: number | null;
   bodyFatDisplay: string;
   bodyFatSourceLabel: string;
   bodyFatAvailability: 'available' | 'unavailable';
 } {
-  if (snapshot.bodyFatPct == null || !Number.isFinite(snapshot.bodyFatPct)) {
+  const measuredCircumferences =
+    snapshot.snapshotReason === 'measurement'
+      ? { waistCm: snapshot.waistCm, neckCm: snapshot.neckCm }
+      : null;
+
+  if (
+    !canPresentBodyFatEstimate(profile, measuredCircumferences) ||
+    snapshot.bodyFatPct == null ||
+    !Number.isFinite(snapshot.bodyFatPct)
+  ) {
     return {
       bodyFatPct: null,
       bodyFatDisplay: '—',
-      bodyFatSourceLabel: HOME_BODY_FAT_UNAVAILABLE_LABEL,
+      bodyFatSourceLabel: t('home.bodyFatUnavailable'),
       bodyFatAvailability: 'unavailable',
     };
   }
@@ -148,21 +154,24 @@ function buildSnapshotBodyFat(snapshot: HealthSnapshot): {
   return {
     bodyFatPct: snapshot.bodyFatPct,
     bodyFatDisplay: formatBodyFatPercent(snapshot.bodyFatPct),
-    bodyFatSourceLabel: HOME_BODY_FAT_SNAPSHOT_LABEL,
+    bodyFatSourceLabel: t('home.bodyFat.snapshot'),
     bodyFatAvailability: 'available',
   };
 }
 
-function buildFromSnapshot(snapshot: HealthSnapshot): HomeCurrentHealthState {
+function buildFromSnapshot(
+  snapshot: HealthSnapshot,
+  profile: UserProfile | null,
+): HomeCurrentHealthState {
   if (!isFocusType(snapshot.primaryFocus)) {
     return {
       status: 'error',
-      message: 'Hälsosnapshoten innehåller ogiltigt fokus.',
+      message: t('home.invalidFocus'),
     };
   }
 
-  const focusPresentation = getFocusPresentation(snapshot.primaryFocus);
-  const bodyFat = buildSnapshotBodyFat(snapshot);
+  const focusPresentation = getLocalizedFocusPresentation(snapshot.primaryFocus);
+  const bodyFat = buildSnapshotBodyFat(snapshot, profile);
   const coach = buildSnapshotCoachMessage(snapshot);
 
   return {
@@ -174,12 +183,12 @@ function buildFromSnapshot(snapshot: HealthSnapshot): HomeCurrentHealthState {
       capturedAt: snapshot.createdAt,
       healthScore: {
         score: snapshot.overallScore,
-        subtitle: getHealthScoreBandLabel(snapshot.overallScore),
+        subtitle: getHealthScoreBandDisplayLabel(snapshot.overallScore),
       },
       metrics: {
         weightKg: snapshot.weightKg,
         weightDisplay: formatWeightKg(snapshot.weightKg),
-        weightSourceLabel: HOME_WEIGHT_SNAPSHOT_LABEL,
+        weightSourceLabel: t('home.weight.snapshot'),
         ...bodyFat,
       },
       focus: {
@@ -219,32 +228,44 @@ function buildFromProfileFallback(
     return { status: 'empty' };
   }
 
+  const focusDisplay = getLocalizedFocusPresentation(primaryFocusState.primaryFocus);
+  const coachDisplay = getLocalizedCoachPresentation(
+    coachState.recommendationId,
+    coachState.result.durationMinutes,
+    coachState.result.frequencyPerWeek,
+  );
+  const bodyFatAvailable = canPresentBodyFatEstimate(profile);
+
   return {
     status: 'ready',
     data: {
       source: 'profile_fallback',
       healthScore: {
         score: calculated.score,
-        subtitle: calculated.subtitle,
+        subtitle: getHealthScoreBandDisplayLabel(calculated.score),
       },
       metrics: {
         weightKg: calculated.input.weightKg,
         weightDisplay: formatWeightKg(calculated.input.weightKg),
-        weightSourceLabel: HOME_WEIGHT_PROFILE_LABEL,
-        bodyFatPct: calculated.result.metrics.bodyFatPct,
-        bodyFatDisplay: formatBodyFatPercent(calculated.result.metrics.bodyFatPct),
-        bodyFatSourceLabel: HOME_BODY_FAT_PROFILE_LABEL,
-        bodyFatAvailability: 'available',
+        weightSourceLabel: t('home.weight.profile'),
+        bodyFatPct: bodyFatAvailable ? calculated.result.metrics.bodyFatPct : null,
+        bodyFatDisplay: bodyFatAvailable
+          ? formatBodyFatPercent(calculated.result.metrics.bodyFatPct)
+          : '—',
+        bodyFatSourceLabel: bodyFatAvailable
+          ? t('home.bodyFat.profile')
+          : t('home.bodyFatUnavailable'),
+        bodyFatAvailability: bodyFatAvailable ? 'available' : 'unavailable',
       },
       focus: {
         primaryFocus: primaryFocusState.primaryFocus,
-        title: primaryFocusState.title,
-        subtitle: primaryFocusState.subtitle,
+        title: focusDisplay.title,
+        subtitle: focusDisplay.subtitle,
       },
       coach: {
         recommendationId: coachState.recommendationId,
-        title: coachState.title,
-        message: coachState.message,
+        title: coachDisplay.title,
+        message: formatCoachMessage(coachDisplay.description),
         availability: 'available',
         languageSource: {
           recommendationId: coachState.result.recommendationId,
@@ -266,7 +287,7 @@ export function buildHomeCurrentHealthState(
   asOfDate: string = getLocalCalendarDate(),
 ): HomeCurrentHealthState {
   if (latestSnapshot) {
-    return buildFromSnapshot(latestSnapshot);
+    return buildFromSnapshot(latestSnapshot, profile);
   }
 
   if (!profile) {
@@ -277,7 +298,7 @@ export function buildHomeCurrentHealthState(
   if (fallback.status === 'empty') {
     return {
       status: 'error',
-      message: HOME_CURRENT_HEALTH_EMPTY_MESSAGE,
+      message: t('home.emptyHealth'),
     };
   }
 

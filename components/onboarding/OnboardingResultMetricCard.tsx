@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
   },
   caption: {
-    color: colors.onboardingTextMuted,
+    color: colors.onboardingProfileLabel,
     fontSize: onboardingResultLayout.metricLabelFontSize,
     fontWeight: typography.fontWeight.regular,
   },

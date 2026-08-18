@@ -1,15 +1,15 @@
 # NORDYAN Measurement Module v1.0
 
-**Status:** Draft — awaiting architecture review  
-**Sprint:** 9 — Milestone 1 (Architecture & Design)  
+**Status:** Approved & Frozen — Measurement Module v1.0  
+**Sprint:** 22 — Measurement Module Freeze & Architecture Status Reconciliation (**completed**)  
 **Parent reference:** [NORDYAN Architecture v1.0](./NORDYAN_ARCHITECTURE_V1.md)  
-**Last updated:** 2026-07-30
+**Last updated:** 2026-08-10
 
 ---
 
 ## 1. Purpose
 
-The Measurement Module introduces a dedicated product surface and orchestration path for capturing **time-stamped health readings**. It completes the domain separation begun in NORDYAN Core v1.0, where weight, waist, and neck are still stored transitionally on the user profile.
+The Measurement Module is the dedicated product surface and orchestration path for capturing **time-stamped health readings**. It completes the domain separation begun in NORDYAN Core v1.0. Profile `weight` / `waist` / `neck` remain **transitional** onboarding and Home fallback storage (see §7.1).
 
 Within the NORDYAN platform, the module answers one question:
 
@@ -25,7 +25,7 @@ Its role is to:
 
 The Measurement Module does not replace Profile, Snapshot, or Progress. It **feeds** them through a single approved workflow. It is the primary entry point for recurring health check-ins after onboarding.
 
-This document is a technical specification for Measurement Module v1.0. It authorizes design intent only. Implementation milestones require separate approval.
+This document is the **Approved & Frozen** specification for Measurement Module v1.0. Behavioral or contract changes require an explicit versioned change request and architecture review.
 
 ---
 
@@ -49,7 +49,7 @@ Separating these concepts prevents three architectural failures:
 2. **Ambiguous recalculation** — engine input becomes unclear when profile fields silently change without a dated event.
 3. **Product confusion** — Profile ("Who am I?") and Measurement ("How do I look today?") answer different user questions and must not share the same edit path.
 
-After Measurement Module v1.0 is implemented, weight, waist, and neck must no longer be treated as ordinary profile edits. Profile remains the source of stable engine inputs; Measurement becomes the source of time-varying body readings.
+Weight, waist, and neck are **not** ordinary Profile UI edits. Profile remains the source of stable engine inputs (identity/baseline). Append-only Measurement events are the source of time-varying body readings. After a successful measurement snapshot, Home uses the latest health snapshot as source of truth (see §7.1).
 
 ---
 
@@ -104,21 +104,26 @@ flowchart TD
     B --> C{Validation passes?}
     C -- No --> D[Inline validation feedback]
     D --> B
-    C -- Yes --> E[Measurement Workflow]
-    E --> F[Health Score Engine]
-    F --> G[Focus Engine]
-    G --> H[Coach Engine]
-    H --> I[Snapshot Service]
-    I --> J[Progress Service on next read]
-    J --> K[Home reflects updated state]
+    C -- Yes --> E[Persist measurement]
+    E --> F[Load profile + map]
+    F --> G[Health Score Engine]
+    G --> H[Focus Engine]
+    H --> I[Coach Engine]
+    I --> J[Snapshot Service]
+    J --> K[Progress Service on next read]
+    K --> L[Home reflects latest snapshot]
 ```
 
 ### Linear pipeline guarantee
 
-Each successful submission produces **one chain** of outcomes:
+Each fully successful submission (`completed`) produces **one chain** of outcomes:
 
 ```
-Measurement
+Validate
+↓
+Persist measurement
+↓
+Profile resolve + map
 ↓
 Health Score Engine
 ↓
@@ -126,14 +131,14 @@ Focus Engine
 ↓
 Coach Engine
 ↓
-Snapshot Service
+Snapshot Service (reason: measurement)
 ↓
 Progress Service
 ↓
-Home
+Home (latest snapshot)
 ```
 
-No step in this chain may run twice for the same submission. Home does not recalculate; it reads refreshed service output after the workflow completes.
+No engine step in this chain may run twice for the same submission. Home does not recalculate from raw measurements; it reads snapshot-derived service output after a successful snapshot.
 
 ### Relationship to onboarding
 
@@ -185,11 +190,9 @@ Presentation components only. No engine imports.
 ### Navigation
 
 - Measurement is a first-class product surface, distinct from Profile
-- entry from an approved tab or Home call-to-action (exact route defined at implementation milestone)
-- successful submit may navigate to Home or present inline success with a clear path to Home
-- back navigation must not silently discard a valid in-progress form without confirmation if values were entered
-
-No React code, route files, or component filenames are specified in this document.
+- Entry: Health tab → measurement history (`app/(tabs)/health`) → **Ny mätning** (`app/(tabs)/health/new-measurement`)
+- Successful submit presents inline success feedback; the user can return to history/Home
+- Back navigation should not silently discard a valid in-progress form without confirmation if values were entered
 
 ---
 
@@ -244,11 +247,13 @@ Measurements are **never updated or deleted** in v1.0. Corrections require a new
 
 | Concern | Owner |
 |---------|-------|
-| Measurement domain types | `lib/domain/measurement/` (planned) |
-| Measurement persistence | MeasurementService / repository (planned) |
-| Measurement orchestration | Measurement Workflow (planned) |
+| Measurement domain types + validation | `lib/domain/measurement/` |
+| Measurement persistence (create) | `lib/repositories/*measurement*` |
+| Measurement history reads | `lib/services/measurement/` |
+| Measurement orchestration | `lib/application/measurement/` (`DefaultMeasurementWorkflow`) |
 | Engine output history | SnapshotService |
 | Progress comparison | ProgressService |
+| Home current health presentation | `lib/services/home/` (snapshot-first) |
 
 ---
 
@@ -258,30 +263,60 @@ Measurements are **never updated or deleted** in v1.0. Corrections require a new
 
 | Layer | Responsibility | Must not |
 |-------|----------------|----------|
-| **Measurement Screen** | capture input, show validation and workflow status, render formatted results | calculate health outcomes, call Supabase, call SnapshotService directly |
-| **Measurement Workflow** | validate business rules, load profile context, invoke engines once, persist measurement and snapshot, return presentation-ready result | implement score/focus/coach formulas, expose PostgREST details to UI |
-| **Health Score Engine** | compute score, driver scores, body fat %, bands | read/write database, import React |
-| **Focus Engine** | select primary/secondary focus from score result | read/write database, import React |
-| **Coach Engine** | select recommendation from focus + score context | read/write database, import React |
-| **Snapshot Service** | append-only snapshot insert and history read | run engines, format UI copy |
-| **Progress Service** | derive latest-vs-previous summary from snapshot history | compare snapshots in UI, mutate snapshots |
-| **Home** | present current score, progress, focus, coach from hooks/services | calculate trends, body fat, or recommendations |
+| **UI** (`app/(tabs)/health/*`, `components/measurement/`) | collect/display input; show validation and workflow status; format display copy | calculate health outcomes; call Supabase; call SnapshotService directly; duplicate measurement business rules |
+| **Hooks** | call Measurement Workflow / MeasurementService; map typed outcomes to UI state | run engines; own persistence |
+| **Measurement domain** | validate measurement field/business rules for the event | persist; run score/focus/coach formulas |
+| **Measurement Workflow** | orchestrate validate → persist measurement → profile resolve → map → engines → snapshot; return typed outcomes | implement score/focus/coach formulas; expose PostgREST details to UI |
+| **Health Score / Focus / Coach Engines** | sole deterministic decision logic for score, focus, recommendation | read/write database; import React |
+| **Snapshot Service** | append-only snapshot insert and history read | run engines; format UI copy |
+| **Progress Service** | derive latest-vs-previous summary from snapshot history | compare snapshots in UI; mutate snapshots |
+| **Home** | present current score, progress, focus, coach from hooks/services (snapshot-derived when available) | calculate trends, body fat, or recommendations; read `measurements` for Home health math |
 
-### Measurement Workflow (planned orchestration)
+### Measurement Workflow (implemented orchestration)
 
-The Measurement Workflow is the **single approved orchestrator** for measurement submission. It replaces profile-save as the trigger for recurring weight/waist/neck updates.
+The Measurement Workflow (`DefaultMeasurementWorkflow`) is the **single approved orchestrator** for measurement submission. It is the trigger for recurring weight/waist/neck updates after onboarding.
 
-Approved internal sequence:
+**Implemented sequence (authoritative):**
 
-1. validate measurement input
-2. load complete profile context
-3. merge profile + measurement into Health Score Engine input
-4. run Health Score Engine once
-5. run Focus Engine once
-6. run Coach Engine once
-7. persist measurement record
-8. create exactly one snapshot with a measurement-specific reason (to be added at implementation milestone)
-9. return structured success or typed failure to the hook layer
+```
+validate measurement input
+→ persist measurement (append-only insert)
+→ load / resolve profile
+→ map profile + measurement → Health Score input
+→ Health Score Engine (once)
+→ Focus Engine (once)
+→ Coach Engine (once)
+→ persist health snapshot (reason: measurement)
+→ return structured success or typed partial/failure to the hook layer
+```
+
+**Persist-first is intentional.** Persisting the measurement before engines/snapshot aligns with the Core **non-blocking snapshot** policy: a measurement event must not be lost because snapshot or engine orchestration failed.
+
+#### Typed outcomes
+
+| Outcome | Meaning |
+|---------|---------|
+| `completed` | Measurement and snapshot both persisted; `snapshotId` required |
+| `measurement_persisted_snapshot_failed` | Measurement persisted; snapshot path failed (`profile_unavailable`, `profile_incomplete`, `pipeline_failed`, or `snapshot_persist_failed`) |
+| `Result` error | Validation or unrecoverable persist failure; no success UX |
+
+Partial success must surface honest UX: measurement saved; Home/progress may lag until a later successful snapshot.
+
+### 7.1 Source of truth — transitional profile storage (v1.0)
+
+| Concern | Source of truth |
+|---------|-----------------|
+| Append-only body measurement events | `measurements` table via Measurement repository |
+| Home current score / weight / body fat / focus / coach (after successful measurement snapshot) | **Latest health snapshot** |
+| Profile identity / baseline (gender, DOB, height, activity, goal) | `profiles` |
+| Profile `weightKg` / `waistCm` / `neckCm` | **Transitional** onboarding and Home **profile_fallback** storage only |
+
+Explicit v1.0 rules:
+
+- Measurement submission **does not** mirror body values back into the profile.
+- After a successful measurement snapshot, Home uses the latest health snapshot and does **not** re-read `measurements` for health math.
+- If snapshot generation fails after measurement persist, profile fallback (or an older snapshot) may be **older** than the latest measurement row. This is accepted transitional architecture for v1.0.
+- Removal or deprecation of profile body fields requires a later explicit ADR / milestone (reserved ADR-007).
 
 ### Integration with frozen Core v1.0
 
@@ -290,11 +325,11 @@ The following remain frozen and are consumed, not modified:
 - Health Score Engine
 - Focus Engine
 - Coach Engine
-- SnapshotService contract (extended only by approved snapshot reason and caller)
+- SnapshotService contract (caller uses approved `measurement` snapshot reason)
 - ProgressService contract
 - Home presentation contracts for Score, Progress, and Coach
 
-Profile persistence remains the owner of identity fields. Measurement persistence becomes the owner of time-stamped weight, waist, and neck.
+Profile persistence remains the owner of identity fields. Measurement persistence owns time-stamped weight, waist, and neck events.
 
 ---
 
@@ -365,13 +400,15 @@ Before workflow execution:
 | Outcome | User experience |
 |---------|-----------------|
 | Field invalid | inline error on affected field; submit remains disabled or rejected |
-| Profile incomplete | clear message directing user to Profile; no partial snapshot |
-| Success | confirmation that measurement was saved; optional summary of new score |
-| Recoverable failure | calm retry message; no raw database text |
+| Full success (`completed`) | confirmation that measurement and health snapshot were saved |
+| Partial success (`measurement_persisted_snapshot_failed`) | measurement saved; honest message that health snapshot could not be created (e.g. incomplete profile) |
+| Recoverable persist failure | calm retry message; no raw database text |
 
 ### Failure handling
 
-Validation failures **stop before** engines run. No snapshot is created. No partial engine chain is persisted as success.
+Field validation failures **stop before** measurement persist and engines. No measurement row and no snapshot are created.
+
+After a measurement is persisted, snapshot/engine failures return typed **partial success** (`measurement_persisted_snapshot_failed`). They do not roll back the measurement row.
 
 ---
 
@@ -379,12 +416,16 @@ Validation failures **stop before** engines run. No snapshot is created. No part
 
 ### When a snapshot is created
 
-A snapshot is created **only** after a successful Measurement Workflow completion.
+A snapshot with reason `measurement` is created when the Measurement Workflow completes the engine pipeline and SnapshotService insert successfully (`status: completed`).
 
-Exact chain:
+Exact happy-path chain:
 
 ```
-One successful measurement submission
+Validate measurement
+↓
+Persist measurement (append-only)
+↓
+Load profile + map to engine input
 ↓
 One Health Score calculation
 ↓
@@ -392,25 +433,33 @@ One Focus calculation
 ↓
 One Coach calculation
 ↓
-One Snapshot insert
+One Snapshot insert (reason: measurement)
 ↓
 One Progress update on next ProgressService read
+↓
+Home reads latest snapshot
 ```
 
 ### Duplication policy
 
 | Scenario | Policy |
 |----------|--------|
-| Double tap submit | workflow idempotency guard; one snapshot maximum |
-| Retry after network failure | implementation must define safe retry without duplicate snapshot (Open Question) |
-| Engine success + snapshot failure | measurement may be persisted; user sees success for measurement with logged snapshot failure; Home progress may lag until snapshot succeeds on retry policy |
-| Validation failure | no snapshot |
+| Double tap submit | submit disabled while in flight; one workflow run |
+| Retry after network failure | safe retry / idempotency policy still open (Open Question); avoid silent duplicate snapshots |
+| Engine or snapshot failure after measurement persist | typed `measurement_persisted_snapshot_failed`; measurement kept; Home may lag |
+| Validation failure | no measurement row; no snapshot |
 
 ### Snapshot reason
 
-Core v1.0 uses `onboarding` and `profile_update`. The Measurement Module will introduce a dedicated measurement snapshot reason during implementation. The final enum value will be approved at that milestone and added to domain and schema in a controlled migration.
+Approved reasons in use:
 
-Existing schema also defines `weekly_checkin`; Measurement Module v1.0 does not repurpose it unless explicitly approved.
+| Reason | When used |
+|--------|-----------|
+| `onboarding` | after onboarding profile sync |
+| `profile_update` | after transitional profile-triggered snapshot path |
+| `measurement` | after successful Measurement Workflow snapshot persist |
+
+Existing schema also defines `weekly_checkin`; Measurement Module v1.0 does not use it.
 
 ---
 
@@ -501,9 +550,9 @@ They must not bypass engines or write snapshots from UI.
 | **Duplicate score calculations** | inconsistent Home vs Measurement summary | engines invoked only inside Measurement Workflow |
 | **Multiple workflow execution** | race on double submit | disable submit while in flight; workflow-level concurrency guard |
 | **UI-side calculations** | drift from Home and onboarding | presentation-only UI; architecture review gate |
-| **Profile misuse** | weight/waist/neck edited via Profile after module launch | remove body fields from Profile UI; profile service rejects body updates except migration period |
-| **Transitional dual paths** | onboarding/profile_update and measurement both write snapshots | explicit milestone to deprecate profile-triggered body snapshot path |
-| **Snapshot failure masking** | user believes progress updated when snapshot missing | honest UX copy; logging; retry policy |
+| **Profile misuse** | weight/waist/neck edited via Profile after module launch | Profile UI no longer edits body fields; keep service-level body writes limited to onboarding/transitional paths |
+| **Transitional dual paths** | onboarding/profile_update and measurement both write snapshots | accepted for v1.0; deprecate profile body path via later ADR-007 milestone |
+| **Snapshot failure masking** | user believes progress updated when snapshot missing | honest partial-success UX (`measurement_persisted_snapshot_failed`); logging; retry policy |
 
 ---
 
@@ -526,50 +575,43 @@ Measurement Module v1.0 explicitly excludes:
 
 ## 16. Definition of Done
 
-### This milestone (documentation only)
+### Sprint 22 — completed
 
-This Sprint 9 Milestone 1 is complete when:
+- [x] specification reconciled to implemented Measurement Module v1.0
+- [x] workflow order and partial-success contract documented
+- [x] transitional profile body storage documented as accepted v1.0 architecture
+- [x] `npx tsc --noEmit` — **PASS**
+- [x] Expo Go smoke: Health → Ny mätning → persist → Home score/progress/coach — **PASS**
+- [x] architecture review completed — no blockers
+- [x] **Approved & Frozen — Measurement Module v1.0**
 
-- [ ] this specification is reviewed against [NORDYAN Architecture v1.0](./NORDYAN_ARCHITECTURE_V1.md)
-- [ ] architectural boundaries are consistent with frozen Core v1.0
-- [ ] open questions are recorded without premature resolution
-- [ ] architecture review completed
-- [ ] document approved for implementation planning
-
-This milestone does **not** require `npx tsc --noEmit` or Expo Go verification because no application code is changed.
-
-### Future implementation milestones
-
-Implementation of Measurement Module v1.0 is done when:
-
-- [ ] architecture in this document is respected
-- [ ] no duplicated business logic outside Measurement Workflow
-- [ ] single orchestration flow for measurement submission
-- [ ] `npx tsc --noEmit` passes
-- [ ] Expo Go verification passes
-- [ ] architecture review completed
-- [ ] **Approved & Frozen — Measurement Module v1.0**
+Sprint 22 did not change application code, schema, deploy configuration, or AI coach surfaces.
 
 ---
 
 ## 17. Open Questions
 
-The following decisions are intentionally deferred to implementation or later design milestones:
+Resolved in implementation (recorded for history):
+
+| Topic | Resolution |
+|-------|------------|
+| Measurement persistence before snapshot | **Persist-first**; typed `measurement_persisted_snapshot_failed` |
+| Snapshot reason enum | **`measurement`** (schema + domain) |
+
+Still deferred to later milestones:
 
 | Question | Considerations |
 |----------|----------------|
 | Prefill last measurement? | reduces friction vs implies endorsement of prior values |
 | Multiple measurements per day? | snapshot duplication policy; progress semantics |
-| Edit vs delete historical measurements? | conflicts with append-only principle; likely deferred entirely in v1.0 |
+| Edit vs delete historical measurements? | conflicts with append-only principle; deferred in v1.0 |
 | User notes on a measurement? | scope creep vs coaching context |
 | Progress photos? | separate media module; not v1.0 |
-| Measurement persistence before snapshot? | partial success UX if snapshot fails |
 | Safe retry after snapshot failure | idempotency key vs duplicate detection |
-| Exact snapshot reason enum value | approved during schema migration milestone |
-| Deprecation timeline for profile body fields | migration path from Core v1.0 transitional model |
-| Post-submit navigation | inline success vs redirect to Home |
+| Deprecation timeline for profile body fields | reserved ADR-007 |
+| Post-submit navigation polish | inline success vs redirect to Home |
 
-None of these questions alter the architectural intent of v1.0.
+None of these open questions block documenting or freezing Measurement Module v1.0 as implemented.
 
 ---
 
@@ -625,21 +667,39 @@ None of these questions alter the architectural intent of v1.0.
 
 ---
 
+### ADR-006 — Measurement snapshot reason
+
+**Decision:** Successful Measurement Workflow snapshots use `snapshot_reason = 'measurement'`.
+
+**Rationale:** distinguishes measurement-driven history from onboarding / profile_update paths.
+
+**Status:** Approved & Frozen (with Measurement Module v1.0)
+
+---
+
 ### Future ADRs (reserved)
 
-- ADR-006 — Measurement snapshot reason enum
-- ADR-007 — Deprecation of profile body-field updates
-- ADR-008 — Idempotency and retry policy
+- ADR-007 — Deprecation of transitional profile body-field storage / updates
+- ADR-008 — Idempotency and retry policy after snapshot failure
 - ADR-009 — Multiple measurements per day policy
+
+---
+
+## 19. Known non-blocking cleanup debt
+
+The following items are **not** freeze blockers for Measurement Module v1.0. They may be cleaned up in a later patch milestone:
+
+| Debt | Location | Notes |
+|------|----------|-------|
+| Stale “future milestone” comment on validation contract | `lib/domain/measurement/measurement.validation.ts` | Rules are already implemented in `measurement.validator.ts` |
+| Unused `measurement_persisted` workflow variant | `lib/application/measurement/measurement.workflow.types.ts` | Live workflow returns `completed` or `measurement_persisted_snapshot_failed` |
 
 ---
 
 ## Document Status
 
-This specification is a **draft** prepared for architecture review.
+> **Approved & Frozen — Measurement Module v1.0**
 
-It is **not** yet:
+**Sprint 22:** Completed (architecture verification, documentation reconciliation, TypeScript PASS, Expo Go PASS, final freeze).
 
-> Approved & Frozen — Measurement Module v1.0
-
-No application code, database schema, services, engines, navigation, or UI was modified to produce this document.
+Frozen means: bug fixes allowed; behavior or contract changes require an explicit versioned change request and architecture review. Non-blocking cleanup debt in §19 may be addressed in a later patch milestone without unfreezing the product contract.

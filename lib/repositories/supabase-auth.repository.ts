@@ -1,11 +1,20 @@
 import type { Session } from '@supabase/supabase-js';
 
 import type { Result } from '@/lib/core';
-import { authMessages } from '@/lib/services/auth/auth-errors';
-import type { AuthSession, AuthStatus, AuthUser } from '@/lib/domain/auth';
+import type { AuthSession, AuthStatus, AuthUser, SignUpOutcome } from '@/lib/domain/auth';
 import type { AuthRepository } from '@/lib/repositories/auth.repository';
+import {
+  authMessages,
+  mapAuthCallbackError,
+  mapSupabaseAuthError,
+} from '@/lib/services/auth/auth-errors';
+import {
+  getAuthEmailRedirectTo,
+  getPasswordRecoveryRedirectTo,
+} from '@/lib/services/auth/auth-redirect';
+import { toSignUpOutcome } from '@/lib/services/auth/to-sign-up-outcome';
+import { logSignupForensics } from '@/lib/services/auth/signup-forensics';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { mapSupabaseAuthError } from '@/lib/services/auth/auth-errors';
 
 function mapUser(user: Session['user']): AuthUser {
   return {
@@ -33,8 +42,12 @@ function missingConfigError(): Result<never> {
 }
 
 export class SupabaseAuthRepository implements AuthRepository {
+  constructor(
+    private readonly clientProvider: typeof getSupabaseClient = getSupabaseClient,
+  ) {}
+
   async getSession(): Promise<Result<AuthSession | null>> {
-    const supabase = getSupabaseClient();
+    const supabase = this.clientProvider();
     if (!supabase) {
       return missingConfigError();
     }
@@ -76,7 +89,7 @@ export class SupabaseAuthRepository implements AuthRepository {
   }
 
   async signInWithEmail(email: string, password: string): Promise<Result<AuthSession>> {
-    const supabase = getSupabaseClient();
+    const supabase = this.clientProvider();
     if (!supabase) {
       return missingConfigError();
     }
@@ -100,33 +113,183 @@ export class SupabaseAuthRepository implements AuthRepository {
     return { ok: true, value: mapSession(data.session) };
   }
 
-  async signUpWithEmail(email: string, password: string): Promise<Result<AuthSession>> {
-    const supabase = getSupabaseClient();
+  async signUpWithEmail(email: string, password: string): Promise<Result<SignUpOutcome>> {
+    const supabase = this.clientProvider();
     if (!supabase) {
       return missingConfigError();
     }
 
+    const trimmedEmail = email.trim();
+    logSignupForensics({
+      stage: 'provider-request',
+      signupProviderResult: 'not_attempted',
+      outcome: 'not_determined',
+      pendingBindResult: 'not_attempted',
+      persistenceResult: 'not_attempted',
+      profileOwnerState: 'unknown',
+      lifestyleOwnerState: 'unknown',
+    });
     const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: trimmedEmail,
       password,
+      options: {
+        emailRedirectTo: getAuthEmailRedirectTo(),
+      },
+    });
+
+    if (error) {
+      logSignupForensics({
+        stage: 'provider-result',
+        signupProviderResult: 'provider_error',
+        providerError: error,
+        outcome: 'failed',
+        pendingBindResult: 'not_attempted',
+        persistenceResult: 'not_attempted',
+        profileOwnerState: 'unknown',
+        lifestyleOwnerState: 'unknown',
+      });
+      return { ok: false, error: mapSupabaseAuthError(error) };
+    }
+
+    const providerResult = data.user
+      ? data.session
+        ? 'success_user_and_session'
+        : 'success_user_without_session'
+      : data.session
+        ? 'success_session_without_user'
+        : 'success_empty';
+    logSignupForensics({
+      stage: 'provider-result',
+      signupProviderResult: providerResult,
+      outcome: 'not_determined',
+      pendingBindResult: 'not_attempted',
+      persistenceResult: 'not_attempted',
+      profileOwnerState: 'unknown',
+      lifestyleOwnerState: 'unknown',
+    });
+
+    const ownerId = data.user?.id ?? data.session?.user.id;
+    if (!ownerId) {
+      logSignupForensics({
+        stage: 'outcome-mapped',
+        signupProviderResult: 'local_mapping_failed',
+        outcome: 'failed',
+        pendingBindResult: 'not_attempted',
+        persistenceResult: 'not_attempted',
+        profileOwnerState: 'unknown',
+        lifestyleOwnerState: 'unknown',
+      });
+      return {
+        ok: false,
+        error: { code: 'UNKNOWN', message: authMessages.generic },
+      };
+    }
+
+    const outcome = toSignUpOutcome(
+      trimmedEmail,
+      data.session ? mapSession(data.session) : null,
+      ownerId,
+    );
+    logSignupForensics({
+      stage: 'outcome-mapped',
+      signupProviderResult: providerResult,
+      outcome: outcome.kind,
+      pendingBindResult: 'not_attempted',
+      persistenceResult: 'not_attempted',
+      profileOwnerState: 'unknown',
+      lifestyleOwnerState: 'unknown',
+    });
+
+    return {
+      ok: true,
+      value: outcome,
+    };
+  }
+
+  async resendSignupVerification(email: string): Promise<Result<void>> {
+    const supabase = this.clientProvider();
+    if (!supabase) {
+      return missingConfigError();
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo: getAuthEmailRedirectTo(),
+      },
     });
 
     if (error) {
       return { ok: false, error: mapSupabaseAuthError(error) };
     }
 
+    return { ok: true, value: undefined };
+  }
+
+  async requestPasswordRecovery(email: string): Promise<Result<void>> {
+    const supabase = this.clientProvider();
+    if (!supabase) {
+      return missingConfigError();
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: getPasswordRecoveryRedirectTo(),
+    });
+
+    if (error) {
+      return { ok: false, error: mapSupabaseAuthError(error) };
+    }
+
+    return { ok: true, value: undefined };
+  }
+
+  async exchangeAuthCallbackCode(code: string): Promise<Result<AuthSession>> {
+    const supabase = this.clientProvider();
+    if (!supabase) {
+      return missingConfigError();
+    }
+
+    const trimmedCode = code.trim();
+    if (!trimmedCode) {
+      return {
+        ok: false,
+        error: { code: 'VALIDATION', message: authMessages.callbackExpired },
+      };
+    }
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(trimmedCode);
+
+    if (error) {
+      return { ok: false, error: mapAuthCallbackError(error) };
+    }
+
     if (!data.session) {
       return {
         ok: false,
-        error: { code: 'UNAUTHORIZED', message: authMessages.emailNotConfirmed },
+        error: { code: 'UNAUTHORIZED', message: authMessages.callbackGeneric },
       };
     }
 
     return { ok: true, value: mapSession(data.session) };
   }
 
+  async updatePassword(password: string): Promise<Result<void>> {
+    const supabase = this.clientProvider();
+    if (!supabase) {
+      return missingConfigError();
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      return { ok: false, error: mapSupabaseAuthError(error) };
+    }
+
+    return { ok: true, value: undefined };
+  }
+
   async signOut(): Promise<Result<void>> {
-    const supabase = getSupabaseClient();
+    const supabase = this.clientProvider();
     if (!supabase) {
       return missingConfigError();
     }

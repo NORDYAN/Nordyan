@@ -6,6 +6,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View
 import { MeasurementForm } from '@/components/measurement';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
+import { MEASUREMENT_SAVE_SUCCESS_NAVIGATION } from '@/lib/presentation/measurement/measurement-save-navigation';
+import { t } from '@/lib/i18n';
 import { useAuth } from '@/providers/auth-provider';
 import {
   colors,
@@ -36,7 +38,7 @@ export default function NewMeasurementScreen() {
           <View style={styles.navRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Tillbaka"
+              accessibilityLabel={t('common.back')}
               onPress={() => router.back()}
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -50,14 +52,17 @@ export default function NewMeasurementScreen() {
           </View>
 
           <View style={styles.headerBlock}>
-            <Text style={styles.title}>Ny mätning</Text>
-            <Text style={styles.subtitle}>
-              Registrera dina senaste kroppsmått för att uppdatera din utveckling och din NORDYAN
-              Health Score.
-            </Text>
+            <Text style={styles.title}>{t('health.new.title')}</Text>
+            <Text style={styles.subtitle}>{t('health.new.subtitle')}</Text>
           </View>
 
-          <MeasurementForm userId={userId} variant="newMeasurement" />
+          <MeasurementForm
+            userId={userId}
+            variant="newMeasurement"
+            onNavigateToHistory={() => {
+              router.replace(MEASUREMENT_SAVE_SUCCESS_NAVIGATION.destination);
+            }}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>

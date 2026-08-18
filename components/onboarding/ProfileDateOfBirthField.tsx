@@ -1,7 +1,7 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentProps, type ComponentType } from 'react';
 import {
   Modal,
   Platform,
@@ -11,14 +11,27 @@ import {
 } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
+import {
+  formatDisplayDate,
+  getActiveLocale,
+  intlLocaleFor,
+  t,
+} from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { dateOfBirthPickerConfig } from '@/lib/presentation/date-of-birth';
 import { colors, onboardingProfileLayout, radii, typography } from '@/theme';
 
-const PLACEHOLDER = 'Välj födelsedatum';
+type DateOfBirthPickerProps = ComponentProps<typeof DateTimePicker> & {
+  startOnYearSelection?: boolean;
+};
+
+const DateOfBirthPicker = DateTimePicker as ComponentType<DateOfBirthPickerProps>;
 
 type ProfileDateOfBirthFieldProps = {
   label: string;
   value: string;
   uppercaseLabel?: boolean;
+  stacked?: boolean;
   onChange: (isoDate: string) => void;
 };
 
@@ -57,11 +70,7 @@ function formatDateOfBirthDisplay(iso: string): string {
     return '';
   }
 
-  return new Intl.DateTimeFormat('sv-SE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
+  return formatDisplayDate(date, getActiveLocale());
 }
 
 function defaultPickerDate(): Date {
@@ -88,13 +97,17 @@ export function ProfileDateOfBirthField({
   label,
   value,
   uppercaseLabel = false,
+  stacked = false,
   onChange,
 }: ProfileDateOfBirthFieldProps) {
+  useI18n();
   const [showPicker, setShowPicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(defaultPickerDate);
 
+  const placeholder = t('onboarding.dateOfBirthPlaceholder');
   const displayValue = useMemo(() => formatDateOfBirthDisplay(value), [value]);
   const hasValue = displayValue.length > 0;
+  const pickerLocale = intlLocaleFor(getActiveLocale());
 
   const openPicker = () => {
     setPickerDate(parseIsoDate(value) ?? defaultPickerDate());
@@ -125,12 +138,12 @@ export function ProfileDateOfBirthField({
   };
 
   return (
-    <View style={[styles.root, styles.rootInline]}>
+    <View style={[styles.root, stacked ? styles.rootStacked : styles.rootInline]}>
       <Text style={[styles.label, !uppercaseLabel && styles.labelTitleCase]}>{label}</Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint={PLACEHOLDER}
+        accessibilityHint={placeholder}
         onPress={openPicker}
         style={({ pressed }) => [styles.inputField, pressed && styles.inputFieldPressed]}
       >
@@ -138,7 +151,7 @@ export function ProfileDateOfBirthField({
           style={[styles.input, !hasValue && styles.placeholder]}
           numberOfLines={1}
         >
-          {hasValue ? displayValue : PLACEHOLDER}
+          {hasValue ? displayValue : placeholder}
         </Text>
       </Pressable>
 
@@ -155,26 +168,26 @@ export function ProfileDateOfBirthField({
               <View style={styles.modalHeader}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Avbryt"
+                  accessibilityLabel={t('common.cancel')}
                   onPress={closePicker}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={styles.modalAction}>Avbryt</Text>
+                  <Text style={styles.modalAction}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Klar"
+                  accessibilityLabel={t('common.done')}
                   onPress={confirmPicker}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={styles.modalActionPrimary}>Klar</Text>
+                  <Text style={styles.modalActionPrimary}>{t('common.done')}</Text>
                 </Pressable>
               </View>
-              <DateTimePicker
+              <DateOfBirthPicker
                 value={pickerDate}
                 mode="date"
-                display="spinner"
-                locale="sv-SE"
+                display={dateOfBirthPickerConfig.ios.display}
+                locale={pickerLocale}
                 onChange={handleIosPickerChange}
                 minimumDate={minimumBirthDate()}
                 maximumDate={maximumBirthDate()}
@@ -187,10 +200,11 @@ export function ProfileDateOfBirthField({
       ) : null}
 
       {Platform.OS === 'android' && showPicker ? (
-        <DateTimePicker
+        <DateOfBirthPicker
           value={pickerDate}
           mode="date"
-          display="default"
+          display={dateOfBirthPickerConfig.android.display}
+          startOnYearSelection={dateOfBirthPickerConfig.android.startOnYearSelection}
           onChange={handleAndroidChange}
           minimumDate={minimumBirthDate()}
           maximumDate={maximumBirthDate()}
@@ -207,6 +221,9 @@ const styles = StyleSheet.create({
   },
   rootInline: {
     flex: 1,
+  },
+  rootStacked: {
+    width: '100%',
   },
   label: {
     color: colors.onboardingProfileLabel,

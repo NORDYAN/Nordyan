@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
+import { t } from '@/lib/i18n';
 import { colors, onboardingResultLayout, typography } from '@/theme';
 
 type OnboardingCoachCardProps = {
@@ -14,7 +15,7 @@ export function OnboardingCoachCard({ headline, message }: OnboardingCoachCardPr
     <View style={styles.card}>
       <View style={styles.header}>
         <Ionicons name="sparkles" size={16} color={colors.onboardingAccent} />
-        <Text style={styles.headerLabel}>DIN COACH</Text>
+        <Text style={styles.headerLabel}>{t('onboarding.coach.label')}</Text>
       </View>
       <Text style={styles.headline}>{headline}</Text>
       <Text style={styles.message}>{message}</Text>
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     lineHeight: onboardingResultLayout.coachHeadlineFontSize * 1.3,
   },
   message: {
-    color: colors.onboardingText,
+    color: colors.onboardingProfileLabel,
     fontSize: onboardingResultLayout.coachBodyFontSize,
     fontWeight: typography.fontWeight.regular,
     lineHeight: onboardingResultLayout.coachBodyFontSize * typography.lineHeight.normal,

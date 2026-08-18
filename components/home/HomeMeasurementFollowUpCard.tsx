@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { colors, homeLayout, typography } from '@/theme';
 
 type HomeMeasurementFollowUpCardProps = {
@@ -10,27 +12,26 @@ type HomeMeasurementFollowUpCardProps = {
 };
 
 export function HomeMeasurementFollowUpCard({ onPress }: HomeMeasurementFollowUpCardProps) {
+  useI18n();
+
   return (
     <Card padding={homeLayout.coachCardPadding} borderRadius={homeLayout.coachCardRadius} style={styles.card}>
       <View style={styles.header}>
         <View style={styles.iconBox}>
           <Ionicons name="body-outline" size={18} color={colors.onboardingAccent} />
         </View>
-        <Text style={styles.title}>Förbättra precisionen</Text>
+        <Text style={styles.title}>{t('home.followUp.title')}</Text>
       </View>
 
-      <Text style={styles.body}>
-        Registrera midje- och halsmått när du har möjlighet för en ännu mer träffsäker NORDYAN
-        Health Score.
-      </Text>
+      <Text style={styles.body}>{t('home.followUp.body')}</Text>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Registrera kroppsmått"
+        accessibilityLabel={t('onboarding.registerMeasurements')}
         onPress={onPress}
         style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
       >
-        <Text style={styles.actionLabel}>Registrera kroppsmått</Text>
+        <Text style={styles.actionLabel}>{t('onboarding.registerMeasurements')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.onboardingText} />
       </Pressable>
     </Card>

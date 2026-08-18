@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { PROFILE_ACTIVITY_LEVEL_OPTIONS } from '@/lib/domain/profile';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import {
   colors,
   onboardingLayout,
@@ -14,23 +16,13 @@ import {
   typography,
 } from '@/theme';
 
-export const ACTIVITY_HELP_TITLE = 'Så väljer du aktivitetsnivå';
-
-export const ACTIVITY_HELP_SUBTITLE =
-  'Välj den nivå som bäst beskriver din vardag de senaste veckorna. Det hjälper oss att tolka din hälsa mer träffsäkert.';
-
-const ACTIVITY_HELP_DESCRIPTIONS: Record<string, string> = {
-  sedentary:
-    'Du sitter eller står stilla större delen av dagen och rör dig sällan mer än i vardagssysslor.',
-  lightly_active:
-    'Du rör dig regelbundet i vardagen, till exempel promenader eller lätt hushållsarbete.',
-  moderately_active:
-    'Du tränar eller rör dig medelhårt flera gånger i veckan, ungefär 3–5 pass.',
-  very_active:
-    'Du tränar hårt de flesta dagar i veckan eller har ett fysiskt krävande arbete.',
-  extra_active:
-    'Du tränar intensivt nästan dagligen eller har en elit-/toppidrottsbelastning.',
-};
+const ACTIVITY_HELP_DESCRIPTION_KEYS = {
+  sedentary: 'profile.activityHelp.sedentary',
+  lightly_active: 'profile.activityHelp.lightly_active',
+  moderately_active: 'profile.activityHelp.moderately_active',
+  very_active: 'profile.activityHelp.very_active',
+  extra_active: 'profile.activityHelp.extra_active',
+} as const;
 
 type ActivityHelpModalProps = {
   visible: boolean;
@@ -40,6 +32,7 @@ type ActivityHelpModalProps = {
 const SHEET_SLIDE_OFFSET = 28;
 
 export function ActivityHelpModal({ visible, onClose }: ActivityHelpModalProps) {
+  useI18n();
   const screenOpacity = useRef(new Animated.Value(0)).current;
   const screenTranslateY = useRef(new Animated.Value(SHEET_SLIDE_OFFSET)).current;
 
@@ -99,7 +92,7 @@ export function ActivityHelpModal({ visible, onClose }: ActivityHelpModalProps) 
               style={styles.backButton}
               onPress={handleClose}
               accessibilityRole="button"
-              accessibilityLabel="Stäng"
+              accessibilityLabel={t('common.close')}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
               <Ionicons
@@ -116,8 +109,8 @@ export function ActivityHelpModal({ visible, onClose }: ActivityHelpModalProps) 
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.titleSection}>
-              <Text style={styles.title}>{ACTIVITY_HELP_TITLE}</Text>
-              <Text style={styles.subtitle}>{ACTIVITY_HELP_SUBTITLE}</Text>
+              <Text style={styles.title}>{t('profile.activityHelp.title')}</Text>
+              <Text style={styles.subtitle}>{t('profile.activityHelp.subtitle')}</Text>
             </View>
 
             <View style={styles.cardsSpacer} />
@@ -133,7 +126,7 @@ export function ActivityHelpModal({ visible, onClose }: ActivityHelpModalProps) 
                   <View style={styles.guidelineCardContent}>
                     <Text style={styles.guidelineCardTitle}>{option.label}</Text>
                     <Text style={styles.guidelineCardBody}>
-                      {ACTIVITY_HELP_DESCRIPTIONS[option.value]}
+                      {t(ACTIVITY_HELP_DESCRIPTION_KEYS[option.value])}
                     </Text>
                   </View>
                 </Card>
@@ -143,7 +136,7 @@ export function ActivityHelpModal({ visible, onClose }: ActivityHelpModalProps) 
 
           <View style={styles.ctaContainer}>
             <Button
-              label="Jag förstår"
+              label={t('measureHelp.understood')}
               variant="onboarding"
               style={styles.confirmButton}
               labelStyle={styles.confirmButtonLabel}

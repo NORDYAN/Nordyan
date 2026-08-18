@@ -7,6 +7,11 @@ import { HomeIndicator, OnboardingMountainBackground } from '@/components/onboar
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
+import { onboardingResultHref } from '@/lib/onboarding/onboarding-result-navigation';
+import { useAuth } from '@/providers/auth-provider';
 import {
   colors,
   onboardingLayout,
@@ -19,12 +24,27 @@ import {
 const MEASUREMENT_CHOICE_OVERLAY = 'rgba(18, 20, 22, 0.8)';
 
 export default function OnboardingMeasurementChoiceScreen() {
+  useI18n();
+  const { status, session } = useAuth();
+  const authenticated = status === 'authenticated';
+  const viewerUserId = authenticated ? session?.user.id ?? null : null;
+
   const handleRegisterMeasurements = () => {
     router.push(routes.onboardingBodyMeasurements);
   };
 
   const handleSkipToHealthScore = () => {
-    router.push(routes.onboardingStep5);
+    void (async () => {
+      await emitOnboardingForensics({
+        event: 'measurement-choice-skip',
+        authenticated,
+        viewerUserId,
+        profileWriteResult: 'not_attempted',
+        lifestyleWriteResult: 'not_attempted',
+        visitIdPresent: false,
+      });
+      router.push(onboardingResultHref());
+    })();
   };
 
   return (
@@ -35,30 +55,27 @@ export default function OnboardingMeasurementChoiceScreen() {
         <View style={styles.content}>
           <View style={styles.mainBody}>
             <View style={styles.headerBlock}>
-              <Text style={styles.overline}>Nästa steg</Text>
-              <Text style={styles.title}>Vill du registrera kroppsmått?</Text>
+              <Text style={styles.overline}>{t('onboarding.measureChoice.overline')}</Text>
+              <Text style={styles.title}>{t('onboarding.measureChoice.title')}</Text>
             </View>
 
-            <Text style={styles.body}>
-              Midje- och halsmått ger en mer träffsäker NORDYAN Health Score. Du kan registrera
-              dem nu eller senare via Hälsa.
-            </Text>
+            <Text style={styles.body}>{t('onboarding.measureChoice.body')}</Text>
           </View>
 
           <View style={styles.footer}>
             <Button
-              label="Registrera kroppsmått nu"
+              label={t('onboarding.measureNow')}
               variant="onboarding"
               style={styles.primaryButton}
               onPress={handleRegisterMeasurements}
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Fortsätt till min Health Score"
+              accessibilityLabel={t('onboarding.continueToScore')}
               onPress={handleSkipToHealthScore}
               style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryButtonPressed]}
             >
-              <Text style={styles.secondaryButtonLabel}>Fortsätt till min Health Score</Text>
+              <Text style={styles.secondaryButtonLabel}>{t('onboarding.continueToScore')}</Text>
             </Pressable>
             <HomeIndicator />
           </View>

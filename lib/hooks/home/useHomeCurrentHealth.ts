@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import type { HealthSnapshot } from '@/lib/domain/snapshot';
+import { t } from '@/lib/i18n';
 import {
   buildHomeCurrentHealthState,
   type HomeCurrentHealthState,
@@ -60,7 +61,7 @@ export function useHomeCurrentHealth(): UseHomeCurrentHealthResult {
       }
 
       if (!result.ok) {
-        setSnapshotError(result.error.message ?? 'Kunde inte hämta hälsosnapshot.');
+        setSnapshotError(t('home.snapshot.loadError'));
         setIsSnapshotLoading(false);
         return;
       }
