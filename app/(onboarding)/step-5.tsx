@@ -100,10 +100,6 @@ export default function OnboardingResultScreen() {
       if (!profileSyncSucceededRef.current) {
         const syncResult = await syncPendingProfileAfterAuth();
 
-        if (__DEV__) {
-          console.log('[onboarding/step-5] sync result', syncResult);
-        }
-
         if (!syncResult.ok) {
           if (syncResult.reason === 'missing_pending') {
             const profileResult = await profileService.getCurrentProfile();

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "NORDYAN",
-    "slug": "NORDYAN",
+    "slug": "nordyan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -36,6 +36,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a701cafa-eb98-4ea9-a191-08f5e57d65c6"
+      }
+    },
+    "owner": "nordyans-team"
   }
 }
