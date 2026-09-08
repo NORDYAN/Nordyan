@@ -347,26 +347,16 @@ export default function ProfileNotificationsScreen() {
                 />
               </>
             ) : null}
-            {showTimePicker && prefs.dailyEnabled && timeDraft ? (
+            {showTimePicker && prefs.dailyEnabled && timeDraft && Platform.OS !== 'ios' ? (
               <DailyTimePicker
                 value={timeDraft}
                 mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 is24Hour
                 themeVariant={IOS_DAILY_TIME_PICKER_THEME.themeVariant}
                 textColor={colors.onboardingText}
                 onChange={handleTimeChange}
               />
-            ) : null}
-            {showTimePicker && prefs.dailyEnabled && Platform.OS === 'ios' ? (
-              <Pressable
-                onPress={handleTimeConfirm}
-                style={styles.doneButton}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.done')}
-              >
-                <Text style={styles.doneLabel}>{t('common.done')}</Text>
-              </Pressable>
             ) : null}
             <ProfileSettingsDivider />
             <View style={styles.toggleRow}>
@@ -385,6 +375,29 @@ export default function ProfileNotificationsScreen() {
           </ProfileSettingsCard>
         )}
       </ScrollView>
+      {showTimePicker && prefs.dailyEnabled && Platform.OS === 'ios' ? (
+        <View style={styles.iosTimePickerHost}>
+          {timeDraft ? (
+            <DailyTimePicker
+              value={timeDraft}
+              mode="time"
+              display="spinner"
+              is24Hour
+              themeVariant={IOS_DAILY_TIME_PICKER_THEME.themeVariant}
+              textColor={colors.onboardingText}
+              onChange={handleTimeChange}
+            />
+          ) : null}
+          <Pressable
+            onPress={handleTimeConfirm}
+            style={styles.doneButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.done')}
+          >
+            <Text style={styles.doneLabel}>{t('common.done')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </ScreenContainer>
   );
 }
@@ -407,6 +420,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  iosTimePickerHost: {
+    paddingHorizontal: profileLayout.horizontalPadding,
   },
   scrollContent: {
     gap: profileLayout.sectionGap,

@@ -138,6 +138,24 @@ describe('Push Notifications v1 source contracts', () => {
       /saveDailyTime\(next\)/,
     );
 
+    const scrollBody = screen.slice(screen.indexOf('<ScrollView'), screen.indexOf('</ScrollView>'));
+    const afterScroll = screen.slice(screen.indexOf('</ScrollView>'));
+    assert.match(scrollBody, /DailyTimePicker/);
+    assert.match(scrollBody, /display="default"/);
+    assert.doesNotMatch(scrollBody, /display="spinner"/);
+    assert.doesNotMatch(scrollBody, /handleTimeConfirm/);
+    assert.doesNotMatch(scrollBody, /common\.done/);
+    assert.match(afterScroll, /DailyTimePicker/);
+    assert.match(afterScroll, /display="spinner"/);
+    assert.match(afterScroll, /handleTimeConfirm/);
+    assert.match(afterScroll, /common\.done/);
+    assert.doesNotMatch(afterScroll, /<ScrollView/);
+    assert.doesNotMatch(screen, /Modal/);
+    assert.match(scrollBody, /Platform\.OS !== 'ios'/);
+    assert.match(afterScroll, /Platform\.OS === 'ios'/);
+    assert.match(picker, /action: 'commit'/);
+    assert.doesNotMatch(scrollBody, /action === 'commit'/);
+
     assert.match(lifecycle, /decideNotificationScheduleSync/);
     assert.doesNotMatch(lifecycle, /commitDailyTimeDraft|timeDraft|themeVariant/);
     assert.doesNotMatch(permission, /commitDailyTimeDraft|DateTimePicker/);
