@@ -30,7 +30,7 @@ type AuthFormProps = {
   title: string;
   submitLabel: string;
   loadingLabel: string;
-  alternatePrompt: string;
+  alternatePrompt?: string;
   alternateHref: Href;
   alternateLabel: string;
   email: string;
@@ -212,7 +212,7 @@ export function AuthForm({
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>{alternatePrompt}</Text>
+        {alternatePrompt ? <Text style={styles.footerText}>{alternatePrompt}</Text> : null}
         <Link href={alternateHref} asChild>
           <Pressable
             disabled={isSubmitting}

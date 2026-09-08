@@ -51,6 +51,7 @@ export type PendingInitialLifestyleStore = {
   bindPendingInitialLifestyleToUser(
     userId: string,
   ): Promise<PendingInitialLifestyleBindResult>;
+  releaseBinding(userId: string): Promise<void>;
   clearPendingInitialLifestyle(): Promise<void>;
   clearPendingInitialLifestyleForUser(userId: string): Promise<void>;
   clearUnownedPendingInitialLifestyle(): Promise<void>;
@@ -219,6 +220,21 @@ export function createPendingInitialLifestyleStore(
         byUser: { ...container.byUser, [userId]: container.anonymous },
       });
       return 'bound';
+    },
+
+    async releaseBinding(userId) {
+      const container = await read();
+      const retry = container.byUser[userId];
+      if (!retry) {
+        return;
+      }
+      if (container.anonymous !== null) {
+        throw new Error('cannot release a bound lifestyle over an anonymous draft');
+      }
+
+      const byUser = { ...container.byUser };
+      delete byUser[userId];
+      await write({ version: 2, anonymous: retry, byUser });
     },
 
     async clearPendingInitialLifestyle(): Promise<void> {

@@ -22,13 +22,19 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
+import { isEligibleAdultDateOfBirth } from '@/lib/domain/age-eligibility';
 import type { ProfileActivityLevel, ProfileGender } from '@/lib/domain/profile';
 import {
   PROFILE_ACTIVITY_LEVEL_OPTIONS,
   PROFILE_GENDER_OPTIONS,
+  isWritableProfileGender,
 } from '@/lib/domain/profile';
 import { useCurrentProfile } from '@/lib/hooks/profile';
-import { healthProfilePersonalFields } from '@/lib/presentation/health-profile';
+import {
+  canSaveHealthProfilePersonalFields,
+  healthProfilePersonalFields,
+} from '@/lib/presentation/health-profile';
+import { resolveSelectableProfileGender } from '@/lib/presentation/onboarding-profile';
 import { profileService } from '@/lib/services/profile';
 import { createHealthSnapshotFromProfile } from '@/lib/services/snapshots';
 import { t } from '@/lib/i18n';
@@ -86,14 +92,27 @@ export default function HealthProfileScreen() {
   }, [profile]);
 
   const heightCm = parseMeasurementNumericInput(height);
-  const canSave =
-    isValidDateOfBirth(dateOfBirth) &&
-    isPositiveMeasurementInput(height) &&
-    gender !== null &&
-    activityLevel !== null;
+  const canSave = canSaveHealthProfilePersonalFields({
+    dateOfBirthValid: isValidDateOfBirth(dateOfBirth),
+    heightValid: isPositiveMeasurementInput(height),
+    gender,
+    activityLevel,
+  });
 
   const handleSave = async () => {
-    if (!profile || !canSave || !gender || !activityLevel || isSaving || heightCm === null) {
+    if (
+      !profile ||
+      !canSave ||
+      !isWritableProfileGender(gender) ||
+      !activityLevel ||
+      isSaving ||
+      heightCm === null
+    ) {
+      return;
+    }
+
+    if (!isEligibleAdultDateOfBirth(dateOfBirth.trim())) {
+      setErrorMessage(t('profile.validation.mustBe18'));
       return;
     }
 
@@ -169,11 +188,12 @@ export default function HealthProfileScreen() {
 
               <ProfileSingleChoiceGroup
                 label={t('onboarding.profile.gender')}
-                value={gender}
+                value={resolveSelectableProfileGender(gender)}
                 options={PROFILE_GENDER_OPTIONS}
                 onChange={setGender}
                 layout="row"
                 optionIcons={PROFILE_GENDER_ICONS}
+                helper={t('onboarding.profile.genderHelper')}
               />
 
               <View style={styles.measurementsSection}>

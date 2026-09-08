@@ -5,7 +5,6 @@ import type { InitialLifestyleAnswerField } from '@/lib/domain/initial-lifestyle
 import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
 import { getAnonymousOnboardingAttemptVersion } from '@/lib/onboarding/anonymous-onboarding-attempt';
 import {
-  clearPendingInitialLifestyle,
   getPendingLifestyleOwnerState,
   savePendingInitialLifestyle,
 } from '@/lib/onboarding/pending-initial-lifestyle-storage';
@@ -20,16 +19,12 @@ import {
   retreatInitialLifestyleStep,
   savePendingOnboardingInitialLifestyle,
   selectInitialLifestyleAnswer,
-  skipOnboardingInitialLifestyle,
   type InitialLifestyleAnswerValue,
   type InitialLifestyleFormAnswers,
   type InitialLifestyleStep,
 } from '@/lib/presentation/initial-lifestyle';
 
-type PendingLifestyleStore = Pick<
-  PendingInitialLifestyleStore,
-  'savePendingInitialLifestyle' | 'clearPendingInitialLifestyle'
->;
+type PendingLifestyleStore = Pick<PendingInitialLifestyleStore, 'savePendingInitialLifestyle'>;
 
 type UseOnboardingInitialLifestyleOptions = {
   onFinished: () => void;
@@ -44,7 +39,6 @@ export type UseOnboardingInitialLifestyleResult = {
   canAdvance: boolean;
   canSubmit: boolean;
   start: () => void;
-  skip: () => Promise<void>;
   goBack: () => void;
   goNext: () => void;
   selectAnswer: (field: InitialLifestyleAnswerField, value: InitialLifestyleAnswerValue) => void;
@@ -59,7 +53,6 @@ export function useOnboardingInitialLifestyle(
   const viewerUserId = authenticated ? session?.user.id ?? null : null;
   const pendingStore = options.pendingStore ?? {
     savePendingInitialLifestyle,
-    clearPendingInitialLifestyle,
   };
 
   const [step, setStep] = useState<InitialLifestyleStep>({ kind: 'intro' });
@@ -87,18 +80,6 @@ export function useOnboardingInitialLifestyle(
     setSaveError(null);
     setStep((current) => advanceInitialLifestyleStep(current, answers));
   }, [answers]);
-
-  const skip = useCallback(async () => {
-    if (saving) {
-      return;
-    }
-
-    setSaving(true);
-    setSaveError(null);
-    await skipOnboardingInitialLifestyle(pendingStore);
-    setSaving(false);
-    options.onFinished();
-  }, [options, pendingStore, saving]);
 
   const goBack = useCallback(() => {
     setSaveError(null);
@@ -165,7 +146,6 @@ export function useOnboardingInitialLifestyle(
     canAdvance: canAdvanceInitialLifestyleQuestion(answers, questionIndex),
     canSubmit: canSubmitInitialLifestyleForm(answers),
     start,
-    skip,
     goBack,
     goNext,
     selectAnswer,

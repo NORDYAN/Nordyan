@@ -28,7 +28,7 @@ export default function OnboardingProductValueScreen() {
   useI18n();
 
   const handleContinue = () => {
-    router.push(routes.onboardingLifestyleIntro);
+    router.push(routes.onboardingAgeConfirmation);
   };
 
   return (

@@ -37,7 +37,6 @@ export const INITIAL_LIFESTYLE_COPY: InitialLifestyleCopy = liveCopy({
   introBody: () => t('lifestyle.intro.body'),
   introTimeHint: () => t('lifestyle.intro.timeHint'),
   introStartCta: () => t('lifestyle.intro.start'),
-  introSkipCta: () => t('lifestyle.intro.skip'),
 });
 
 type LifestyleOptionDef = {

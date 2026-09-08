@@ -60,10 +60,12 @@ function clearFormFields(
   setWeightText: (value: string) => void,
   setWaistText: (value: string) => void,
   setNeckText: (value: string) => void,
+  setHipText: (value: string) => void,
 ) {
   setWeightText('');
   setWaistText('');
   setNeckText('');
+  setHipText('');
 }
 
 export function MeasurementForm({
@@ -76,6 +78,7 @@ export function MeasurementForm({
   const [weightText, setWeightText] = useState('');
   const [waistText, setWaistText] = useState('');
   const [neckText, setNeckText] = useState('');
+  const [hipText, setHipText] = useState('');
   const [measurementHelpVisible, setMeasurementHelpVisible] = useState(false);
   const { state: submitState, submit, clearFeedback } = useSubmitMeasurement();
 
@@ -105,7 +108,8 @@ export function MeasurementForm({
   const allFieldsFilled =
     weightText.trim().length > 0 &&
     waistText.trim().length > 0 &&
-    neckText.trim().length > 0;
+    neckText.trim().length > 0 &&
+    hipText.trim().length > 0;
 
   const validationResult = useMemo(() => {
     if (!allFieldsFilled) {
@@ -119,10 +123,11 @@ export function MeasurementForm({
         weightKg: parseMeasurementNumericInput(weightText) ?? Number.NaN,
         waistCm: parseMeasurementNumericInput(waistText) ?? Number.NaN,
         neckCm: parseMeasurementNumericInput(neckText) ?? Number.NaN,
+        hipCm: parseMeasurementNumericInput(hipText) ?? Number.NaN,
       },
       { todayLocalDate },
     );
-  }, [allFieldsFilled, neckText, todayLocalDate, userId, waistText, weightText]);
+  }, [allFieldsFilled, hipText, neckText, todayLocalDate, userId, waistText, weightText]);
 
   const canSave =
     allFieldsFilled &&
@@ -154,6 +159,11 @@ export function MeasurementForm({
     setNeckText(normalizeMeasurementDecimalInput(text));
   };
 
+  const handleHipChange = (text: string) => {
+    resetFeedbackIfNeeded();
+    setHipText(normalizeMeasurementDecimalInput(text));
+  };
+
   const handleSave = async () => {
     if (!canSave || isSubmitting || !validationResult?.valid) {
       return;
@@ -162,8 +172,9 @@ export function MeasurementForm({
     const weightKg = parseMeasurementNumericInput(weightText);
     const waistCm = parseMeasurementNumericInput(waistText);
     const neckCm = parseMeasurementNumericInput(neckText);
+    const hipCm = parseMeasurementNumericInput(hipText);
 
-    if (weightKg === null || waistCm === null || neckCm === null) {
+    if (weightKg === null || waistCm === null || neckCm === null || hipCm === null) {
       return;
     }
 
@@ -173,13 +184,14 @@ export function MeasurementForm({
       weightKg,
       waistCm,
       neckCm,
+      hipCm,
     });
 
     if (!outcome) {
       return;
     }
 
-    clearFormFields(setWeightText, setWaistText, setNeckText);
+    clearFormFields(setWeightText, setWaistText, setNeckText, setHipText);
 
     if (resolveMeasurementSaveNavigation(outcome).action === 'replace') {
       onNavigateToHistory?.();
@@ -255,6 +267,29 @@ export function MeasurementForm({
     />
   );
 
+  const hipInput = isNewMeasurement ? (
+    <ProfileMeasurementField
+      label={t('health.new.hip')}
+      unit="cm"
+      value={hipText}
+      placeholder={t('health.new.placeholder')}
+      editable={!isSubmitting}
+      uppercaseLabel={false}
+      stacked
+      onChangeText={handleHipChange}
+      errorMessage={allFieldsFilled ? fieldError(fieldErrors, 'hipCm') : undefined}
+    />
+  ) : (
+    <MeasurementInput
+      label={t('health.new.hip')}
+      unit="cm"
+      value={hipText}
+      editable={!isSubmitting}
+      onChangeText={handleHipChange}
+      errorMessage={allFieldsFilled ? fieldError(fieldErrors, 'hipCm') : undefined}
+    />
+  );
+
   const saveSection = (
     <View style={styles.saveSection}>
       <View style={styles.saveButtonContainer}>
@@ -316,6 +351,7 @@ export function MeasurementForm({
             {weightInput}
             {waistInput}
             {neckInput}
+            {hipInput}
           </Card>
         </View>
 
@@ -381,6 +417,7 @@ export function MeasurementForm({
       {weightInput}
       {waistInput}
       {neckInput}
+      {hipInput}
       {saveSection}
     </View>
   );

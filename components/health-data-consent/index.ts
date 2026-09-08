@@ -1,0 +1,1 @@
+export { HealthDataConsentView } from './HealthDataConsentView';

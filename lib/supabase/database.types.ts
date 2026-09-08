@@ -74,6 +74,7 @@ export type Database = {
           weight_kg: number;
           waist_cm: number;
           neck_cm: number;
+          hip_cm: number | null;
           engine_version: string;
           snapshot_reason: string;
           body_fat_pct: number | null;
@@ -94,6 +95,7 @@ export type Database = {
           weight_kg: number;
           waist_cm: number;
           neck_cm: number;
+          hip_cm?: number | null;
           engine_version: string;
           snapshot_reason: string;
           body_fat_pct?: number | null;
@@ -114,6 +116,7 @@ export type Database = {
           weight_kg?: number;
           waist_cm?: number;
           neck_cm?: number;
+          hip_cm?: number | null;
           engine_version?: string;
           snapshot_reason?: string;
           body_fat_pct?: number | null;
@@ -138,6 +141,7 @@ export type Database = {
           weight_kg: number;
           waist_cm: number;
           neck_cm: number;
+          hip_cm: number | null;
           created_at: string;
         };
         Insert: {
@@ -147,6 +151,7 @@ export type Database = {
           weight_kg: number;
           waist_cm: number;
           neck_cm: number;
+          hip_cm?: number | null;
           created_at?: string;
         };
         Update: {
@@ -156,6 +161,7 @@ export type Database = {
           weight_kg?: number;
           waist_cm?: number;
           neck_cm?: number;
+          hip_cm?: number | null;
           created_at?: string;
         };
         Relationships: [
@@ -224,6 +230,47 @@ export type Database = {
           },
         ];
       };
+      health_data_consents: {
+        Row: {
+          id: string;
+          user_id: string;
+          consent_type: string;
+          policy_version: string;
+          granted_at: string;
+          withdrawn_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          consent_type: string;
+          policy_version: string;
+          granted_at: string;
+          withdrawn_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          consent_type?: string;
+          policy_version?: string;
+          granted_at?: string;
+          withdrawn_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'health_data_consents_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       initial_lifestyle_checks: {
         Row: {
           id: string;
@@ -269,6 +316,136 @@ export type Database = {
             foreignKeyName: 'initial_lifestyle_checks_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_weekly_focus: {
+        Row: {
+          id: string;
+          user_id: string;
+          week_start_date: string;
+          area_1: string;
+          area_1_mode: string;
+          area_1_need: number;
+          area_2: string;
+          area_2_mode: string;
+          area_2_need: number;
+          recovery_constraint: boolean;
+          engine_version: string;
+          insufficient_evidence_fallback: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          week_start_date: string;
+          area_1: string;
+          area_1_mode: string;
+          area_1_need: number;
+          area_2: string;
+          area_2_mode: string;
+          area_2_need: number;
+          recovery_constraint: boolean;
+          engine_version: string;
+          insufficient_evidence_fallback?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          week_start_date?: string;
+          area_1?: string;
+          area_1_mode?: string;
+          area_1_need?: number;
+          area_2?: string;
+          area_2_mode?: string;
+          area_2_need?: number;
+          recovery_constraint?: boolean;
+          engine_version?: string;
+          insufficient_evidence_fallback?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_weekly_focus_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_daily_focus: {
+        Row: {
+          id: string;
+          user_id: string;
+          local_date: string;
+          week_start_date: string;
+          action_id: string;
+          focus_area: string;
+          weekly_mode: string;
+          intensity: string;
+          behavior_family: string;
+          completed_at: string | null;
+          swap_count: number;
+          swapped_from_action_id: string | null;
+          swapped_from_behavior_family: string | null;
+          swapped_from_focus_area: string | null;
+          swapped_from_intensity: string | null;
+          action_bank_version: string;
+          selector_version: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          local_date: string;
+          week_start_date: string;
+          action_id: string;
+          focus_area: string;
+          weekly_mode: string;
+          intensity: string;
+          behavior_family: string;
+          completed_at?: string | null;
+          swap_count?: number;
+          swapped_from_action_id?: string | null;
+          swapped_from_behavior_family?: string | null;
+          swapped_from_focus_area?: string | null;
+          swapped_from_intensity?: string | null;
+          action_bank_version: string;
+          selector_version: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          local_date?: string;
+          week_start_date?: string;
+          action_id?: string;
+          focus_area?: string;
+          weekly_mode?: string;
+          intensity?: string;
+          behavior_family?: string;
+          completed_at?: string | null;
+          swap_count?: number;
+          swapped_from_action_id?: string | null;
+          swapped_from_behavior_family?: string | null;
+          swapped_from_focus_area?: string | null;
+          swapped_from_intensity?: string | null;
+          action_bank_version?: string;
+          selector_version?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_daily_focus_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
           },

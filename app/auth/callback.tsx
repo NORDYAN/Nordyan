@@ -11,9 +11,21 @@ import { syncPendingProfileAfterAuth } from '@/lib/onboarding/sync-pending-profi
 import {
   AUTH_VERIFICATION_COPY,
   completeAuthEmailCallback,
+  decideAuthCallbackStart,
 } from '@/lib/presentation/auth-verification';
+import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { authService } from '@/lib/services/auth/auth.service';
+
+function hasNonEmptyParam(value: string | string[] | undefined): boolean {
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0].trim().length > 0;
+  }
+  return false;
+}
 
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{ code?: string | string[]; error?: string | string[] }>();
@@ -23,6 +35,13 @@ export default function AuthCallbackScreen() {
   const startedRef = useRef(false);
   const runningRef = useRef(false);
 
+  useEffect(() => {
+    logNordyanAuthTrace('callback.mount');
+    return () => {
+      logNordyanAuthTrace('callback.unmount');
+    };
+  }, []);
+
   const run = useCallback(async () => {
     if (runningRef.current) {
       return;
@@ -31,8 +50,15 @@ export default function AuthCallbackScreen() {
     runningRef.current = true;
     setErrorMessage(null);
     setCanRetry(false);
+    logNordyanAuthTrace('callback.completion.start');
 
     try {
+      const existing = await authService.getSession();
+      const existingSessionRecovery = existing.ok && existing.value !== null;
+      logNordyanAuthTrace('callback.existing-session', {
+        recovery: existingSessionRecovery,
+      });
+
       const result = await completeAuthEmailCallback({
         params,
         getSession: () => authService.getSession(),
@@ -43,12 +69,21 @@ export default function AuthCallbackScreen() {
       });
 
       if (!result.ok) {
+        logNordyanAuthTrace('callback.completion.result', {
+          result: 'failure',
+          errorCode: result.error.code,
+        });
         setErrorMessage(result.error.message || authMessages.callbackGeneric);
         const session = await authService.getSession();
         setCanRetry(session.ok && session.value !== null);
         return;
       }
 
+      logNordyanAuthTrace('callback.completion.result', {
+        result: 'success',
+        existingSessionRecovery,
+      });
+      logNordyanAuthTrace('callback.replace.root');
       router.replace(routes.root);
     } finally {
       runningRef.current = false;
@@ -57,13 +92,22 @@ export default function AuthCallbackScreen() {
   }, [params]);
 
   useEffect(() => {
-    if (startedRef.current) {
+    const hasCode = hasNonEmptyParam(params.code);
+    const hasError = hasNonEmptyParam(params.error);
+    logNordyanAuthTrace('callback.params', { hasCode, hasError });
+
+    const decision = decideAuthCallbackStart({
+      alreadyStarted: startedRef.current,
+      params,
+    });
+    logNordyanAuthTrace('callback.start-decision', { action: decision.action });
+    if (decision.action !== 'start') {
       return;
     }
 
     startedRef.current = true;
     void run();
-  }, [run]);
+  }, [params, run]);
 
   return (
     <AuthLayout>

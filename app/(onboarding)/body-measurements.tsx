@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
+import { isSupportedHipCm } from '@/lib/domain/measurement';
 import { routes } from '@/constants/routes';
 import { onboardingResultHref } from '@/lib/onboarding/onboarding-result-navigation';
 import { emitOnboardingForensics } from '@/lib/onboarding/onboarding-forensics-emit';
@@ -42,7 +43,7 @@ import {
   typography,
 } from '@/theme';
 
-/** Onboarding body measurement step — waist and neck only. */
+/** Onboarding body measurement step — waist, neck, and hip. */
 const PROFILE_INTRO_TOP_OFFSET = 22;
 
 function setMeasurementField(
@@ -60,6 +61,7 @@ export default function OnboardingBodyMeasurementsScreen() {
   const userId = status === 'authenticated' ? session?.user.id ?? null : null;
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
+  const [hip, setHip] = useState('');
   const [measurementHelpVisible, setMeasurementHelpVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,20 +70,27 @@ export default function OnboardingBodyMeasurementsScreen() {
       if (!pending) {
         setWaist('');
         setNeck('');
+        setHip('');
         return;
       }
 
       setMeasurementField(pending.waistCm, setWaist);
       setMeasurementField(pending.neckCm, setNeck);
+      setMeasurementField(pending.hipCm, setHip);
     });
   }, [userId]);
 
   const waistCm = parseMeasurementNumericInput(waist);
   const neckCm = parseMeasurementNumericInput(neck);
-  const canContinue = isPositiveMeasurementInput(waist) && isPositiveMeasurementInput(neck);
+  const hipCm = parseMeasurementNumericInput(hip);
+  const canContinue =
+    isPositiveMeasurementInput(waist) &&
+    isPositiveMeasurementInput(neck) &&
+    hipCm !== null &&
+    isSupportedHipCm(hipCm);
 
   const handleContinue = async () => {
-    if (!canContinue || isSubmitting || waistCm === null || neckCm === null) {
+    if (!canContinue || isSubmitting || waistCm === null || neckCm === null || hipCm === null) {
       return;
     }
 
@@ -90,6 +99,7 @@ export default function OnboardingBodyMeasurementsScreen() {
     const updated = await updatePendingProfileMeasurements({
       waistCm,
       neckCm,
+      hipCm,
     });
     const profileOwnerState = await getPendingProfileOwnerState();
 
@@ -167,6 +177,15 @@ export default function OnboardingBodyMeasurementsScreen() {
                   uppercaseLabel={false}
                   stacked
                   onChangeText={setNeck}
+                />
+                <ProfileMeasurementField
+                  label={t('onboarding.hip')}
+                  value={hip}
+                  unit="cm"
+                  placeholder={t('health.new.placeholder')}
+                  uppercaseLabel={false}
+                  stacked
+                  onChangeText={setHip}
                 />
               </Card>
             </View>

@@ -41,6 +41,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
             automaticallyAdjustKeyboardInsets
+            removeClippedSubviews={false}
           >
             <View style={styles.brand} accessibilityLabel="NORDYAN">
               <NordyanMountainLogo

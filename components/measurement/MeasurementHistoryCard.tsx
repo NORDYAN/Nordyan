@@ -59,6 +59,10 @@ export function MeasurementHistoryCard({ measurement }: MeasurementHistoryCardPr
           label={t('onboarding.neck')}
           value={formatMeasurementHistoryCircumference(measurement.neckCm)}
         />
+        <MeasurementRow
+          label={t('onboarding.hip')}
+          value={formatMeasurementHistoryCircumference(measurement.hipCm)}
+        />
       </View>
     </Card>
   );

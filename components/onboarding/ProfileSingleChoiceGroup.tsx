@@ -16,6 +16,7 @@ type ProfileSingleChoiceGroupProps<T extends string> = {
   onChange: (value: T) => void;
   layout?: 'row' | 'stack';
   optionIcons?: Partial<Record<T, keyof typeof Ionicons.glyphMap>>;
+  helper?: string;
 };
 
 export function ProfileSingleChoiceGroup<T extends string>({
@@ -25,6 +26,7 @@ export function ProfileSingleChoiceGroup<T extends string>({
   onChange,
   layout = 'stack',
   optionIcons,
+  helper,
 }: ProfileSingleChoiceGroupProps<T>) {
   return (
     <View style={styles.root}>
@@ -72,6 +74,7 @@ export function ProfileSingleChoiceGroup<T extends string>({
           );
         })}
       </View>
+      {helper ? <Text style={styles.helper}>{helper}</Text> : null}
     </View>
   );
 }
@@ -145,5 +148,12 @@ const styles = StyleSheet.create({
   optionLabelSelected: {
     color: colors.onboardingText,
     fontWeight: typography.fontWeight.medium,
+  },
+  helper: {
+    color: colors.onboardingProfileSubtitle,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.regular,
+    lineHeight: typography.fontSize.sm * typography.lineHeight.relaxed,
+    width: '100%',
   },
 });

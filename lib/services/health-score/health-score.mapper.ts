@@ -5,7 +5,12 @@ import type {
 } from '@/lib/domain/health-score';
 import { INPUT_LIMITS } from '@/lib/domain/health-score/health-score.constants';
 import { calculateBmi } from '@/lib/domain/health-score/health-score.utils';
+import { resolveOptionalHipCm } from '@/lib/domain/measurement/hip-cm';
 import type { ProfileActivityLevel, ProfileGender, UserProfile } from '@/lib/domain/profile';
+
+export type HealthScoreProfileOptions = {
+  hipCm?: number | null;
+};
 
 const PROFILE_TO_ENGINE_ACTIVITY: Record<ProfileActivityLevel, HealthScoreActivityLevel> = {
   sedentary: 'sedentary',
@@ -77,6 +82,7 @@ export function estimatePreliminaryAnthropometrics(
 export function mapProfileToHealthScoreInput(
   profile: UserProfile,
   asOfDate: string = getLocalCalendarDate(),
+  options?: HealthScoreProfileOptions,
 ): HealthScoreInput | null {
   if (!profile.dateOfBirth || !isValidIsoDate(profile.dateOfBirth)) {
     return null;
@@ -108,6 +114,8 @@ export function mapProfileToHealthScoreInput(
     neckCm = isPositiveNumber(neckCm) ? neckCm : estimated.neckCm;
   }
 
+  const hipCm = resolveOptionalHipCm(options?.hipCm);
+
   return {
     dateOfBirth: profile.dateOfBirth,
     gender: profile.gender,
@@ -117,5 +125,6 @@ export function mapProfileToHealthScoreInput(
     neckCm,
     activityLevel,
     asOfDate,
+    ...(hipCm !== undefined ? { hipCm } : {}),
   };
 }

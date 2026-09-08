@@ -22,7 +22,10 @@ export type SyncPendingProfileDeps = {
   clearPendingProfileMeasurements: (userId: string) => Promise<void>;
   completeOnboarding: (measurements: ProfileMeasurements) => Promise<Result<UserProfile>>;
   getCurrentProfile: () => Promise<Result<UserProfile | null>>;
-  createOnboardingSnapshot: (profile: UserProfile) => Promise<Result<unknown>>;
+  createOnboardingSnapshot: (
+    profile: UserProfile,
+    options?: { hipCm?: number | null },
+  ) => Promise<Result<unknown>>;
   setOnboardingCompleteForUser: (userId: string, complete: boolean) => Promise<void>;
 };
 
@@ -30,7 +33,7 @@ async function resolveProfileForSync(
   userId: string,
   deps: SyncPendingProfileDeps,
 ): Promise<
-  | { ok: true; profile: UserProfile; persistedPending: boolean }
+  | { ok: true; profile: UserProfile; persistedPending: boolean; hipCm: number | null }
   | { ok: false; reason: SyncPendingProfileReason; error?: AppError }
 > {
   const pending = await deps.getPendingProfileMeasurements(userId);
@@ -45,8 +48,13 @@ async function resolveProfileForSync(
       return { ok: false, reason: 'incomplete_profile' };
     }
 
+    const hipCm =
+      typeof pending.hipCm === 'number' && Number.isFinite(pending.hipCm) && pending.hipCm > 0
+        ? pending.hipCm
+        : null;
+
     await deps.clearPendingProfileMeasurements(userId);
-    return { ok: true, profile: result.value, persistedPending: true };
+    return { ok: true, profile: result.value, persistedPending: true, hipCm };
   }
 
   const existingResult = await deps.getCurrentProfile();
@@ -58,7 +66,7 @@ async function resolveProfileForSync(
     return { ok: false, reason: 'missing_pending' };
   }
 
-  return { ok: true, profile: existingResult.value, persistedPending: false };
+  return { ok: true, profile: existingResult.value, persistedPending: false, hipCm: null };
 }
 
 /**
@@ -85,7 +93,9 @@ export async function runSyncPendingProfile(
 
   let snapshotCreated = false;
   if (profileResult.persistedPending) {
-    const snapshotResult = await deps.createOnboardingSnapshot(profileResult.profile);
+    const snapshotResult = await deps.createOnboardingSnapshot(profileResult.profile, {
+      hipCm: profileResult.hipCm,
+    });
     if (snapshotResult.ok) {
       snapshotCreated = true;
     } else if (__DEV__) {

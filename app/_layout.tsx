@@ -22,6 +22,12 @@ export default function RootLayout() {
         <Stack.Screen name="auth/reset-password" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
+          name="authenticated-health-data-consent"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="health-score"
           options={{
             headerShown: false,

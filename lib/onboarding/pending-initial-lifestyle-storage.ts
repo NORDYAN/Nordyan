@@ -72,6 +72,10 @@ export function bindPendingInitialLifestyleToUser(userId: string) {
   return pendingInitialLifestyleStore.bindPendingInitialLifestyleToUser(userId);
 }
 
+export function releasePendingInitialLifestyleBinding(userId: string): Promise<void> {
+  return pendingInitialLifestyleStore.releaseBinding(userId);
+}
+
 export async function clearPendingInitialLifestyle(): Promise<void> {
   await pendingInitialLifestyleStore.clearPendingInitialLifestyle();
 }

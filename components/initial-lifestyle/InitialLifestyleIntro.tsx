@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { HomeIndicator } from '@/components/onboarding';
 import { Button } from '@/components/ui/Button';
@@ -14,10 +14,9 @@ import {
 type InitialLifestyleIntroProps = {
   saving: boolean;
   onStart: () => void;
-  onSkip: () => void;
 };
 
-export function InitialLifestyleIntro({ saving, onStart, onSkip }: InitialLifestyleIntroProps) {
+export function InitialLifestyleIntro({ saving, onStart }: InitialLifestyleIntroProps) {
   return (
     <View style={styles.root}>
       <View style={styles.hero}>
@@ -48,17 +47,6 @@ export function InitialLifestyleIntro({ saving, onStart, onSkip }: InitialLifest
             style={styles.button}
             onPress={onStart}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={INITIAL_LIFESTYLE_COPY.introSkipCta}
-            disabled={saving}
-            onPress={onSkip}
-            style={({ pressed }) => [styles.skip, pressed && styles.skipPressed]}
-          >
-            <Text style={styles.skipLabel} maxFontSizeMultiplier={1.1}>
-              {INITIAL_LIFESTYLE_COPY.introSkipCta}
-            </Text>
-          </Pressable>
         </View>
         <HomeIndicator />
       </View>
@@ -123,20 +111,5 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-  },
-  skip: {
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  skipPressed: {
-    opacity: 0.75,
-  },
-  skipLabel: {
-    color: initialLifestyleColors.muted,
-    fontSize: initialLifestyleTypography.secondaryLinkSize,
-    fontWeight: typography.fontWeight.semibold,
-    includeFontPadding: false,
   },
 });

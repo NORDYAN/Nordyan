@@ -8,6 +8,8 @@ import {
   validateNewPassword,
   validateRecoveryEmail,
 } from './auth-errors';
+import { logAuthHydrationDiagnostic } from './auth-session-diagnostics';
+import { resolveHydratedAuthSession, type HydratedAuthSession } from './resolve-hydrated-auth-session';
 import type { AuthService } from './auth.service.types';
 
 class DefaultAuthService implements AuthService {
@@ -19,6 +21,20 @@ class DefaultAuthService implements AuthService {
 
   getSession(): Promise<Result<AuthSession | null>> {
     return this.repository.getSession();
+  }
+
+  async hydrateLocalSession(): Promise<HydratedAuthSession> {
+    const localSession = await this.repository.getSession();
+    const serverUser =
+      localSession.ok && localSession.value ? await this.repository.getServerUser() : null;
+    const hydrated = resolveHydratedAuthSession({ localSession, serverUser });
+    logAuthHydrationDiagnostic({
+      localSessionPresent: Boolean(localSession.ok && localSession.value),
+      serverUserValidated: hydrated.status === 'authenticated' && hydrated.errorClass === 'none',
+      staleSessionCleared: hydrated.shouldClearLocalSession,
+      errorClass: hydrated.errorClass,
+    });
+    return hydrated;
   }
 
   async signInWithEmail(email: string, password: string): Promise<Result<AuthSession>> {

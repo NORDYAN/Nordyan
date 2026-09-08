@@ -7,6 +7,7 @@ import {
   assertSeriesAscending,
   buildDevelopmentHomeSummary,
   buildDevelopmentMetricSeries,
+  buildObservedCircumferenceDelta,
   buildDevelopmentTrendsSummary,
   resolveDevelopmentPeriodSince,
 } from './development.derivation';
@@ -146,6 +147,110 @@ describe('buildDevelopmentHomeSummary', () => {
     assert.equal(summary.waist.status, 'ready');
     assert.equal(summary.activity.status, 'ready');
     assert.notEqual(summary.trend, 'insufficient_history');
+  });
+
+  it('does not use imputed onboarding waist as a delta baseline', () => {
+    const onboarding = snapshot({
+      id: 'onboarding',
+      createdAt: '2026-08-01T10:00:00.000Z',
+      snapshotReason: 'onboarding',
+      overallScore: 70,
+      weightKg: 80,
+      waistCm: 85,
+      neckCm: 36,
+      activityScore: 55,
+    });
+    const firstMeasurement = snapshot({
+      id: 'measured',
+      createdAt: '2026-08-10T10:00:00.000Z',
+      snapshotReason: 'measurement',
+      overallScore: 72,
+      weightKg: 90,
+      waistCm: 90,
+      neckCm: 38,
+      activityScore: 56,
+    });
+
+    const summary = buildDevelopmentHomeSummary({
+      latest: firstMeasurement,
+      previous: onboarding,
+    });
+    assert.equal(summary.status, 'ready');
+    if (summary.status !== 'ready') {
+      return;
+    }
+
+    assert.deepEqual(summary.waist, {
+      status: 'insufficient_history',
+      current: 90,
+    });
+    assert.deepEqual(summary.weight, {
+      status: 'ready',
+      current: 90,
+      previous: 80,
+      change: 10,
+    });
+    assert.deepEqual(summary.scoreChange, {
+      status: 'ready',
+      current: 72,
+      previous: 70,
+      change: 2,
+    });
+    assert.deepEqual(summary.activity, {
+      status: 'ready',
+      current: 56,
+      previous: 55,
+      change: 1,
+    });
+    assert.deepEqual(
+      buildObservedCircumferenceDelta(
+        firstMeasurement,
+        onboarding,
+        (item) => item.neckCm,
+      ),
+      { status: 'insufficient_history', current: 38 },
+    );
+  });
+
+  it('shows waist and neck deltas only between two measurement snapshots', () => {
+    const first = snapshot({
+      id: 'm1',
+      createdAt: '2026-08-10T10:00:00.000Z',
+      snapshotReason: 'measurement',
+      weightKg: 90,
+      waistCm: 90,
+      neckCm: 38,
+    });
+    const second = snapshot({
+      id: 'm2',
+      createdAt: '2026-08-20T10:00:00.000Z',
+      snapshotReason: 'measurement',
+      weightKg: 88,
+      waistCm: 86,
+      neckCm: 37,
+    });
+
+    const summary = buildDevelopmentHomeSummary({ latest: second, previous: first });
+    assert.equal(summary.status, 'ready');
+    if (summary.status !== 'ready') {
+      return;
+    }
+
+    assert.deepEqual(summary.waist, {
+      status: 'ready',
+      current: 86,
+      previous: 90,
+      change: -4,
+    });
+    assert.deepEqual(
+      buildObservedCircumferenceDelta(second, first, (item) => item.neckCm),
+      {
+        status: 'ready',
+        current: 37,
+        previous: 38,
+        change: -1,
+      },
+    );
   });
 });
 
@@ -294,5 +399,51 @@ describe('buildDevelopmentTrendsSummary', () => {
     assert.equal(summary.periodChange, 9);
     assert.equal(summary.series.healthScore[0]!.capturedAt, '2026-08-02T10:00:00.000Z');
     assert.equal(summary.series.healthScore[1]!.capturedAt, '2026-08-07T10:00:00.000Z');
+  });
+
+  it('omits imputed onboarding waist and neck from circumference trend series', () => {
+    const onboarding = snapshot({
+      id: 'onboarding',
+      createdAt: '2026-08-01T10:00:00.000Z',
+      snapshotReason: 'onboarding',
+      overallScore: 68,
+      weightKg: 82,
+      waistCm: 85,
+      neckCm: 36,
+      activityScore: 48,
+    });
+    const measured = snapshot({
+      id: 'measured',
+      createdAt: '2026-08-10T10:00:00.000Z',
+      snapshotReason: 'measurement',
+      overallScore: 71,
+      weightKg: 80,
+      waistCm: 90,
+      neckCm: 38,
+      activityScore: 52,
+    });
+
+    const series = buildDevelopmentMetricSeries([onboarding, measured]);
+
+    assert.deepEqual(
+      series.waist.map((point) => point.value),
+      [90],
+    );
+    assert.deepEqual(
+      series.neck.map((point) => point.value),
+      [38],
+    );
+    assert.deepEqual(
+      series.weight.map((point) => point.value),
+      [82, 80],
+    );
+    assert.deepEqual(
+      series.healthScore.map((point) => point.value),
+      [68, 71],
+    );
+    assert.deepEqual(
+      series.activity.map((point) => point.value),
+      [48, 52],
+    );
   });
 });

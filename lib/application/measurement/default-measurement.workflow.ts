@@ -118,6 +118,7 @@ export class DefaultMeasurementWorkflow implements MeasurementWorkflow {
         weightKg: measurement.weightKg,
         waistCm: measurement.waistCm,
         neckCm: measurement.neckCm,
+        hipCm: measurement.hipCm,
       },
       pipelineResult.value,
       'measurement',

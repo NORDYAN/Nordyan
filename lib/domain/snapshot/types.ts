@@ -18,6 +18,7 @@ export type HealthSnapshot = {
   weightKg: number;
   waistCm: number;
   neckCm: number;
+  hipCm?: number | null;
   engineVersion: string;
   snapshotReason: SnapshotReason;
   bodyFatPct: number | null;
@@ -37,6 +38,7 @@ export type CreateSnapshotInput = {
   weightKg: number;
   waistCm: number;
   neckCm: number;
+  hipCm?: number | null;
   engineVersion: string;
   snapshotReason: SnapshotReason;
   bodyFatPct?: number | null;

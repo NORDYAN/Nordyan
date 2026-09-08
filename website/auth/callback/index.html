@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NORDYAN – Bekräfta din e-postadress</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <style>
+      :root {
+        --gold: #d5a655;
+        --ink: #0e1218;
+        --white: #ffffff;
+        --muted: rgba(255, 255, 255, 0.78);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--ink);
+        color: var(--white);
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .bridge {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px 48px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 40px;
+        letter-spacing: 0.18em;
+        font-weight: 700;
+        font-size: 15px;
+      }
+
+      .brand img {
+        width: 40px;
+        height: auto;
+        display: block;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 420px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 1.5rem;
+        line-height: 1.25;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .help {
+        margin-top: 8px;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.58);
+      }
+
+      #open-nordyan {
+        appearance: none;
+        border: 0;
+        width: 100%;
+        min-height: 48px;
+        margin-top: 8px;
+        padding: 0 18px;
+        border-radius: 4px;
+        background: var(--gold);
+        color: #121416;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      #open-nordyan[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="bridge">
+      <div class="brand">
+        <img src="/assets/logo-mark.png" alt="" width="44" height="21" />
+        <span>NORDYAN</span>
+      </div>
+      <div class="card">
+        <h1 id="bridge-title">Bekräftar…</h1>
+        <p id="bridge-body"></p>
+        <button id="open-nordyan" type="button" hidden>Öppna NORDYAN</button>
+        <p id="bridge-help" class="help"></p>
+      </div>
+    </main>
+    <script type="module">
+      import { bindEmailVerificationBridge } from "./bridge.js";
+
+      bindEmailVerificationBridge(document, window.location.search, (url) => {
+        window.location.assign(url);
+      });
+    </script>
+  </body>
+</html>

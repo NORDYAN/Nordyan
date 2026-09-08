@@ -177,17 +177,17 @@ describe('Home coach language flow contracts', () => {
     }
   });
 
-  it('Home screen shows template before language hook result (source contract)', () => {
+  it('Home screen uses static ask copy and does not depend on language hook (source contract)', () => {
     const homePath = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
       '../../../app/(tabs)/home.tsx',
     );
     const source = readFileSync(homePath, 'utf8');
 
-    assert.match(source, /templateCoachMessage/);
-    assert.match(source, /useHomeCoachLanguage/);
-    assert.match(source, /templateMessage:\s*templateCoachMessage/);
-    // Language URL must not gate Home readiness.
+    assert.doesNotMatch(source, /templateCoachMessage/);
+    assert.doesNotMatch(source, /useHomeCoachLanguage/);
+    assert.match(source, /HomeCoachCard/);
+    assert.match(source, /routes\.coach/);
     assert.doesNotMatch(source, /EXPO_PUBLIC_COACH_LANGUAGE_API_URL/);
     assert.doesNotMatch(source, /OPENAI_API_KEY/);
   });

@@ -1,5 +1,6 @@
 import type { HealthScoreInput } from '@/lib/domain/health-score';
 import type { Measurement } from '@/lib/domain/measurement';
+import { resolveOptionalHipCm } from '@/lib/domain/measurement/hip-cm';
 import type { UserProfile } from '@/lib/domain/profile';
 
 import {
@@ -9,7 +10,7 @@ import {
 
 type MeasurementBodyFields = Pick<
   Measurement,
-  'weightKg' | 'waistCm' | 'neckCm' | 'measuredAt'
+  'weightKg' | 'waistCm' | 'neckCm' | 'hipCm' | 'measuredAt'
 >;
 
 /**
@@ -25,11 +26,14 @@ export function mapProfileAndMeasurementToHealthScoreInput(
     return null;
   }
 
+  const hipCm = resolveOptionalHipCm(measurement.hipCm);
+
   return {
     ...profileInput,
     weightKg: measurement.weightKg,
     waistCm: measurement.waistCm,
     neckCm: measurement.neckCm,
     asOfDate: measurement.measuredAt,
+    ...(hipCm !== undefined ? { hipCm } : {}),
   };
 }

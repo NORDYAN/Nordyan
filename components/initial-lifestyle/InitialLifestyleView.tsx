@@ -36,7 +36,6 @@ export function InitialLifestyleView({ flow }: InitialLifestyleViewProps) {
           <InitialLifestyleIntro
             saving={flow.saving}
             onStart={flow.start}
-            onSkip={() => void flow.skip()}
           />
         ) : null}
 

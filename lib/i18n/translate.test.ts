@@ -10,12 +10,16 @@ describe('translation lookup', () => {
     setActiveLocale('sv');
     assert.equal(t('tabs.home'), 'Hem');
     assert.equal(t('auth.signIn.title'), 'Logga in');
+    assert.equal(t('auth.signUp.backToStart'), '← Tillbaka till start');
+    assert.equal(t('auth.signIn.alternatePrompt'), 'Har du inget konto?');
+    assert.equal(t('auth.signIn.alternateLabel'), 'Skapa konto');
   });
 
   it('switches UI copy without restart', () => {
     setActiveLocale('nb');
     assert.equal(t('tabs.home'), 'Hjem');
     assert.equal(t('auth.signIn.title'), 'Logg inn');
+    assert.equal(t('auth.signUp.backToStart'), '← Tilbake til start');
     setActiveLocale('sv');
     assert.equal(t('tabs.home'), 'Hem');
   });
@@ -25,6 +29,8 @@ describe('translation lookup', () => {
     assert.equal(t('onboarding.bodyFatUnavailable', undefined, 'nb'), 'Ingen beregning ennå');
     assert.equal(t('home.bodyFatUnavailable', undefined, 'sv'), 'Ingen uppskattning ännu');
     assert.equal(t('home.bodyFatUnavailable', undefined, 'nb'), 'Ingen beregning ennå');
+    assert.equal(t('home.greeting.default', undefined, 'sv'), 'Din hälsa idag');
+    assert.equal(t('home.greeting.default', undefined, 'nb'), 'Din helse i dag');
   });
 
   it('falls back to Swedish when a Bokmål string is missing', () => {

@@ -34,6 +34,23 @@ describe('resolveUnauthenticatedAppGate', () => {
     );
   });
 
+  it('does not restore check-email after the wait record is cleared', () => {
+    assert.notDeepEqual(
+      resolveUnauthenticatedAppGate({
+        isReady: true,
+        pendingVerificationEmail: null,
+      }),
+      { destination: 'check-email' },
+    );
+    assert.deepEqual(
+      resolveUnauthenticatedAppGate({
+        isReady: true,
+        pendingVerificationEmail: null,
+      }),
+      { destination: 'onboarding' },
+    );
+  });
+
   it('ignores a verification-wait record without a usable email', () => {
     assert.deepEqual(
       resolveUnauthenticatedAppGate({

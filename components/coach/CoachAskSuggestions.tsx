@@ -38,6 +38,10 @@ export function CoachAskSuggestions({
     onSubmit(trimmed);
   };
 
+  if (slots.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.section}>
       <Text style={styles.heading} maxFontSizeMultiplier={1.1}>

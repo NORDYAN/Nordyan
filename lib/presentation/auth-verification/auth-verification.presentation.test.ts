@@ -1,18 +1,25 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { afterEach, describe, it } from 'node:test';
 
 import {
   AUTH_RESEND_COOLDOWN_MS,
   AUTH_VERIFICATION_COPY,
   buildCheckEmailBody,
   canResendVerification,
+  decideAuthCallbackStart,
+  hasActionableAuthCallbackParams,
   maskEmailAddress,
   parseAuthCallbackParams,
   parseAuthCallbackUrl,
 } from './auth-verification.presentation';
 import { completeAuthEmailCallback } from './complete-auth-email-callback';
-import { AUTH_EMAIL_REDIRECT_TO } from '../../services/auth/auth-redirect';
+import { EMAIL_VERIFICATION_NATIVE_CALLBACK } from '../../services/auth/auth-redirect';
 import { authMessages } from '../../services/auth/auth-errors';
+import { setActiveLocale } from '../../i18n';
+
+afterEach(() => {
+  setActiveLocale('sv');
+});
 
 describe('check-email presentation', () => {
   it('masks the local part and keeps the domain', () => {
@@ -34,7 +41,16 @@ describe('check-email presentation', () => {
     assert.equal(AUTH_VERIFICATION_COPY.resendSubmitting, 'Skickar…');
     assert.equal(AUTH_VERIFICATION_COPY.resendSuccess, 'Ett nytt mail är på väg.');
     assert.equal(AUTH_VERIFICATION_COPY.returnToSignIn, 'Tillbaka till logga in');
+    assert.equal(AUTH_VERIFICATION_COPY.useAnotherEmail, 'Använd en annan e-postadress');
     assert.equal(AUTH_VERIFICATION_COPY.callbackLoading, 'Bekräftar kontot…');
+  });
+
+  it('keeps the Norwegian use-another-email check-email action', () => {
+    setActiveLocale('nb');
+    assert.equal(AUTH_VERIFICATION_COPY.useAnotherEmail, 'Bruk en annen e-postadresse');
+    assert.equal(AUTH_VERIFICATION_COPY.resend, 'Send e-posten på nytt');
+    assert.equal(AUTH_VERIFICATION_COPY.returnToSignIn, 'Tilbake til innlogging');
+    setActiveLocale('sv');
   });
 
   it('enforces a 60-second resend cooldown', () => {
@@ -47,7 +63,7 @@ describe('check-email presentation', () => {
 
 describe('callback URL parsing', () => {
   it('reads a PKCE code from the nordyan callback URL', () => {
-    assert.deepEqual(parseAuthCallbackUrl(`${AUTH_EMAIL_REDIRECT_TO}?code=abc123`), {
+    assert.deepEqual(parseAuthCallbackUrl(`${EMAIL_VERIFICATION_NATIVE_CALLBACK}?code=abc123`), {
       kind: 'code',
       code: 'abc123',
     });
@@ -57,6 +73,101 @@ describe('callback URL parsing', () => {
     assert.deepEqual(parseAuthCallbackParams({}), { kind: 'invalid' });
     assert.deepEqual(parseAuthCallbackParams({ error: 'access_denied' }), { kind: 'invalid' });
     assert.deepEqual(parseAuthCallbackUrl('not a url'), { kind: 'invalid' });
+  });
+});
+
+describe('auth callback param readiness (deep-link timing)', () => {
+  it('treats initial empty params as waiting, not terminal failure', () => {
+    assert.equal(hasActionableAuthCallbackParams({}), false);
+    assert.deepEqual(decideAuthCallbackStart({ alreadyStarted: false, params: {} }), {
+      action: 'wait',
+    });
+    assert.deepEqual(
+      decideAuthCallbackStart({ alreadyStarted: false, params: { code: '   ' } }),
+      { action: 'wait' },
+    );
+  });
+
+  it('starts exactly once when empty params become a valid code on the same mount', async () => {
+    const exchanges: string[] = [];
+    let started = false;
+    let paintedExpired = false;
+
+    const first = decideAuthCallbackStart({ alreadyStarted: started, params: {} });
+    assert.equal(first.action, 'wait');
+    assert.equal(started, false);
+
+    const second = decideAuthCallbackStart({
+      alreadyStarted: started,
+      params: { code: 'pkce-code' },
+    });
+    assert.equal(second.action, 'start');
+    started = true;
+
+    const session = {
+      user: { id: 'user-1', email: 'user@nordyan.se' },
+      accessToken: 'token',
+      expiresAt: null,
+    };
+    const result = await completeAuthEmailCallback({
+      params: { code: 'pkce-code' },
+      getSession: async () => ({ ok: true, value: null }),
+      exchangeCode: async (code) => {
+        exchanges.push(code);
+        return { ok: true, value: session };
+      },
+      syncPendingProfile: async () => ({
+        ok: true,
+        profile: {
+          id: 'profile-1',
+          userId: 'user-1',
+          firstName: null,
+          dateOfBirth: '1980-01-01',
+          gender: 'male',
+          heightCm: 180,
+          weightKg: 80,
+          waistCm: null,
+          neckCm: null,
+          activityLevel: 'moderately_active',
+          goal: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        persistedPending: true,
+        snapshotCreated: true,
+      }),
+      persistPendingLifestyle: async () => ({ ok: true, value: { persisted: true } }),
+      clearCompletedOnboardingLocalData: async () => {},
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(exchanges, ['pkce-code']);
+    if (!result.ok) {
+      paintedExpired = result.error.message === authMessages.callbackExpired;
+    }
+    assert.equal(paintedExpired, false);
+
+    const third = decideAuthCallbackStart({
+      alreadyStarted: started,
+      params: { code: 'pkce-code' },
+    });
+    assert.equal(third.action, 'wait');
+    assert.deepEqual(exchanges, ['pkce-code']);
+  });
+
+  it('keeps the iOS code-on-first-mount path as an immediate start', () => {
+    assert.deepEqual(
+      decideAuthCallbackStart({ alreadyStarted: false, params: { code: 'ios-code' } }),
+      { action: 'start' },
+    );
+  });
+
+  it('starts for an explicit callback error so existing error handling still runs', () => {
+    assert.equal(hasActionableAuthCallbackParams({ error: 'access_denied' }), true);
+    assert.deepEqual(
+      decideAuthCallbackStart({ alreadyStarted: false, params: { error: 'access_denied' } }),
+      { action: 'start' },
+    );
   });
 });
 

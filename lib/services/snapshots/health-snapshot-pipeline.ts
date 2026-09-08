@@ -13,6 +13,7 @@ import type {
   HealthScoreResult,
 } from '@/lib/domain/health-score';
 import type { ProfileGoal } from '@/lib/domain/profile';
+import { resolveOptionalHipCm } from '@/lib/domain/measurement/hip-cm';
 import type { CreateSnapshotInput, SnapshotReason } from '@/lib/domain/snapshot';
 
 export type HealthSnapshotPipelineResult = {
@@ -27,6 +28,7 @@ export type HealthSnapshotBodyMeasurements = {
   weightKg: number;
   waistCm: number;
   neckCm: number;
+  hipCm?: number | null;
 };
 
 export const HEALTH_SNAPSHOT_ENGINE_VERSION = `${HEALTH_SCORE_VERSION}|${FOCUS_ENGINE_VERSION}|${COACH_ENGINE_VERSION}`;
@@ -129,6 +131,7 @@ export function buildCreateSnapshotInputFromPipeline(
   }
 
   const { weightKg, waistCm, neckCm } = bodyMeasurements;
+  const hipCm = resolveOptionalHipCm(bodyMeasurements.hipCm);
   if (
     !Number.isFinite(weightKg) ||
     !Number.isFinite(waistCm) ||
@@ -162,6 +165,7 @@ export function buildCreateSnapshotInputFromPipeline(
       weightKg,
       waistCm,
       neckCm,
+      hipCm: hipCm ?? null,
       engineVersion: HEALTH_SNAPSHOT_ENGINE_VERSION,
       snapshotReason,
       bodyFatPct: healthScoreResult.metrics.bodyFatPct,

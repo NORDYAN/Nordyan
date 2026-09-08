@@ -30,7 +30,13 @@ export function formatMeasurementHistoryWeight(weightKg: number): string {
   return t('common.kg', { value: formatDecimal(weightKg) });
 }
 
-export function formatMeasurementHistoryCircumference(valueCm: number): string {
+export function formatMeasurementHistoryCircumference(
+  valueCm: number | null | undefined,
+): string {
+  if (valueCm == null || !Number.isFinite(valueCm) || valueCm <= 0) {
+    return '—';
+  }
+
   return t('common.cm', { value: String(Math.round(valueCm)) });
 }
 

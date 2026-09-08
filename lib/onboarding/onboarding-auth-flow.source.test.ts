@@ -21,9 +21,102 @@ describe('onboarding-first auth flow source contracts', () => {
     assert.match(unauth, /destination: 'onboarding'/);
     assert.match(unauth, /destination: 'check-email'/);
     assert.doesNotMatch(unauth, /sign-in/);
-    assert.match(index, /gate\.destination === 'onboarding'/);
-    assert.match(index, /gate\.destination === 'check-email'/);
+    assert.match(index, /visibleGate\.destination === 'onboarding'/);
+    assert.match(index, /Redirect href=\{routes\.onboarding\}/);
+    assert.match(index, /visibleGate\.destination === 'check-email'/);
+    assert.match(index, /visibleGate\.destination === 'authenticated-health-data-consent'/);
     assert.match(index, /getPendingSignupVerification/);
+    assert.match(index, /setGate\(APP_GATE_LOADING\)/);
+    assert.match(index, /applyAppGateIfCurrent/);
+    assert.match(index, /visibleAppGate/);
+  });
+
+  it('lets sign-up return to the first onboarding screen without looping through Logga in', () => {
+    const signUp = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/sign-up.tsx'), 'utf8');
+    const signIn = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/sign-in.tsx'), 'utf8');
+    const sv = fs.readFileSync(path.join(process.cwd(), 'lib/i18n/resources/sv.ts'), 'utf8');
+    const nb = fs.readFileSync(path.join(process.cwd(), 'lib/i18n/resources/nb.ts'), 'utf8');
+
+    assert.match(signUp, /alternateHref=\{routes\.onboarding\}/);
+    assert.match(signUp, /auth\.signUp\.backToStart/);
+    assert.doesNotMatch(signUp, /alternateHref=\{routes\.authSignIn\}/);
+    assert.doesNotMatch(signUp, /auth\.signUp\.alternateLabel/);
+    assert.match(sv, /'auth\.signUp\.backToStart': '← Tillbaka till start'/);
+    assert.match(nb, /'auth\.signUp\.backToStart': '← Tilbake til start'/);
+
+    assert.match(signIn, /alternateHref=\{routes\.onboarding\}/);
+    assert.match(signIn, /auth\.signIn\.alternatePrompt/);
+    assert.match(signIn, /auth\.signIn\.alternateLabel/);
+    assert.doesNotMatch(signIn, /auth\.signUp\.backToStart/);
+    assert.doesNotMatch(signIn, /alternateHref=\{routes\.authSignUp\}/);
+  });
+
+  it('keeps sign-in submit on existing-user login through root', () => {
+    const signIn = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/sign-in.tsx'), 'utf8');
+    const provider = fs.readFileSync(path.join(process.cwd(), 'providers/auth-provider.tsx'), 'utf8');
+    const signInBlock = provider.slice(
+      provider.indexOf('const signInWithEmail'),
+      provider.indexOf('const signUpWithEmail'),
+    );
+    const submit = signIn.slice(
+      signIn.indexOf('const handleSubmit'),
+      signIn.indexOf('return ('),
+    );
+
+    assert.match(submit, /signInWithEmail\(email, password\)/);
+    assert.match(submit, /router\.replace\(routes\.root\)/);
+    assert.doesNotMatch(submit, /hasRequiredAnonymousSignupBaseline/);
+    assert.doesNotMatch(submit, /signUpWithEmail/);
+    assert.match(signInBlock, /await clearUnownedPendingOnboardingForExistingSignIn\(\);/);
+    assert.doesNotMatch(signInBlock, /bindPendingOnboardingToUser/);
+  });
+
+  it('blocks signup until unowned pending Initial Lifestyle exists', () => {
+    const signUp = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/sign-up.tsx'), 'utf8');
+    const helper = fs.readFileSync(
+      path.join(process.cwd(), 'lib/onboarding/anonymous-signup-baseline.ts'),
+      'utf8',
+    );
+    const complete = fs.readFileSync(
+      path.join(process.cwd(), 'lib/domain/profile/is-profile-complete.ts'),
+      'utf8',
+    );
+    const gate = fs.readFileSync(path.join(process.cwd(), 'lib/onboarding/resolve-app-gate.ts'), 'utf8');
+    const authenticatedGate = gate.slice(
+      gate.indexOf('export async function resolveAuthenticatedOnboardingGate'),
+      gate.indexOf('export async function resolveAppGate'),
+    );
+    const submit = signUp.slice(
+      signUp.indexOf('const handleSubmit'),
+      signUp.indexOf('return ('),
+    );
+
+    assert.match(signUp, /hasRequiredAnonymousSignupBaseline/);
+    assert.match(helper, /getPendingInitialLifestyle/);
+    assert.match(helper, /initialLifestyleAnswersValidator/);
+    assert.match(helper, /getUnownedPendingInitialLifestyle/);
+    assert.match(submit, /await hasRequiredAnonymousSignupBaseline\(\)/);
+    assert.ok(
+      submit.indexOf('await hasRequiredAnonymousSignupBaseline()') <
+        submit.indexOf('await signUpWithEmail(email, password)'),
+    );
+    assert.match(submit, /router\.replace\(routes\.onboarding\)/);
+    assert.ok(
+      submit.indexOf('if (!maySignUp)') < submit.indexOf('await signUpWithEmail(email, password)'),
+    );
+    assert.ok(
+      submit.indexOf('router.replace(routes.onboarding)') <
+        submit.indexOf('await signUpWithEmail(email, password)'),
+    );
+    assert.doesNotMatch(complete, /lifestyle|sleepQuality|initialLifestyle/);
+    assert.doesNotMatch(authenticatedGate, /initialLifestyle|getPendingInitialLifestyle|hasRequiredAnonymousSignupBaseline/);
+  });
+
+  it('sends step-2 into age confirmation before Health Data Consent', () => {
+    const step2 = fs.readFileSync(path.join(process.cwd(), 'app/(onboarding)/step-2.tsx'), 'utf8');
+    assert.match(step2, /routes\.onboardingAgeConfirmation/);
+    assert.doesNotMatch(step2, /routes\.onboardingHealthDataConsent/);
+    assert.doesNotMatch(step2, /routes\.onboardingLifestyleIntro/);
   });
 
   it('keeps a subordinate Logga in entry on the onboarding intro', () => {
@@ -59,6 +152,8 @@ describe('onboarding-first auth flow source contracts', () => {
     );
     assert.match(resetBlock, /clearUnownedPendingOnboarding\(ownershipDeps\)/);
     assert.match(resetBlock, /beginNewAnonymousOnboardingAttempt\(\)/);
+    assert.match(resetBlock, /clearUnownedPendingHealthDataConsent\(\)/);
+    assert.match(resetBlock, /clearUnownedPendingAgeConfirmation\(\)/);
     assert.doesNotMatch(resetBlock, /clearPendingProfileMeasurementsForUser/);
     assert.doesNotMatch(resetBlock, /clearPendingInitialLifestyleForUser/);
     assert.doesNotMatch(resetBlock, /clearPendingSignupVerification/);
@@ -160,6 +255,7 @@ describe('onboarding-first auth flow source contracts', () => {
     assert.match(step4, /resolveOnboardingProfileFormPrefill/);
     assert.match(body, /setWaist\(''\)/);
     assert.match(body, /setNeck\(''\)/);
+    assert.match(body, /setHip\(''\)/);
   });
 
   it('keeps anonymous writes independent from per-user retry data', () => {

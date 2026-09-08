@@ -13,45 +13,104 @@ export const PROFILE_HOME_MEASUREMENTS_SUBTITLE =
 export const PROFILE_HOME_SIGN_OUT_TITLE = 'Logga ut';
 export const PROFILE_HOME_COMING_SOON_LABEL = 'Kommer snart';
 
-export type ProfileHomeComingSoonRowId =
+export type ProfileHomeComingSoonNavRowId =
   | 'health-data-sources'
-  | 'subscription'
+  | 'food-scanner'
+  | 'blood-tests'
+  | 'subscription';
+
+export type ProfileHomeComingSoonDeadRowId = never;
+
+export type ProfileHomeComingSoonRowId = ProfileHomeComingSoonNavRowId;
+
+export type ProfileHomeActiveRowId =
+  | 'account-card'
+  | 'health-profile'
+  | 'measurements'
+  | 'language'
   | 'notifications'
   | 'privacy-and-data'
+  | 'feedback'
   | 'help-and-support'
-  | 'feedback';
-
-export type ProfileHomeActiveRowId = 'account-card' | 'health-profile' | 'measurements' | 'language' | 'sign-out';
+  | 'sign-out';
 
 export type ProfileHomeRowId = ProfileHomeActiveRowId | ProfileHomeComingSoonRowId;
 
 export type ProfileHomeActiveNavRow = {
-  id: 'health-profile' | 'measurements' | 'language';
+  id: 'health-profile' | 'measurements' | 'language' | 'privacy-and-data';
   status: 'active';
-  icon: 'person-outline' | 'resize-outline' | 'language-outline';
+  icon: 'person-outline' | 'resize-outline' | 'language-outline' | 'shield-outline';
   title: string;
   subtitle: string;
-  route: typeof routes.profileHealthProfile | typeof routes.healthMeasurementHistory | typeof routes.profileLanguage;
+  route:
+    | typeof routes.profileHealthProfile
+    | typeof routes.healthMeasurementHistory
+    | typeof routes.profileLanguage
+    | typeof routes.profilePrivacy;
   showChevron: true;
 };
 
-export type ProfileHomeComingSoonRow = {
-  id: ProfileHomeComingSoonRowId;
+export type ProfileHomeComingSoonNavRow = {
+  id: ProfileHomeComingSoonNavRowId;
   status: 'comingSoon';
-  icon:
-    | 'watch-outline'
-    | 'star-outline'
-    | 'notifications-outline'
-    | 'shield-outline'
-    | 'help-circle-outline'
-    | 'chatbox-outline';
+  icon: 'watch-outline' | 'nutrition-outline' | 'water-outline' | 'star-outline';
+  title: string;
+  subtitle: string;
+  route:
+    | typeof routes.profileHealthDataSources
+    | typeof routes.profileFoodScanner
+    | typeof routes.profileBloodTests
+    | typeof routes.profileSubscription;
+  showChevron: true;
+};
+
+export type ProfileHomeComingSoonDeadRow = {
+  id: ProfileHomeComingSoonDeadRowId;
+  status: 'comingSoon';
+  icon: 'notifications-outline';
   title: string;
   subtitle: string;
   route: null;
   showChevron: false;
 };
 
-export type ProfileHomeRow = ProfileHomeActiveNavRow | ProfileHomeComingSoonRow;
+export type ProfileHomeNotificationsRow = {
+  id: 'notifications';
+  status: 'active';
+  icon: 'notifications-outline';
+  title: string;
+  route: typeof routes.profileNotifications;
+  showChevron: true;
+};
+
+export type ProfileHomeFeedbackRow = {
+  id: 'feedback';
+  status: 'active';
+  icon: 'chatbox-outline';
+  title: string;
+  route: null;
+  action: 'mailto-feedback';
+  showChevron: true;
+};
+
+export type ProfileHomeHelpRow = {
+  id: 'help-and-support';
+  status: 'active';
+  icon: 'help-circle-outline';
+  title: string;
+  route: null;
+  action: 'mailto-help';
+  showChevron: true;
+};
+
+export type ProfileHomeComingSoonRow = ProfileHomeComingSoonNavRow | ProfileHomeComingSoonDeadRow;
+
+export type ProfileHomeRow =
+  | ProfileHomeActiveNavRow
+  | ProfileHomeComingSoonRow
+  | ProfileHomeFeedbackRow
+  | ProfileHomeHelpRow
+  | ProfileHomeNotificationsRow;
 
 export type ProfileHomeSectionId = 'health' | 'account-settings' | 'support-privacy';
 
@@ -112,8 +171,26 @@ export function buildProfileHomeView(): ProfileHomeView {
             icon: 'watch-outline',
             title: t('profile.healthDataSources'),
             subtitle: t('common.comingSoon'),
-            route: null,
-            showChevron: false,
+            route: routes.profileHealthDataSources,
+            showChevron: true,
+          },
+          {
+            id: 'food-scanner',
+            status: 'comingSoon',
+            icon: 'nutrition-outline',
+            title: t('profile.foodScanner'),
+            subtitle: t('common.comingSoon'),
+            route: routes.profileFoodScanner,
+            showChevron: true,
+          },
+          {
+            id: 'blood-tests',
+            status: 'comingSoon',
+            icon: 'water-outline',
+            title: t('profile.bloodTests'),
+            subtitle: t('common.comingSoon'),
+            route: routes.profileBloodTests,
+            showChevron: true,
           },
         ],
       },
@@ -136,17 +213,16 @@ export function buildProfileHomeView(): ProfileHomeView {
             icon: 'star-outline',
             title: t('profile.subscription'),
             subtitle: t('common.comingSoon'),
-            route: null,
-            showChevron: false,
+            route: routes.profileSubscription,
+            showChevron: true,
           },
           {
             id: 'notifications',
-            status: 'comingSoon',
+            status: 'active',
             icon: 'notifications-outline',
             title: t('profile.notifications'),
-            subtitle: t('common.comingSoon'),
-            route: null,
-            showChevron: false,
+            route: routes.profileNotifications,
+            showChevron: true,
           },
         ],
       },
@@ -156,30 +232,30 @@ export function buildProfileHomeView(): ProfileHomeView {
         rows: [
           {
             id: 'privacy-and-data',
-            status: 'comingSoon',
+            status: 'active',
             icon: 'shield-outline',
             title: t('profile.privacy'),
-            subtitle: t('common.comingSoon'),
-            route: null,
-            showChevron: false,
+            subtitle: t('profile.privacy.subtitle'),
+            route: routes.profilePrivacy,
+            showChevron: true,
           },
           {
             id: 'help-and-support',
-            status: 'comingSoon',
+            status: 'active',
             icon: 'help-circle-outline',
             title: t('profile.help'),
-            subtitle: t('common.comingSoon'),
             route: null,
-            showChevron: false,
+            action: 'mailto-help',
+            showChevron: true,
           },
           {
             id: 'feedback',
-            status: 'comingSoon',
+            status: 'active',
             icon: 'chatbox-outline',
             title: t('profile.feedback'),
-            subtitle: t('common.comingSoon'),
             route: null,
-            showChevron: false,
+            action: 'mailto-feedback',
+            showChevron: true,
           },
         ],
       },
@@ -207,14 +283,29 @@ export function listProfileHomeComingSoonRows(
   );
 }
 
+export function listProfileHomeComingSoonNavRows(
+  view: ProfileHomeView = buildProfileHomeView(),
+): readonly ProfileHomeComingSoonNavRow[] {
+  return listProfileHomeComingSoonRows(view).filter(
+    (row): row is ProfileHomeComingSoonNavRow => row.route != null,
+  );
+}
+
+export function listProfileHomeComingSoonDeadRows(
+  view: ProfileHomeView = buildProfileHomeView(),
+): readonly ProfileHomeComingSoonDeadRow[] {
+  return listProfileHomeComingSoonRows(view).filter(
+    (row): row is ProfileHomeComingSoonDeadRow => row.route == null,
+  );
+}
+
 export function listProfileHomeNavigableRoutes(
   view: ProfileHomeView = buildProfileHomeView(),
 ): readonly string[] {
-  const navigable: string[] = [
+  return [
     view.accountCard.route,
     ...view.sections.flatMap((section) =>
-      section.rows.flatMap((row) => (row.status === 'active' ? [row.route] : [])),
+      section.rows.flatMap((row) => (row.route ? [row.route] : [])),
     ),
   ];
-  return navigable;
 }

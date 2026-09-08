@@ -30,6 +30,8 @@ import {
 import { syncPendingProfileAfterAuth } from '@/lib/onboarding/sync-pending-profile-runtime';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { authService } from '@/lib/services/auth/auth.service';
+import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
+import { cancelNordyanScheduledNotifications } from '@/lib/presentation/notifications/sync-nordyan-notifications.runtime';
 import {
   logSignupForensics,
   type SignupForensicsOutcome,
@@ -39,6 +41,7 @@ import {
   type SignupPersistenceResult,
   type SignupProviderResultCategory,
 } from '@/lib/services/auth/signup-forensics';
+import { deleteCurrentAccountForApp } from '@/lib/services/account-delete/delete-current-account.runtime';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type AuthContextValue = {
@@ -60,6 +63,7 @@ type AuthContextValue = {
     confirmation: string,
   ) => Promise<{ ok: true } | { ok: false; error: AppError }>;
   signOut: () => Promise<{ ok: true } | { ok: false; error: AppError }>;
+  deleteAccount: () => Promise<{ ok: true } | { ok: false; error: AppError }>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -123,31 +127,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let isMounted = true;
+    let hydrationComplete = false;
+    let clearingStaleSession = false;
 
     const syncSession = async () => {
-      const result = await authService.getSession();
+      const hydrated = await authService.hydrateLocalSession();
 
       if (!isMounted) {
         return;
       }
 
-      if (result.ok) {
-        setSession(result.value);
-        setStatus(result.value ? 'authenticated' : 'unauthenticated');
-      } else {
-        setSession(null);
-        setStatus('unauthenticated');
+      if (hydrated.shouldClearLocalSession) {
+        clearingStaleSession = true;
+        await authService.signOut();
+        clearingStaleSession = false;
       }
 
+      setSession(hydrated.session);
+      setStatus(hydrated.status);
       setIsReady(true);
+      hydrationComplete = true;
+      logNordyanAuthTrace('auth.hydration.complete', {
+        authenticated: hydrated.status === 'authenticated',
+        ready: true,
+      });
     };
-
-    void syncSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) {
+        return;
+      }
+
+      // Cold-start hydration owns the first authenticated/unauthenticated decision.
+      // Applying INITIAL_SESSION / TOKEN_REFRESHED before getUser() would treat a
+      // stale local JWT as a valid NORDYAN user.
+      if (!hydrationComplete) {
+        logNordyanAuthTrace('auth.onAuthStateChange.skipped-pre-hydration', {
+          event,
+        });
+        return;
+      }
+
+      if (clearingStaleSession && event === 'SIGNED_OUT') {
+        setSession(null);
+        setStatus('unauthenticated');
+        setIsPasswordRecovery(false);
+        logNordyanAuthTrace('auth.onAuthStateChange', {
+          event,
+          authenticated: false,
+          clearingStaleSession: true,
+        });
         return;
       }
 
@@ -164,14 +195,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === 'PASSWORD_RECOVERY') {
           setIsPasswordRecovery(true);
         }
+        logNordyanAuthTrace('auth.onAuthStateChange', {
+          event,
+          authenticated: true,
+        });
       } else {
         setSession(null);
         setStatus('unauthenticated');
         setIsPasswordRecovery(false);
+        logNordyanAuthTrace('auth.onAuthStateChange', {
+          event,
+          authenticated: false,
+        });
       }
 
       setIsReady(true);
     });
+
+    void syncSession();
 
     return () => {
       isMounted = false;
@@ -437,6 +478,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return result;
     }
 
+    await cancelNordyanScheduledNotifications();
+
     if (userId) {
       await clearCurrentUserPendingOnboardingLeftover(userId);
       await emitOnboardingForensics({
@@ -455,6 +498,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true as const };
   }, [session?.user.id]);
 
+  const deleteAccount = useCallback(async () => {
+    const result = await deleteCurrentAccountForApp(
+      session
+        ? { userId: session.user.id, accessToken: session.accessToken }
+        : null,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    setSession(null);
+    setStatus('unauthenticated');
+    setIsPasswordRecovery(false);
+    return { ok: true as const };
+  }, [session]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -469,6 +529,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activatePasswordRecovery,
       updateRecoveredPassword,
       signOut,
+      deleteAccount,
     }),
     [
       status,
@@ -483,6 +544,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activatePasswordRecovery,
       updateRecoveredPassword,
       signOut,
+      deleteAccount,
     ],
   );
 

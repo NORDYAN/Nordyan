@@ -20,6 +20,7 @@ const validInput: CreateMeasurementInput = {
   weightKg: 80,
   waistCm: 90,
   neckCm: 38,
+  hipCm: 98,
 };
 
 const persistedMeasurement: Measurement = {
@@ -29,6 +30,7 @@ const persistedMeasurement: Measurement = {
   weightKg: validInput.weightKg,
   waistCm: validInput.waistCm,
   neckCm: validInput.neckCm,
+  hipCm: validInput.hipCm,
   createdAt: '2026-08-16T12:00:00.000Z',
 };
 
@@ -101,6 +103,7 @@ function snapshotService(options?: {
         weightKg: input.weightKg,
         waistCm: input.waistCm,
         neckCm: input.neckCm,
+        hipCm: input.hipCm,
         engineVersion: input.engineVersion,
         snapshotReason: input.snapshotReason,
         bodyFatPct: input.bodyFatPct ?? null,
@@ -180,5 +183,22 @@ describe('DefaultMeasurementWorkflow.submit', () => {
     assert.equal(result.value.measurement.id, 'measurement-1');
     assert.equal(result.value.snapshotId, 'snapshot-1');
     assert.deepEqual(reasons, ['measurement']);
+  });
+
+  it('passes hip through the measurement snapshot pipeline without imputing', async () => {
+    let hipCm: number | null | undefined;
+    const workflow = new DefaultMeasurementWorkflow(
+      measurementRepository(),
+      profileRepository(completeProfile),
+      snapshotService({
+        onCreate: (input) => {
+          hipCm = input.hipCm;
+        },
+      }),
+    );
+
+    const result = await workflow.submit(validInput);
+    assert.equal(result.ok, true);
+    assert.equal(hipCm, 98);
   });
 });

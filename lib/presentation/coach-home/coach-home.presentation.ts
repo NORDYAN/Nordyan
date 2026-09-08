@@ -1,18 +1,12 @@
-import {
-  formatPlanFrequencyCount,
-  getLocalizedCoachPresentation,
-  getLocalizedFocusPresentation,
-  matchesTranslatedLabel,
-  t,
-} from '@/lib/i18n';
+import { t } from '@/lib/i18n';
 import type { CoachHomeSummary } from '@/lib/services/coach-home';
 
+import { buildCoachQuickQuestionSlots } from '@/lib/presentation/coach-quick-questions/coach-quick-questions.presentation';
+import type { CoachQuickQuestionSignals } from '@/lib/domain/coach-quick-questions';
+
 import {
-  COACH_HOME_CONTEXTUAL_QUESTION_CATALOG,
   COACH_HOME_SECTION_ORDER,
-  COACH_HOME_STABLE_QUICK_QUESTIONS,
   type CoachHomeFetchState,
-  type CoachHomeQuickQuestionContext,
   type CoachHomeQuickQuestionSlot,
   type CoachHomeSectionId,
   type CoachHomeViewModel,
@@ -26,49 +20,14 @@ export function getCoachHomeErrorMessage(): string {
   return t('coach.error');
 }
 
-export const COACH_HOME_PLAN_UNAVAILABLE_MESSAGE = () => t('coach.planUnavailable');
-
-function formatDurationText(minutes: number): string {
-  return t('common.min', { minutes });
-}
-
-export function isCoachHomeBodyFatComparisonQuestion(question: string): boolean {
-  return matchesTranslatedLabel(question, 'coach.quick.bodyFatComparison');
-}
-
 /**
- * Builds the three quick-question slots.
- * Outer questions are stable. The middle slot is contextual and can be replaced
- * from local presentation context without Coach Context / engine changes.
+ * Builds up to three localized quick-question slots from Coach Ask evidence.
+ * Does not invent questions the current Ask context cannot ground.
  */
 export function selectCoachHomeQuickQuestionSlots(
-  context: CoachHomeQuickQuestionContext = {},
-): readonly [
-  CoachHomeQuickQuestionSlot,
-  CoachHomeQuickQuestionSlot,
-  CoachHomeQuickQuestionSlot,
-] {
-  const contextualQuestion = context.bodyFatComparisonUsed
-    ? COACH_HOME_CONTEXTUAL_QUESTION_CATALOG.planMoreEffective
-    : COACH_HOME_CONTEXTUAL_QUESTION_CATALOG.bodyFatComparison;
-
-  return [
-    {
-      id: 'why-focus',
-      kind: 'stable',
-      question: COACH_HOME_STABLE_QUICK_QUESTIONS.whyFocus,
-    },
-    {
-      id: 'contextual',
-      kind: 'contextual',
-      question: contextualQuestion,
-    },
-    {
-      id: 'instead-today',
-      kind: 'stable',
-      question: COACH_HOME_STABLE_QUICK_QUESTIONS.insteadToday,
-    },
-  ];
+  signals: CoachQuickQuestionSignals,
+): readonly CoachHomeQuickQuestionSlot[] {
+  return buildCoachQuickQuestionSlots(signals);
 }
 
 export function listCoachHomeReadySections(): readonly CoachHomeSectionId[] {
@@ -78,32 +37,6 @@ export function listCoachHomeReadySections(): readonly CoachHomeSectionId[] {
 export function buildCoachHomeViewModel(
   summary: Extract<CoachHomeSummary, { status: 'ready' }>,
 ): CoachHomeViewModel {
-  const focusDisplay = getLocalizedFocusPresentation(summary.focus.type);
-  const planDisplay =
-    summary.plan.available === true
-      ? getLocalizedCoachPresentation(
-          summary.plan.recommendationId,
-          summary.plan.durationMinutes,
-          summary.plan.frequencyPerWeek,
-        )
-      : null;
-
-  const plan =
-    summary.plan.available === true && planDisplay
-      ? {
-          available: true as const,
-          sectionLabel: t('coach.plan.section'),
-          title: planDisplay.title,
-          description: planDisplay.description,
-          durationText: formatDurationText(summary.plan.durationMinutes),
-          frequencyText: formatPlanFrequencyCount(summary.plan.frequencyPerWeek),
-        }
-      : {
-          available: false as const,
-          sectionLabel: t('coach.plan.section'),
-          unavailableMessage: t('coach.planUnavailable'),
-        };
-
   const askContext =
     summary.plan.available === true
       ? {
@@ -122,7 +55,15 @@ export function buildCoachHomeViewModel(
         }
       : null;
   const canAsk = askContext != null;
-  const quickQuestionSlots = selectCoachHomeQuickQuestionSlots();
+  const quickQuestionSlots: readonly CoachHomeQuickQuestionSlot[] = [];
+  const focusBridge = canAsk
+    ? {
+        visible: true as const,
+        title: t('coach.bridge.title'),
+        body: t('coach.bridge.body'),
+        ctaLabel: t('coach.bridge.cta'),
+      }
+    : { visible: false as const };
 
   return {
     header: {
@@ -130,12 +71,7 @@ export function buildCoachHomeViewModel(
       coachLabel: t('coach.header.label'),
       coachSubtitle: t('coach.header.subtitle'),
     },
-    focus: {
-      sectionLabel: t('coach.focus.section'),
-      title: focusDisplay.title,
-      body: focusDisplay.subtitle,
-    },
-    plan,
+    focusBridge,
     ask: {
       sectionLabel: t('coach.ask.section'),
       inputPlaceholder: t('coach.ask.placeholder'),

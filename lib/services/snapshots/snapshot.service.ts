@@ -52,6 +52,7 @@ function mapSnapshotRow(row: HealthSnapshotRow): HealthSnapshot | null {
     weightKg: toNumber(row.weight_kg),
     waistCm: toNumber(row.waist_cm),
     neckCm: toNumber(row.neck_cm),
+    hipCm: row.hip_cm == null ? null : toNumber(row.hip_cm),
     engineVersion: row.engine_version,
     snapshotReason: row.snapshot_reason,
     bodyFatPct: row.body_fat_pct == null ? null : toNumber(row.body_fat_pct),
@@ -117,6 +118,13 @@ function validateCreateSnapshotInput(input: CreateSnapshotInput): AppError | nul
     }
   }
 
+  if (input.hipCm != null && (!Number.isFinite(input.hipCm) || input.hipCm <= 0)) {
+    return {
+      code: 'VALIDATION',
+      message: 'hipCm måste vara större än 0 när det anges.',
+    };
+  }
+
   if (!input.primaryFocus.trim()) {
     return { code: 'VALIDATION', message: 'primaryFocus krävs.' };
   }
@@ -149,6 +157,7 @@ function createSnapshotInsert(input: CreateSnapshotInput): HealthSnapshotInsert 
     weight_kg: input.weightKg,
     waist_cm: input.waistCm,
     neck_cm: input.neckCm,
+    hip_cm: input.hipCm ?? null,
     engine_version: input.engineVersion,
     snapshot_reason: input.snapshotReason,
     body_fat_pct: input.bodyFatPct ?? null,

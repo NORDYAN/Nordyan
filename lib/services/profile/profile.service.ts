@@ -1,9 +1,10 @@
 import type { AppError, Result } from '@/lib/core';
+import { isEligibleAdultDateOfBirth } from '@/lib/domain/age-eligibility';
 import {
   normalizeAccountFirstName,
   validateAccountFirstName,
   type ProfileActivityLevel,
-  type ProfileGender,
+  isWritableProfileGender,
   type ProfileMeasurements,
   type UserProfile,
 } from '@/lib/domain/profile';
@@ -249,14 +250,22 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
     };
   }
 
-  if (!resolveDateOfBirth(measurements)) {
+  const dateOfBirth = resolveDateOfBirth(measurements);
+  if (!dateOfBirth) {
     return {
       code: 'VALIDATION',
       message: t('profile.validation.dateOfBirth'),
     };
   }
 
-  if (!isProfileGender(measurements.gender)) {
+  if (!isEligibleAdultDateOfBirth(dateOfBirth)) {
+    return {
+      code: 'VALIDATION',
+      message: t('profile.validation.mustBe18'),
+    };
+  }
+
+  if (!isWritableProfileGender(measurements.gender)) {
     return {
       code: 'VALIDATION',
       message: t('profile.validation.gender'),
@@ -271,10 +280,6 @@ function validateMeasurements(measurements: ProfileMeasurements): AppError | nul
   }
 
   return null;
-}
-
-function isProfileGender(value: ProfileGender | null | undefined): value is ProfileGender {
-  return value === 'male' || value === 'female' || value === 'other';
 }
 
 function isProfileActivityLevel(

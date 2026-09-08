@@ -20,6 +20,8 @@ describe('measurement history card', () => {
     assert.equal(formatMeasurementHistoryDate('2026-08-10'), '10 augusti 2026');
     assert.equal(formatMeasurementHistoryWeight(82.4), '82,4 kg');
     assert.equal(formatMeasurementHistoryCircumference(91.2), '91 cm');
+    assert.equal(formatMeasurementHistoryCircumference(null), '—');
+    assert.equal(formatMeasurementHistoryCircumference(undefined), '—');
   });
 
   it('is the destination after a successful save so the new row can appear in history', () => {

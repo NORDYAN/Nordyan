@@ -15,11 +15,32 @@ import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
 import { useCurrentProfile } from '@/lib/hooks/profile';
 import { buildProfileAccountHeaderView } from '@/lib/presentation/profile-account';
-import { buildProfileHomeView } from '@/lib/presentation/profile-home';
+import { buildProfileHomeView, type ProfileHomeRow } from '@/lib/presentation/profile-home';
+import {
+  buildFeedbackMailto,
+  buildHelpAndSupportMailto,
+  openMailtoUrl,
+} from '@/lib/presentation/support-mail';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useAuth } from '@/providers/auth-provider';
 import { colors, profileLayout, profileTypography, typography } from '@/theme';
+
+function handleProfileRowPress(row: ProfileHomeRow) {
+  if (row.status === 'active' && 'action' in row) {
+    if (row.action === 'mailto-feedback') {
+      void openMailtoUrl(buildFeedbackMailto());
+      return;
+    }
+    if (row.action === 'mailto-help') {
+      void openMailtoUrl(buildHelpAndSupportMailto());
+      return;
+    }
+  }
+  if (row.route) {
+    router.push(row.route);
+  }
+}
 
 export default function ProfileMainScreen() {
   const { locale } = useI18n();
@@ -80,14 +101,14 @@ export default function ProfileMainScreen() {
                     <ProfileSettingsRow
                       icon={row.icon}
                       title={row.title}
-                      subtitle={row.subtitle}
+                      subtitle={'subtitle' in row ? row.subtitle : undefined}
                       showChevron={row.showChevron}
                       comingSoon={row.status === 'comingSoon'}
                       onPress={
-                        row.status === 'active'
-                          ? () => {
-                              router.push(row.route);
-                            }
+                        row.route ||
+                        ('action' in row &&
+                          (row.action === 'mailto-feedback' || row.action === 'mailto-help'))
+                          ? () => handleProfileRowPress(row)
                           : undefined
                       }
                     />

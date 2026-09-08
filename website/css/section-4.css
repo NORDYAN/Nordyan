@@ -1,0 +1,328 @@
+.s4 {
+  background: var(--section);
+  padding: 40px 48px 128px;
+}
+
+.s4-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.54fr) minmax(0, 0.46fr);
+  column-gap: 48px;
+  align-items: center;
+}
+
+.s4-product {
+  position: relative;
+  min-height: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.s4-glow {
+  position: absolute;
+  left: 18%;
+  top: 10%;
+  width: 64%;
+  height: 78%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(213, 166, 85, 0.08) 0%,
+    rgba(213, 166, 85, 0.02) 44%,
+    rgba(14, 18, 24, 0) 72%
+  );
+  pointer-events: none;
+}
+
+.s4-device {
+  position: relative;
+  z-index: 4;
+  width: 560px;
+  margin: 0;
+}
+
+.s4-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.s4-device img {
+  width: 100%;
+  height: auto;
+  display: block;
+  -webkit-mask-image: radial-gradient(
+    ellipse 74% 76% at 50% 46%,
+    #000 54%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 86%
+  );
+  mask-image: radial-gradient(
+    ellipse 74% 76% at 50% 46%,
+    #000 54%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 86%
+  );
+}
+
+.s4-card {
+  position: absolute;
+  z-index: 5;
+  width: 148px;
+  padding: 11px 12px 12px;
+  background: rgba(11, 14, 19, 0.94);
+  border: 1px solid rgba(213, 166, 85, 0.42);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.s4-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.s4-card-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3ec8b7;
+  box-shadow: 0 0 6px rgba(62, 200, 183, 0.45);
+}
+
+.s4-card-metric {
+  margin: 6px 0 2px;
+  color: var(--white);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.s4-card-sub,
+.s4-card-meta,
+.s4-card-row {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.s4-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.s4-card-row span {
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 500;
+}
+
+.s4-card--hormones {
+  right: 0;
+  top: 4%;
+  width: 168px;
+  padding-bottom: 14px;
+}
+
+.s4-card--hormones .s4-card-row:first-of-type {
+  margin-top: 8px;
+}
+
+.s4-card--puls {
+  left: 0;
+  top: 8%;
+}
+
+.s4-card--activity {
+  left: 0;
+  top: 42%;
+}
+
+.s4-card--alcohol {
+  left: 0;
+  bottom: 6%;
+}
+
+.s4-card--body {
+  right: 2%;
+  top: 46%;
+}
+
+.s4-card--steps {
+  right: 0;
+  bottom: 6%;
+}
+
+.s4-copy {
+  max-width: 520px;
+  padding-left: 8px;
+}
+
+.s4-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 22px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.s4-eyebrow-rule {
+  width: 28px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.s4-copy h2 {
+  margin: 0 0 24px;
+  font-size: 40px;
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.s4-lead {
+  margin: 0 0 40px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.s4-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.s4-point-title {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.s4-point-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1180px) {
+  .s4 {
+    padding: 32px 40px 104px;
+  }
+
+  .s4-inner {
+    column-gap: 32px;
+  }
+
+  .s4-product {
+    min-height: 520px;
+  }
+
+  .s4-device {
+    width: 400px;
+  }
+
+  .s4-card {
+    width: 128px;
+    padding: 9px 10px 10px;
+  }
+
+  .s4-card--hormones {
+    width: 148px;
+  }
+
+  .s4-card-metric {
+    font-size: 17px;
+  }
+
+  .s4-copy h2 {
+    font-size: 34px;
+  }
+}
+
+@media (max-width: 860px) {
+  .s4 {
+    padding: 16px 20px 72px;
+  }
+
+  .s4-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .s4-copy {
+    order: 1;
+    max-width: none;
+    padding-left: 0;
+  }
+
+  .s4-product {
+    order: 2;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    justify-items: stretch;
+    align-items: stretch;
+  }
+
+  .s4-copy h2 {
+    font-size: 28px;
+  }
+
+  .s4-lead {
+    margin-bottom: 32px;
+  }
+
+  .s4-device {
+    grid-column: 1 / -1;
+    order: -1;
+    width: 300px;
+    justify-self: center;
+  }
+
+  .s4-glow {
+    display: none;
+  }
+
+  .s4-card {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    width: auto;
+  }
+
+  .s4-card--hormones {
+    width: auto;
+  }
+}

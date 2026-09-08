@@ -1,29 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useMemo, useRef } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
+  DailyFocusCard,
   HomeCoachCard,
   HomeHealthScoreCard,
   type HomeHealthScoreCardState,
   HomeMeasurementFollowUpCard,
   HomeMetricTile,
-  HomePriorityItem,
   HomeProgressCard,
   HomeSectionHeading,
   HomeWeeklyCheckInCard,
+  WeeklyFocusCard,
 } from '@/components/home';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
 import { shouldShowBodyMeasurementFollowUp } from '@/lib/domain/profile';
-import { useHomeCoachLanguage, useHomeCurrentHealth, useHomeWeeklyCheckIn } from '@/lib/hooks/home';
+import { useHomeCurrentHealth, useHomeDailyFocus, useHomeWeeklyCheckIn, useHomeWeeklyFocus } from '@/lib/hooks/home';
 import { useHomeProgress } from '@/lib/hooks/progress';
-import { buildHomeDailyPriorities, shouldShowHomeWeeklyCheckInCard } from '@/lib/presentation/home';
+import { toHomeDailyFocusView } from '@/lib/presentation/home/home-daily-focus.presentation';
+import {
+  consumeHomeScrollToTopIntent,
+  shouldShowHomeWeeklyCheckInCard,
+} from '@/lib/presentation/home';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { getLocalCalendarDate } from '@/lib/services/health-score';
 import { colors, homeLayout, homeTypography, spacing, typography } from '@/theme';
 
 const HOME_LOGO = require('../../assets/logos/nordyan-logo-transparent-final.png');
@@ -32,8 +36,8 @@ const HOME_LOGO_WORDMARK_SIZE = 17;
 
 export default function HomeScreen() {
   useI18n();
-  const [completedById, setCompletedById] = useState<Record<string, boolean>>({});
-  const dayKey = useMemo(() => getLocalCalendarDate(), []);
+  const scrollRef = useRef<ScrollView>(null);
+  const { scrollToTop } = useLocalSearchParams<{ scrollToTop?: string | string[] }>();
   const { state: currentHealthState, snapshotRefreshKey, isProfileLoading, profile, latestSnapshot } =
     useHomeCurrentHealth();
   const progressState = useHomeProgress({
@@ -42,6 +46,11 @@ export default function HomeScreen() {
     snapshotRefreshKey,
   });
   const { state: weeklyCheckInState } = useHomeWeeklyCheckIn();
+  const { state: weeklyFocusState } = useHomeWeeklyFocus();
+  const { model: dailyFocusModel, complete, undo, swap } = useHomeDailyFocus({
+    weeklyFocus: weeklyFocusState,
+  });
+  const dailyFocusView = toHomeDailyFocusView(dailyFocusModel);
 
   const showMeasurementFollowUp =
     !isProfileLoading && shouldShowBodyMeasurementFollowUp(profile, latestSnapshot);
@@ -70,44 +79,18 @@ export default function HomeScreen() {
     };
   }, [currentHealthState]);
 
-  const templateCoachMessage =
-    currentHealthState.status === 'ready'
-      ? currentHealthState.data.coach.message
-      : t('home.coachUnavailable');
+  useFocusEffect(
+    useCallback(() => {
+      if (!consumeHomeScrollToTopIntent()) {
+        return;
+      }
 
-  const languageSource =
-    currentHealthState.status === 'ready' ? currentHealthState.data.coach.languageSource : null;
-
-  const { message: coachMessage } = useHomeCoachLanguage({
-    templateMessage: templateCoachMessage,
-    languageSource,
-    enabled:
-      currentHealthState.status === 'ready' &&
-      currentHealthState.data.coach.availability === 'available',
-  });
-
-  const displayPriorities = useMemo(() => {
-    const personal =
-      currentHealthState.status === 'ready'
-        ? {
-            title: currentHealthState.data.focus.title,
-            subtitle: currentHealthState.data.focus.subtitle,
-          }
-        : null;
-
-    return buildHomeDailyPriorities({
-      dayKey,
-      personal,
-      completedById,
-    });
-  }, [completedById, currentHealthState, dayKey]);
-
-  const togglePriority = (id: string, completed: boolean) => {
-    setCompletedById((current) => ({
-      ...current,
-      [id]: completed,
-    }));
-  };
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      if (scrollToTop != null) {
+        router.setParams({ scrollToTop: undefined });
+      }
+    }, [scrollToTop]),
+  );
 
   const greetingTitle = profile?.firstName
     ? t('home.greeting.named', { name: profile.firstName })
@@ -144,6 +127,7 @@ export default function HomeScreen() {
   return (
     <ScreenContainer variant="home">
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -176,6 +160,24 @@ export default function HomeScreen() {
 
         <HomeHealthScoreCard state={healthScoreCardState} />
 
+        <DailyFocusCard
+          view={dailyFocusView}
+          onComplete={() => {
+            void complete();
+          }}
+          onUndo={() => {
+            void undo();
+          }}
+          onSwap={() => {
+            void swap();
+          }}
+        />
+
+        <WeeklyFocusCard
+          weeklyFocus={weeklyFocusState}
+          weekCompletedCount={dailyFocusModel.weekCompletedCount}
+        />
+
         {showWeeklyCheckIn ? (
           <HomeWeeklyCheckInCard onPress={() => router.push(routes.weeklyCheckIn)} />
         ) : null}
@@ -183,28 +185,6 @@ export default function HomeScreen() {
         {showMeasurementFollowUp ? (
           <HomeMeasurementFollowUpCard onPress={() => router.push(routes.healthNewMeasurement)} />
         ) : null}
-
-        <HomeProgressCard state={progressState} />
-
-        <HomeCoachCard
-          message={coachMessage}
-          onPressPlan={() => router.push(routes.coach)}
-        />
-
-        <View style={styles.section}>
-          <HomeSectionHeading title={t('home.priorities.heading')} />
-          <View style={styles.priorityList}>
-            {displayPriorities.map((item) => (
-              <HomePriorityItem
-                key={item.id}
-                title={item.title}
-                subtitle={item.subtitle}
-                completed={item.completed}
-                onToggleComplete={(completed) => togglePriority(item.id, completed)}
-              />
-            ))}
-          </View>
-        </View>
 
         <View style={styles.section}>
           <HomeSectionHeading title={t('home.overview.heading')} />
@@ -235,6 +215,10 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        <HomeProgressCard state={progressState} />
+
+        <HomeCoachCard onPressAsk={() => router.push(routes.coach)} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -296,9 +280,6 @@ const styles = StyleSheet.create({
   },
   section: {
     width: '100%',
-  },
-  priorityList: {
-    gap: homeLayout.listGap,
   },
   metricGrid: {
     gap: homeLayout.gridGap,

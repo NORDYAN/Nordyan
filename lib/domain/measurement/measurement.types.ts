@@ -19,6 +19,8 @@ export type Measurement = {
   weightKg: number;
   waistCm: number;
   neckCm: number;
+  /** Null only for legacy rows written before hip collection. */
+  hipCm: number | null;
   createdAt: string;
 };
 
@@ -29,4 +31,5 @@ export type CreateMeasurementInput = {
   weightKg: number;
   waistCm: number;
   neckCm: number;
+  hipCm: number;
 };

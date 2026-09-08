@@ -19,6 +19,7 @@ import {
   writeLanguagePreference,
 } from './language-preference';
 import { DEFAULT_APP_LOCALE, type AppLocale } from './locales';
+import { applyLocaleNavigatorRemount } from './locale-navigator-remount';
 import { resolveAppLocaleFromLanguageTags } from './resolve-locale';
 import {
   getActiveLocale,
@@ -98,10 +99,23 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <I18nContext.Provider value={value}>
-      <Fragment key={locale}>{children}</Fragment>
-    </I18nContext.Provider>
+    <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
   );
+}
+
+/** Remounts app chrome after an explicit locale change. Keep NotificationLifecycle outside this tree. */
+export function LocaleKeyedSubtree({ children }: { children: ReactNode }) {
+  const { locale, isReady } = useI18n();
+  const [remount, setRemount] = useState({
+    settledLocale: null as AppLocale | null,
+    generation: 0,
+  });
+
+  useEffect(() => {
+    setRemount((current) => applyLocaleNavigatorRemount(current, { isReady, locale }));
+  }, [isReady, locale]);
+
+  return <Fragment key={remount.generation}>{children}</Fragment>;
 }
 
 export function useI18n(): I18nContextValue {

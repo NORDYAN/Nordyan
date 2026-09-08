@@ -22,6 +22,7 @@ export {
   getWeeklyCheckInScalePolarity,
 } from './weekly-check-in.polarity';
 export {
+  getPreviousWeeklyCheckInWeekStartDate,
   getWeeklyCheckInWeekStartDate,
   isWeeklyCheckInLocalCalendarDate,
 } from './weekly-check-in.week';

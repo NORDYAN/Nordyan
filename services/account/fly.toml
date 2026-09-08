@@ -1,0 +1,34 @@
+# fly.toml app configuration for nordyan-account
+#
+# Deploy from the NORDYAN repository root:
+#
+#   fly deploy . --config services/account/fly.toml
+#
+# Do not deploy until Fly secrets are set. This file does not contain secrets.
+
+app = 'nordyan-account'
+primary_region = 'arn'
+
+[build]
+  dockerfile = 'Dockerfile'
+  ignorefile = '.dockerignore'
+
+[http_service]
+  internal_port = 8789
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[http_service.checks]]
+  grace_period = '10s'
+  interval = '15s'
+  method = 'GET'
+  path = '/health'
+  timeout = '5s'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

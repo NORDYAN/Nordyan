@@ -1,8 +1,11 @@
 import { isProfileComplete, type ProfileMeasurements, type UserProfile } from '@/lib/domain/profile';
 import { getLocalizedCoachPresentation } from '@/lib/i18n';
-import { buildHomeCoachState } from '@/lib/services/coach';
-import { formatCoachMessage } from '@/lib/services/coach/coach.presentation';
-import { buildHomePrimaryFocusState } from '@/lib/services/focus';
+import {
+  buildHomeCoachState,
+  formatCoachMessage,
+  type HomeCoachState,
+} from '@/lib/services/coach';
+import { buildHomePrimaryFocusState, type HomePrimaryFocusState } from '@/lib/services/focus';
 import {
   canPresentBodyFatEstimate,
   calculateHomeHealthScoreFromProfile,
@@ -10,22 +13,66 @@ import {
   getLocalCalendarDate,
   type HomeHealthScoreState,
 } from '@/lib/services/health-score';
-import { mapProfileToHealthScoreInput } from '@/lib/services/health-score/health-score.mapper';
+import {
+  mapProfileToHealthScoreInput,
+  type HealthScoreProfileOptions,
+} from '@/lib/services/health-score/health-score.mapper';
 
 import type { OnboardingResultUnavailableReason } from './onboarding-forensics';
 import { draftProfileFromMeasurements } from './onboarding-result.mapper';
-import { formatOnboardingHealthScore } from './onboarding-result.presentation';
+import {
+  formatOnboardingHealthScore,
+  getOnboardingResultCoachFallback,
+} from './onboarding-result.presentation';
 import type { OnboardingResultState } from './onboarding-result.types';
+
+export type OnboardingResultPresentationDeps = {
+  buildHomePrimaryFocusState: (healthScoreState: HomeHealthScoreState) => HomePrimaryFocusState;
+  buildHomeCoachState: (
+    profile: UserProfile | null,
+    healthScoreState: HomeHealthScoreState,
+    primaryFocusState: HomePrimaryFocusState,
+  ) => HomeCoachState;
+};
+
+const defaultOnboardingResultPresentationDeps: OnboardingResultPresentationDeps = {
+  buildHomePrimaryFocusState,
+  buildHomeCoachState,
+};
+
+function resolveOnboardingCoachCopy(
+  profile: UserProfile,
+  healthScoreState: HomeHealthScoreState,
+  deps: OnboardingResultPresentationDeps,
+): { coachTitle: string; coachMessage: string } {
+  const focusState = deps.buildHomePrimaryFocusState(healthScoreState);
+  const coachState = deps.buildHomeCoachState(profile, healthScoreState, focusState);
+  if (coachState.status !== 'ready') {
+    return getOnboardingResultCoachFallback();
+  }
+
+  const display = getLocalizedCoachPresentation(
+    coachState.recommendationId,
+    coachState.durationMinutes,
+    coachState.frequencyPerWeek,
+  );
+  return {
+    coachTitle: display.title,
+    coachMessage: formatCoachMessage(display.description),
+  };
+}
 
 export function buildOnboardingResultFromProfile(
   profile: UserProfile,
   asOfDate: string = getLocalCalendarDate(),
+  options?: HealthScoreProfileOptions,
+  presentationDeps: OnboardingResultPresentationDeps = defaultOnboardingResultPresentationDeps,
 ): OnboardingResultState {
-  const calculated = calculateHomeHealthScoreFromProfile(profile, asOfDate);
+  const calculated = calculateHomeHealthScoreFromProfile(profile, asOfDate, options);
   if (!calculated) {
     return {
       status: 'unavailable',
-      reason: mapProfileToHealthScoreInput(profile, asOfDate)
+      reason: mapProfileToHealthScoreInput(profile, asOfDate, options)
         ? 'result_engine_failure'
         : 'invalid_health_score_input',
     };
@@ -39,19 +86,15 @@ export function buildOnboardingResultFromProfile(
     result: calculated.result,
   };
 
-  const focusState = buildHomePrimaryFocusState(healthScoreState);
-  const coachState = buildHomeCoachState(profile, healthScoreState, focusState);
-
-  if (coachState.status !== 'ready') {
-    return { status: 'unavailable', reason: 'result_engine_failure' };
-  }
-
-  const display = getLocalizedCoachPresentation(
-    coachState.recommendationId,
-    coachState.durationMinutes,
-    coachState.frequencyPerWeek,
-  );
-  const bodyFatAvailable = canPresentBodyFatEstimate(profile);
+  const coach = resolveOnboardingCoachCopy(profile, healthScoreState, presentationDeps);
+  const bodyFatAvailable = canPresentBodyFatEstimate(profile, {
+    waistCm: profile.waistCm,
+    neckCm: profile.neckCm,
+    hipCm: options?.hipCm ?? null,
+    snapshotReason: 'onboarding',
+    bodyFatPct: calculated.result.metrics.bodyFatPct,
+    bodyFatMethod: calculated.result.metrics.bodyFatMethod,
+  });
 
   return {
     status: 'ready',
@@ -60,8 +103,8 @@ export function buildOnboardingResultFromProfile(
       ? formatBodyFatPercent(calculated.result.metrics.bodyFatPct)
       : '—',
     healthScoreLabel: formatOnboardingHealthScore(calculated.score),
-    coachTitle: display.title,
-    coachMessage: formatCoachMessage(display.description),
+    coachTitle: coach.coachTitle,
+    coachMessage: coach.coachMessage,
   };
 }
 
@@ -74,7 +117,9 @@ export function buildOnboardingResultFromMeasurements(
     return { status: 'unavailable', reason: 'invalid_health_score_input' };
   }
 
-  return buildOnboardingResultFromProfile(draftProfile, asOfDate);
+  return buildOnboardingResultFromProfile(draftProfile, asOfDate, {
+    hipCm: measurements.hipCm,
+  });
 }
 
 /**
@@ -102,7 +147,9 @@ export function healthScoreInputReadyFromPending(
   asOfDate: string = getLocalCalendarDate(),
 ): boolean {
   const draft = pending ? draftProfileFromMeasurements(pending) : null;
-  return Boolean(draft && mapProfileToHealthScoreInput(draft, asOfDate));
+  return Boolean(
+    draft && mapProfileToHealthScoreInput(draft, asOfDate, { hipCm: pending?.hipCm }),
+  );
 }
 
 export function unavailableReasonFromResult(

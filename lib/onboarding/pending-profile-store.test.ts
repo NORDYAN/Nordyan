@@ -101,6 +101,35 @@ describe('pending profile ownership', () => {
     assert.deepEqual(await pending.getForUser('user-a'), measurements);
   });
 
+  it('releases a bound retry back to anonymous without deleting values', async () => {
+    const storage = createMemoryPendingKeyValueStore();
+    const pending = createPendingProfileStore(storage);
+    await pending.saveUnowned(measurements);
+    await pending.bindToUser('typo-owner');
+
+    await pending.releaseBinding('typo-owner');
+
+    assert.deepEqual(await pending.getUnowned(), measurements);
+    assert.equal(await pending.getForUser('typo-owner'), null);
+  });
+
+  it('refuses to release a bound retry over an occupied anonymous slot', async () => {
+    const storage = createMemoryPendingKeyValueStore();
+    const pending = createPendingProfileStore(storage);
+    await pending.saveUnowned(measurements);
+    await pending.bindToUser('typo-owner');
+
+    const anonymous = { ...measurements, heightCm: 150, weightKg: 50 };
+    await pending.saveUnowned(anonymous);
+
+    await assert.rejects(
+      pending.releaseBinding('typo-owner'),
+      /cannot release a bound profile over an anonymous draft/,
+    );
+    assert.deepEqual(await pending.getUnowned(), anonymous);
+    assert.deepEqual(await pending.getForUser('typo-owner'), measurements);
+  });
+
   it('does not report written when anonymous persistence fails', async () => {
     const storage = createMemoryPendingKeyValueStore();
     const pending = createPendingProfileStore({

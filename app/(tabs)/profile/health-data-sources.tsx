@@ -1,23 +1,22 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { HealthSourceCard } from '@/components/profile/HealthSourceCard';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import {
+  buildIntegrationSuggestionMailto,
+  openMailtoUrl,
+} from '@/lib/presentation/support-mail';
 import { colors, profileHealthDataSourcesLayout, typography } from '@/theme';
 
-function handleConnectPress(sourceName: string) {
-  if (__DEV__) {
-    console.warn(`[health-data-sources] ${sourceName} integration coming in next version`);
-  }
-
-  Alert.alert(t('health.sources.nextVersionTitle'), t('health.sources.nextVersionBody'));
-}
-
 export default function HealthDataSourcesScreen() {
+  useI18n();
+
   return (
     <ScreenContainer variant="healthDataSources" style={styles.screen}>
       <StatusBar style="light" />
@@ -52,17 +51,13 @@ export default function HealthDataSourcesScreen() {
             icon="heart-outline"
             title="Apple Health"
             description={t('health.sources.apple.description')}
-            status="disconnected"
-            actionLabel={t('health.sources.connect')}
-            onActionPress={() => handleConnectPress('Apple Health')}
+            status="comingSoon"
           />
           <HealthSourceCard
             icon="git-network-outline"
             title="Health Connect (Android)"
             description={t('health.sources.healthConnect.description')}
-            status="disconnected"
-            actionLabel={t('health.sources.connect')}
-            onActionPress={() => handleConnectPress('Health Connect')}
+            status="comingSoon"
           />
           <HealthSourceCard
             icon="watch-outline"
@@ -84,6 +79,20 @@ export default function HealthDataSourcesScreen() {
             <Text style={styles.privacyTitle}>{t('health.sources.privacyTitle')}</Text>
             <Text style={styles.privacyBody}>{t('health.sources.privacyBody')}</Text>
           </View>
+        </View>
+
+        <View style={styles.suggestBlock}>
+          <Text style={styles.suggestHeading}>{t('health.sources.suggest.heading')}</Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('health.sources.suggest.action')}
+            onPress={() => {
+              void openMailtoUrl(buildIntegrationSuggestionMailto());
+            }}
+            style={({ pressed }) => [styles.suggestAction, pressed && styles.suggestActionPressed]}
+          >
+            <Text style={styles.suggestActionLabel}>{t('health.sources.suggest.action')}</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.footerNote}>{t('health.sources.footer')}</Text>
@@ -176,6 +185,32 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.regular,
     lineHeight:
       profileHealthDataSourcesLayout.privacyBodySize * typography.lineHeight.relaxed,
+  },
+  suggestBlock: {
+    width: '100%',
+    gap: 6,
+    alignItems: 'center',
+  },
+  suggestHeading: {
+    color: colors.profileHealthDataSourceTextMuted,
+    fontSize: profileHealthDataSourcesLayout.footerNoteSize,
+    fontWeight: typography.fontWeight.regular,
+    lineHeight:
+      profileHealthDataSourcesLayout.footerNoteSize * typography.lineHeight.relaxed,
+    textAlign: 'center',
+  },
+  suggestAction: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  suggestActionPressed: {
+    opacity: 0.75,
+  },
+  suggestActionLabel: {
+    color: colors.profileHealthDataSourceAccent,
+    fontSize: profileHealthDataSourcesLayout.privacyTitleSize,
+    fontWeight: typography.fontWeight.semibold,
+    textAlign: 'center',
   },
   footerNote: {
     color: colors.profileHealthDataSourceTextMuted,

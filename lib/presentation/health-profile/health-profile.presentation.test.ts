@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   HEALTH_PROFILE_DATE_OF_BIRTH_INPUT,
+  canSaveHealthProfilePersonalFields,
   healthProfilePersonalFields,
 } from './health-profile.presentation';
 
@@ -16,5 +17,21 @@ describe('health profile personal fields', () => {
   it('keeps date of birth and height stacked', () => {
     assert.equal(healthProfilePersonalFields.dateOfBirth.stacked, true);
     assert.equal(healthProfilePersonalFields.height.stacked, true);
+  });
+});
+
+describe('health profile gender save rule', () => {
+  const ready = {
+    dateOfBirthValid: true,
+    heightValid: true,
+    gender: 'female' as const,
+    activityLevel: 'lightly_active' as const,
+  };
+
+  it('enables save for male or female only', () => {
+    assert.equal(canSaveHealthProfilePersonalFields(ready), true);
+    assert.equal(canSaveHealthProfilePersonalFields({ ...ready, gender: 'male' }), true);
+    assert.equal(canSaveHealthProfilePersonalFields({ ...ready, gender: 'other' }), false);
+    assert.equal(canSaveHealthProfilePersonalFields({ ...ready, gender: null }), false);
   });
 });

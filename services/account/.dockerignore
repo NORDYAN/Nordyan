@@ -1,0 +1,28 @@
+# Used when build context is the NORDYAN repository root
+# (fly deploy . --config services/account/fly.toml)
+
+.git
+**/.git
+
+**/node_modules
+node_modules
+
+**/.env
+**/.env.*
+!**/.env.example
+
+app
+assets
+components
+docs
+lib
+supabase
+tools
+services/coach-language
+.cursor
+.expo
+.vscode
+
+**/*.test.ts
+**/README.md
+**/DEPLOY.md

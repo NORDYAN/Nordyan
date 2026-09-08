@@ -42,4 +42,91 @@ describe('canPresentBodyFatEstimate', () => {
       false,
     );
   });
+
+  it('allows female US Navy presentation from a measurement snapshot with hip', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: 80, neckCm: 33, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: 98,
+          snapshotReason: 'measurement',
+          bodyFatPct: 28.4,
+        },
+      ),
+      true,
+    );
+  });
+
+  it('allows female US Navy presentation from an onboarding snapshot with real hip', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: 80, neckCm: 33, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: 98,
+          snapshotReason: 'onboarding',
+          bodyFatPct: 28.4,
+          bodyFatMethod: 'us_navy',
+        },
+      ),
+      true,
+    );
+  });
+
+  it('keeps female hip-less or Deurenberg onboarding results unpresentable', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: 80, neckCm: 33, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: null,
+          snapshotReason: 'onboarding',
+          bodyFatPct: 29.1,
+          bodyFatMethod: 'deurenberg',
+        },
+      ),
+      false,
+    );
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: 80, neckCm: 33, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: 98,
+          snapshotReason: 'onboarding',
+          bodyFatPct: 29.1,
+          bodyFatMethod: 'deurenberg',
+        },
+      ),
+      false,
+    );
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: 80, neckCm: 33, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: null,
+          snapshotReason: 'measurement',
+          bodyFatPct: 29.1,
+        },
+      ),
+      false,
+    );
+  });
+
+  it('does not let hip change male presentation rules', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'male', waistCm: 90, neckCm: 38 },
+        { waistCm: 90, neckCm: 38, hipCm: 102, snapshotReason: 'measurement', bodyFatPct: 18 },
+      ),
+      true,
+    );
+  });
 });

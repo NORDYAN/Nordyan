@@ -9,11 +9,10 @@ import { useI18n } from '@/lib/i18n/I18nProvider';
 import { colors, homeLayout, typography } from '@/theme';
 
 type HomeCoachCardProps = {
-  message: string;
-  onPressPlan?: () => void;
+  onPressAsk?: () => void;
 };
 
-export function HomeCoachCard({ message, onPressPlan }: HomeCoachCardProps) {
+export function HomeCoachCard({ onPressAsk }: HomeCoachCardProps) {
   useI18n();
 
   return (
@@ -29,14 +28,15 @@ export function HomeCoachCard({ message, onPressPlan }: HomeCoachCardProps) {
         <Text style={styles.title}>{t('home.coach.title')}</Text>
       </View>
 
-      <Text style={styles.message}>{message}</Text>
+      <Text style={styles.message}>{t('home.coach.askBody')}</Text>
 
       <Button
-        label={t('home.coach.showPlan')}
+        label={t('home.coach.askCta')}
         variant="primary"
+        accessibilityLabel={t('home.coach.askCta')}
         style={styles.actionButton}
         labelStyle={styles.actionButtonLabel}
-        onPress={onPressPlan}
+        onPress={onPressAsk}
       />
     </Card>
   );

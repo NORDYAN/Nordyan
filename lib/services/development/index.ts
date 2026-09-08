@@ -2,7 +2,9 @@ export {
   buildDevelopmentCoachPresentation,
   buildDevelopmentHomeSummary,
   buildDevelopmentMetricSeries,
+  buildObservedCircumferenceDelta,
   buildDevelopmentTrendsSummary,
+  isObservedCircumferenceSnapshot,
   resolveDevelopmentPeriodSince,
   assertSeriesAscending,
 } from './development.derivation';

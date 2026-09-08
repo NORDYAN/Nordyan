@@ -88,6 +88,29 @@ function insufficientDelta(current: number | null): DevelopmentNumericDelta {
   return { status: 'insufficient_history', current };
 }
 
+/** Circumference values on non-measurement snapshots may be imputed for scoring. */
+export function isObservedCircumferenceSnapshot(snapshot: HealthSnapshot): boolean {
+  return snapshot.snapshotReason === 'measurement';
+}
+
+export function buildObservedCircumferenceDelta(
+  latest: HealthSnapshot,
+  previous: HealthSnapshot | null,
+  read: (snapshot: HealthSnapshot) => number,
+): DevelopmentNumericDelta {
+  const current = isObservedCircumferenceSnapshot(latest) ? read(latest) : null;
+
+  if (
+    current == null ||
+    !previous ||
+    !isObservedCircumferenceSnapshot(previous)
+  ) {
+    return insufficientDelta(current);
+  }
+
+  return buildDelta(current, read(previous));
+}
+
 function deriveTrend(scoreChange: number): Exclude<ProgressTrend, 'insufficient_history'> {
   if (scoreChange > 0) {
     return 'improving';
@@ -126,7 +149,7 @@ export function buildDevelopmentHomeSummary(input: {
       scoreChange: insufficientDelta(latest.overallScore),
       trend: 'insufficient_history',
       weight: insufficientDelta(latest.weightKg),
-      waist: insufficientDelta(latest.waistCm),
+      waist: buildObservedCircumferenceDelta(latest, null, (snapshot) => snapshot.waistCm),
       activity: insufficientDelta(latest.activityScore),
       sleep,
       coach: buildDevelopmentCoachPresentation(latest),
@@ -143,7 +166,7 @@ export function buildDevelopmentHomeSummary(input: {
     scoreChange: buildDelta(latest.overallScore, previous.overallScore),
     trend: deriveTrend(scoreDelta),
     weight: buildDelta(latest.weightKg, previous.weightKg),
-    waist: buildDelta(latest.waistCm, previous.waistCm),
+    waist: buildObservedCircumferenceDelta(latest, previous, (snapshot) => snapshot.waistCm),
     activity: buildDelta(latest.activityScore, previous.activityScore),
     sleep,
     coach: buildDevelopmentCoachPresentation(latest),
@@ -163,11 +186,13 @@ function toSeries(
 export function buildDevelopmentMetricSeries(
   periodSnapshotsAscending: HealthSnapshot[],
 ): DevelopmentMetricSeries {
+  const observedCircumferences = periodSnapshotsAscending.filter(isObservedCircumferenceSnapshot);
+
   return {
     healthScore: toSeries(periodSnapshotsAscending, (s) => s.overallScore),
     weight: toSeries(periodSnapshotsAscending, (s) => s.weightKg),
-    waist: toSeries(periodSnapshotsAscending, (s) => s.waistCm),
-    neck: toSeries(periodSnapshotsAscending, (s) => s.neckCm),
+    waist: toSeries(observedCircumferences, (s) => s.waistCm),
+    neck: toSeries(observedCircumferences, (s) => s.neckCm),
     activity: toSeries(periodSnapshotsAscending, (s) => s.activityScore),
   };
 }

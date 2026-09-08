@@ -13,6 +13,15 @@ function toNumber(value: number | null): number {
   return value === null || Number.isNaN(Number(value)) ? Number.NaN : Number(value);
 }
 
+function toNullableHipCm(value: number | null): number | null {
+  if (value == null) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function mapMeasurementRow(row: MeasurementRow): Measurement {
   return {
     id: row.id,
@@ -21,6 +30,7 @@ export function mapMeasurementRow(row: MeasurementRow): Measurement {
     weightKg: toNumber(row.weight_kg),
     waistCm: toNumber(row.waist_cm),
     neckCm: toNumber(row.neck_cm),
+    hipCm: toNullableHipCm(row.hip_cm),
     createdAt: row.created_at,
   };
 }
@@ -32,6 +42,7 @@ export function measurementToInsert(input: CreateMeasurementInput): MeasurementI
     weight_kg: input.weightKg,
     waist_cm: input.waistCm,
     neck_cm: input.neckCm,
+    hip_cm: input.hipCm,
   };
 }
 

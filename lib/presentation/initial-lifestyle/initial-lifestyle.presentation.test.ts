@@ -21,7 +21,6 @@ import {
   retreatInitialLifestyleStep,
   savePendingOnboardingInitialLifestyle,
   selectInitialLifestyleAnswer,
-  skipOnboardingInitialLifestyle,
   toInitialLifestyleSubmitPayload,
 } from './initial-lifestyle.presentation';
 import type { InitialLifestyleFormAnswers, InitialLifestyleStep } from './initial-lifestyle.types';
@@ -228,7 +227,7 @@ describe('Initial Lifestyle form navigation', () => {
   });
 });
 
-describe('Initial Lifestyle pending save and skip', () => {
+describe('Initial Lifestyle pending save', () => {
   it('saves complete seven answers as pending and does not write during navigation', async () => {
     const storage = createMemoryPendingKeyValueStore();
     const store = createPendingInitialLifestyleStore(storage);
@@ -264,20 +263,21 @@ describe('Initial Lifestyle pending save and skip', () => {
     assert.equal((await storage.getItem('@nordyan/pending_initial_lifestyle')) !== null, true);
   });
 
-  it('explicit Skip creates no pending baseline and clears stale pending lifestyle', async () => {
+  it('requires all seven answers before a pending baseline can be saved', async () => {
     const storage = createMemoryPendingKeyValueStore();
     const store = createPendingInitialLifestyleStore(storage);
+    const sixAnswers = walkForm([
+      { field: 'sleepQuality', label: 'Bra' },
+      { field: 'energy', label: 'Normal' },
+      { field: 'stress', label: 'Inte alls' },
+      { field: 'lessHealthyFoodFrequency', label: '1 gång' },
+      { field: 'everydayActivity', label: 'Ganska aktiv' },
+      { field: 'eatingQuality', label: 'Okej' },
+    ]);
 
-    await store.savePendingInitialLifestyle(completeAnswers);
-    assert.equal((await storage.getItem('@nordyan/pending_initial_lifestyle')) !== null, true);
-
-    await skipOnboardingInitialLifestyle(store);
-
-    const loaded = await store.getPendingInitialLifestyle();
-    assert.equal(loaded.ok, true);
-    if (loaded.ok) {
-      assert.equal(loaded.value, null);
-    }
+    assert.equal(canSubmitInitialLifestyleForm(sixAnswers), false);
+    const incomplete = await savePendingOnboardingInitialLifestyle(store, sixAnswers);
+    assert.equal(incomplete.ok, false);
     assert.equal(await storage.getItem('@nordyan/pending_initial_lifestyle'), null);
   });
 });

@@ -6,17 +6,23 @@ export type ProfileFieldOption<T extends string> = {
   value: T;
 };
 
-export const PROFILE_GENDER_VALUES = ['male', 'female', 'other'] as const;
+export const PROFILE_GENDER_VALUES = ['male', 'female'] as const;
+export type WritableProfileGender = (typeof PROFILE_GENDER_VALUES)[number];
 
-export function getProfileGenderOptions(): readonly ProfileFieldOption<ProfileGender>[] {
+export function isWritableProfileGender(
+  value: ProfileGender | null | undefined,
+): value is WritableProfileGender {
+  return value === 'male' || value === 'female';
+}
+
+export function getProfileGenderOptions(): readonly ProfileFieldOption<WritableProfileGender>[] {
   return [
     { label: t('profile.gender.male'), value: 'male' },
     { label: t('profile.gender.female'), value: 'female' },
-    { label: t('profile.gender.other'), value: 'other' },
   ];
 }
 
-export const PROFILE_GENDER_OPTIONS: readonly ProfileFieldOption<ProfileGender>[] = liveArray(
+export const PROFILE_GENDER_OPTIONS: readonly ProfileFieldOption<WritableProfileGender>[] = liveArray(
   getProfileGenderOptions,
 );
 

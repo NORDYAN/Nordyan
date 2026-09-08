@@ -78,17 +78,22 @@ export function mapCoachAskSex(gender: ProfileGender | null | undefined): CoachA
 export function mapBodyCompositionFromSnapshot(
   snapshot: Pick<
     HealthSnapshot,
-    'bodyFatPct' | 'snapshotReason' | 'waistCm' | 'neckCm'
+    'bodyFatPct' | 'snapshotReason' | 'waistCm' | 'neckCm' | 'hipCm'
   > | null,
-  profile: Pick<UserProfile, 'gender' | 'waistCm' | 'neckCm'> | null,
+  profile: Pick<UserProfile, 'gender' | 'waistCm' | 'neckCm' | 'heightCm'> | null,
 ): CoachAskBodyComposition {
   const percent = snapshot?.bodyFatPct;
-  const measuredCircumferences =
-    snapshot?.snapshotReason === 'measurement'
-      ? { waistCm: snapshot.waistCm, neckCm: snapshot.neckCm }
-      : null;
+  const evidence = snapshot
+    ? {
+        waistCm: snapshot.waistCm,
+        neckCm: snapshot.neckCm,
+        hipCm: snapshot.hipCm ?? null,
+        snapshotReason: snapshot.snapshotReason,
+        bodyFatPct: snapshot.bodyFatPct,
+      }
+    : null;
   if (
-    !canPresentBodyFatEstimate(profile, measuredCircumferences) ||
+    !canPresentBodyFatEstimate(profile, evidence) ||
     typeof percent !== 'number' ||
     !Number.isFinite(percent) ||
     percent <= 0

@@ -38,6 +38,10 @@ export const DEFAULT_MEASUREMENT_HELP_SECTIONS: readonly MeasurementHelpSection[
     title: t('measureHelp.neckHeading'),
     body: t('measureHelp.neck.body'),
   },
+  {
+    title: t('measureHelp.hipHeading'),
+    body: t('measureHelp.hip.body'),
+  },
 ]);
 
 const MEASUREMENT_HELP_MIDJA_ITEM_KEYS = [
@@ -49,6 +53,10 @@ const MEASUREMENT_HELP_MIDJA_ITEM_KEYS = [
 const MEASUREMENT_HELP_HALS_ITEM_KEYS = [
   'measureHelp.neck.1',
   'measureHelp.neck.2',
+] as const satisfies readonly TranslationKey[];
+
+const MEASUREMENT_HELP_HIP_ITEM_KEYS = [
+  'measureHelp.hip.1',
 ] as const satisfies readonly TranslationKey[];
 
 const MEASUREMENT_HELP_TIPS_ITEM_KEYS = [
@@ -214,6 +222,17 @@ export function MeasurementHelpModal({
                 }
                 title={t('measureHelp.neckHeading')}
                 itemKeys={MEASUREMENT_HELP_HALS_ITEM_KEYS}
+              />
+              <MeasurementHelpGuidelineCard
+                icon={
+                  <MaterialCommunityIcons
+                    name="ruler"
+                    size={onboardingMeasurementHelpLayout.cardIconSize}
+                    color={colors.onboardingMeasurementHelpText}
+                  />
+                }
+                title={t('measureHelp.hipHeading')}
+                itemKeys={MEASUREMENT_HELP_HIP_ITEM_KEYS}
               />
               <MeasurementHelpGuidelineCard
                 icon={

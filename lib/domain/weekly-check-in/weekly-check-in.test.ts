@@ -6,6 +6,7 @@ import {
   WEEKLY_CHECK_IN_ANSWER_FIELDS,
   WEEKLY_CHECK_IN_SCALE_POLARITY,
   WEEKLY_CHECK_IN_TRAINING_FREQUENCIES,
+  getPreviousWeeklyCheckInWeekStartDate,
   getWeeklyCheckInScalePolarity,
   getWeeklyCheckInWeekStartDate,
   weeklyCheckInAnswersValidator,
@@ -211,6 +212,18 @@ describe('getWeeklyCheckInWeekStartDate', () => {
     assert.equal(monday, thursday);
     assert.equal(thursday, sunday);
     assert.equal(monday, '2026-08-10');
+  });
+});
+
+describe('getPreviousWeeklyCheckInWeekStartDate', () => {
+  it('returns the previous Monday from a Monday week start', () => {
+    assert.equal(getPreviousWeeklyCheckInWeekStartDate('2026-08-31'), '2026-08-24');
+    assert.equal(getPreviousWeeklyCheckInWeekStartDate('2026-08-24'), '2026-08-17');
+  });
+
+  it('uses the same Sunday/Monday boundary as the canonical week helper', () => {
+    assert.equal(getPreviousWeeklyCheckInWeekStartDate('2026-08-16'), '2026-08-03');
+    assert.equal(getPreviousWeeklyCheckInWeekStartDate('2026-08-17'), '2026-08-10');
   });
 });
 

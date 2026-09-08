@@ -88,6 +88,21 @@ export class SupabaseAuthRepository implements AuthRepository {
     return { ok: true, value: sessionResult.value?.user ?? null };
   }
 
+  async getServerUser(): Promise<Result<AuthUser | null>> {
+    const supabase = this.clientProvider();
+    if (!supabase) {
+      return missingConfigError();
+    }
+
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) {
+      return { ok: false, error: mapSupabaseAuthError(error) };
+    }
+
+    return { ok: true, value: data.user ? mapUser(data.user) : null };
+  }
+
   async signInWithEmail(email: string, password: string): Promise<Result<AuthSession>> {
     const supabase = this.clientProvider();
     if (!supabase) {

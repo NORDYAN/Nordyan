@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { Keyboard } from 'react-native';
 
 import { AuthForm } from '@/components/auth/AuthForm';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { routes } from '@/constants/routes';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { hasRequiredAnonymousSignupBaseline } from '@/lib/onboarding/anonymous-signup-baseline';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -24,6 +26,13 @@ export default function SignUpScreen() {
     }
 
     setErrorMessage(null);
+
+    const maySignUp = await hasRequiredAnonymousSignupBaseline();
+    if (!maySignUp) {
+      router.replace(routes.onboarding);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const result = await signUpWithEmail(email, password);
@@ -36,7 +45,8 @@ export default function SignUpScreen() {
     }
 
     if (result.outcome.kind === 'pending_verification') {
-      router.replace({
+      Keyboard.dismiss();
+      router.push({
         pathname: routes.authCheckEmail,
         params: { email: result.outcome.email },
       });
@@ -52,9 +62,8 @@ export default function SignUpScreen() {
         title={t('auth.signUp.title')}
         submitLabel={t('auth.signUp.submit')}
         loadingLabel={authMessages.signingUp}
-        alternatePrompt={t('auth.signUp.alternatePrompt')}
-        alternateHref={routes.authSignIn}
-        alternateLabel={t('auth.signUp.alternateLabel')}
+        alternateHref={routes.onboarding}
+        alternateLabel={t('auth.signUp.backToStart')}
         email={email}
         password={password}
         errorMessage={errorMessage ?? (!isConfigured ? authMessages.missingConfig : null)}

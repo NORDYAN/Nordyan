@@ -45,16 +45,54 @@ describe('mapBodyCompositionFromSnapshot', () => {
     );
   });
 
-  it('suppresses female Deurenberg body fat because hip is not collected', () => {
+  it('suppresses female Deurenberg body fat without snapshot-local hip', () => {
     assert.deepEqual(
       mapBodyCompositionFromSnapshot(
         { ...onboardingSnapshot, bodyFatPct: 30.1 },
-        { gender: 'female', waistCm: 90, neckCm: 34 },
+        { gender: 'female', waistCm: 90, neckCm: 34, heightCm: 168 },
       ),
       {
         status: 'unavailable',
         bodyFatPercent: null,
         estimationKind: 'unavailable',
+      },
+    );
+  });
+
+  it('maps presentable female US Navy body fat from a measurement snapshot with hip', () => {
+    assert.deepEqual(
+      mapBodyCompositionFromSnapshot(
+        {
+          ...onboardingSnapshot,
+          snapshotReason: 'measurement',
+          hipCm: 98,
+          bodyFatPct: 28.4,
+        },
+        { gender: 'female', waistCm: null, neckCm: null, heightCm: 168 },
+      ),
+      {
+        status: 'ready',
+        bodyFatPercent: 28.4,
+        estimationKind: 'calculated_from_latest_snapshot',
+      },
+    );
+  });
+
+  it('maps presentable female US Navy body fat from an onboarding snapshot with hip', () => {
+    assert.deepEqual(
+      mapBodyCompositionFromSnapshot(
+        {
+          ...onboardingSnapshot,
+          snapshotReason: 'onboarding',
+          hipCm: 98,
+          bodyFatPct: 28.4,
+        },
+        { gender: 'female', waistCm: null, neckCm: null, heightCm: 168 },
+      ),
+      {
+        status: 'ready',
+        bodyFatPercent: 28.4,
+        estimationKind: 'calculated_from_latest_snapshot',
       },
     );
   });

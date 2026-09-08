@@ -34,9 +34,11 @@ export type ProfileMeasurements = {
   heightCm: number;
   /** Initial body weight from onboarding. Optional on profile-only updates. */
   weightKg?: number;
-  /** Collected only via Health → New Measurement. */
+  /** Collected via onboarding body measurements or Health → New Measurement. */
   waistCm?: number;
   neckCm?: number;
+  /** Pending-only. Not stored on profiles. */
+  hipCm?: number;
   activityLevel?: ProfileActivityLevel | null;
   goal?: ProfileGoal | null;
 };

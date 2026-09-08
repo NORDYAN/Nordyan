@@ -1,4 +1,5 @@
 import type { CreateMeasurementInput } from './measurement.types';
+import { isSupportedHipCm } from './hip-cm';
 import { t } from '@/lib/i18n';
 import type {
   MeasurementValidationContext,
@@ -42,6 +43,10 @@ export class DefaultMeasurementValidator implements MeasurementValidator {
 
     if (!isPositiveFinite(input.neckCm)) {
       errors.push({ field: 'neckCm', message: t('health.validation.neck') });
+    }
+
+    if (!isPositiveFinite(input.hipCm) || !isSupportedHipCm(input.hipCm)) {
+      errors.push({ field: 'hipCm', message: t('health.validation.hip') });
     }
 
     if (errors.length === 0) {

@@ -18,8 +18,8 @@ const defaultSyncPendingProfileDeps: SyncPendingProfileDeps = {
   clearPendingProfileMeasurements: clearPendingProfileMeasurementsForUser,
   completeOnboarding: (measurements) => profileService.completeOnboarding(measurements),
   getCurrentProfile: () => profileService.getCurrentProfile(),
-  createOnboardingSnapshot: (profile) =>
-    createHealthSnapshotFromProfile(profile, 'onboarding'),
+  createOnboardingSnapshot: (profile, options) =>
+    createHealthSnapshotFromProfile(profile, 'onboarding', options),
   setOnboardingCompleteForUser,
 };
 

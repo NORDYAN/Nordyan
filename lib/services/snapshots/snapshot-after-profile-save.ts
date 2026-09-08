@@ -2,6 +2,7 @@ import type { Result } from '@/lib/core';
 import type { UserProfile } from '@/lib/domain/profile';
 import type { HealthSnapshot, SnapshotReason } from '@/lib/domain/snapshot';
 import { calculateHomeHealthScoreFromProfile } from '@/lib/services/health-score';
+import type { HealthScoreProfileOptions } from '@/lib/services/health-score/health-score.mapper';
 
 import {
   buildCreateSnapshotInputFromPipeline,
@@ -14,8 +15,9 @@ export type ProfileSnapshotReason = Exclude<SnapshotReason, 'weekly_checkin' | '
 export async function createHealthSnapshotFromProfile(
   profile: UserProfile,
   snapshotReason: ProfileSnapshotReason,
+  options?: HealthScoreProfileOptions,
 ): Promise<Result<HealthSnapshot>> {
-  const calculated = calculateHomeHealthScoreFromProfile(profile);
+  const calculated = calculateHomeHealthScoreFromProfile(profile, undefined, options);
   if (!calculated) {
     return {
       ok: false,
@@ -47,6 +49,7 @@ export async function createHealthSnapshotFromProfile(
       weightKg: calculated.input.weightKg,
       waistCm: calculated.input.waistCm,
       neckCm: calculated.input.neckCm,
+      hipCm: calculated.input.hipCm ?? options?.hipCm ?? null,
     },
     fullPipeline,
     snapshotReason,

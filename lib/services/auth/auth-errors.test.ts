@@ -5,7 +5,10 @@ import { toSignUpOutcome } from './to-sign-up-outcome';
 import {
   AUTH_CALLBACK_PATH,
   AUTH_EMAIL_REDIRECT_TO,
+  EMAIL_VERIFICATION_NATIVE_CALLBACK,
+  EMAIL_VERIFICATION_WEB_REDIRECT,
   PASSWORD_RECOVERY_CALLBACK_PATH,
+  PASSWORD_RECOVERY_REDIRECT,
   PASSWORD_RECOVERY_REDIRECT_TO,
   getAuthEmailRedirectTo,
   getPasswordRecoveryRedirectTo,
@@ -138,16 +141,23 @@ describe('toSignUpOutcome', () => {
 });
 
 describe('auth email redirect', () => {
-  it('uses the nordyan callback URL for signup and resend', () => {
+  it('uses the HTTPS website bridge for signup and resend', () => {
     assert.equal(AUTH_CALLBACK_PATH, '/auth/callback');
-    assert.equal(AUTH_EMAIL_REDIRECT_TO, 'nordyan://auth/callback');
-    assert.equal(getAuthEmailRedirectTo(), AUTH_EMAIL_REDIRECT_TO);
+    assert.equal(EMAIL_VERIFICATION_WEB_REDIRECT, 'https://nordyan.app/auth/callback');
+    assert.equal(AUTH_EMAIL_REDIRECT_TO, EMAIL_VERIFICATION_WEB_REDIRECT);
+    assert.equal(getAuthEmailRedirectTo(), EMAIL_VERIFICATION_WEB_REDIRECT);
+  });
+
+  it('keeps the native email callback for the explicit website handoff', () => {
+    assert.equal(EMAIL_VERIFICATION_NATIVE_CALLBACK, 'nordyan://auth/callback');
   });
 
   it('uses a separate callback URL for password recovery', () => {
     assert.equal(PASSWORD_RECOVERY_CALLBACK_PATH, '/auth/recovery-callback');
-    assert.equal(PASSWORD_RECOVERY_REDIRECT_TO, 'nordyan://auth/recovery-callback');
-    assert.equal(getPasswordRecoveryRedirectTo(), PASSWORD_RECOVERY_REDIRECT_TO);
-    assert.notEqual(PASSWORD_RECOVERY_REDIRECT_TO, AUTH_EMAIL_REDIRECT_TO);
+    assert.equal(PASSWORD_RECOVERY_REDIRECT, 'nordyan://auth/recovery-callback');
+    assert.equal(PASSWORD_RECOVERY_REDIRECT_TO, PASSWORD_RECOVERY_REDIRECT);
+    assert.equal(getPasswordRecoveryRedirectTo(), PASSWORD_RECOVERY_REDIRECT);
+    assert.notEqual(PASSWORD_RECOVERY_REDIRECT, EMAIL_VERIFICATION_WEB_REDIRECT);
+    assert.notEqual(PASSWORD_RECOVERY_REDIRECT, EMAIL_VERIFICATION_NATIVE_CALLBACK);
   });
 });

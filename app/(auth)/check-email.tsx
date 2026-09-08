@@ -1,10 +1,15 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { CheckEmailView } from '@/components/auth/CheckEmailView';
+import { routes } from '@/constants/routes';
 import { AUTH_RESEND_COOLDOWN_MS, canResendVerification, maskEmailAddress } from '@/lib/presentation/auth-verification';
-import { getPendingSignupVerification } from '@/lib/onboarding/pending-signup-verification-storage';
+import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
+import { shouldPreventCheckEmailNativeBack } from '@/lib/presentation/auth-verification/check-email-native-back';
+import { getPendingSignupVerification, clearPendingSignupVerification } from '@/lib/onboarding/pending-signup-verification-storage';
+import { releasePendingOnboardingFromOwner } from '@/lib/onboarding/pending-onboarding-ownership';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -21,7 +26,8 @@ function readEmailParam(value: string | string[] | undefined): string {
 }
 
 export default function CheckEmailScreen() {
-  const { resendSignupVerification } = useAuth();
+  const { resendSignupVerification, status, isReady } = useAuth();
+  const navigation = useNavigation();
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const paramEmail = readEmailParam(params.email);
   const [email, setEmail] = useState(paramEmail);
@@ -32,6 +38,9 @@ export default function CheckEmailScreen() {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [changeEmailError, setChangeEmailError] = useState<string | null>(null);
+  const loggedAuthRedirectRef = useRef(false);
 
   const canResend = Boolean(email) && !isResending && canResendVerification(lastSentAtMs, nowMs);
 
@@ -54,6 +63,14 @@ export default function CheckEmailScreen() {
   }, [paramEmail]);
 
   useEffect(() => {
+    return navigation.addListener('beforeRemove', (event) => {
+      if (shouldPreventCheckEmailNativeBack(event.data.action.type)) {
+        event.preventDefault();
+      }
+    });
+  }, [navigation]);
+
+  useEffect(() => {
     const remainingMs = Math.max(0, AUTH_RESEND_COOLDOWN_MS - (Date.now() - lastSentAtMs));
     const timeout = setTimeout(() => {
       setNowMs(Date.now());
@@ -65,7 +82,7 @@ export default function CheckEmailScreen() {
     const currentNow = Date.now();
     setNowMs(currentNow);
 
-    if (!email || isResending || !canResendVerification(lastSentAtMs, currentNow)) {
+    if (!email || isResending || isChangingEmail || !canResendVerification(lastSentAtMs, currentNow)) {
       return;
     }
 
@@ -85,7 +102,40 @@ export default function CheckEmailScreen() {
 
     setLastSentAtMs(finishedAt);
     setResendSuccess(true);
-  }, [email, isResending, lastSentAtMs, resendSignupVerification]);
+  }, [email, isResending, isChangingEmail, lastSentAtMs, resendSignupVerification]);
+
+  const handleUseAnotherEmail = useCallback(async () => {
+    if (isChangingEmail || isResending) {
+      return;
+    }
+
+    setIsChangingEmail(true);
+    setChangeEmailError(null);
+
+    try {
+      const pending = await getPendingSignupVerification();
+      if (pending?.ownerId) {
+        await releasePendingOnboardingFromOwner(pending.ownerId);
+      }
+      await clearPendingSignupVerification();
+      router.replace(routes.authSignUp);
+    } catch {
+      setChangeEmailError(authMessages.generic);
+      setIsChangingEmail(false);
+    }
+  }, [isChangingEmail, isResending]);
+
+  useEffect(() => {
+    if (!(isReady && status === 'authenticated') || loggedAuthRedirectRef.current) {
+      return;
+    }
+    loggedAuthRedirectRef.current = true;
+    logNordyanAuthTrace('check-email.redirect', { destination: 'root' });
+  }, [isReady, status]);
+
+  if (isReady && status === 'authenticated') {
+    return <Redirect href={routes.root} />;
+  }
 
   return (
     <AuthLayout>
@@ -95,8 +145,13 @@ export default function CheckEmailScreen() {
         canResend={canResend}
         resendSuccess={resendSuccess}
         resendError={resendError}
+        isChangingEmail={isChangingEmail}
+        changeEmailError={changeEmailError}
         onResend={() => {
           void handleResend();
+        }}
+        onUseAnotherEmail={() => {
+          void handleUseAnotherEmail();
         }}
       />
     </AuthLayout>

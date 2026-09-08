@@ -1,11 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/** Legacy device-global flag — must not drive routing anymore. */
-const LEGACY_GLOBAL_ONBOARDING_COMPLETE_KEY = '@nordyan/onboarding_complete';
-
-function onboardingCompleteKeyForUser(userId: string): string {
-  return `@nordyan/onboarding_complete/${userId}`;
-}
+import {
+  LEGACY_GLOBAL_ONBOARDING_COMPLETE_KEY,
+  onboardingCompleteKeyForUser,
+} from './onboarding-complete-keys';
 
 async function clearLegacyGlobalOnboardingFlag(): Promise<void> {
   await AsyncStorage.removeItem(LEGACY_GLOBAL_ONBOARDING_COMPLETE_KEY);

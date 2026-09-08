@@ -17,7 +17,10 @@ type CheckEmailViewProps = {
   canResend: boolean;
   resendSuccess: boolean;
   resendError: string | null;
+  isChangingEmail: boolean;
+  changeEmailError: string | null;
   onResend: () => void;
+  onUseAnotherEmail: () => void;
 };
 
 export function CheckEmailView({
@@ -26,7 +29,10 @@ export function CheckEmailView({
   canResend,
   resendSuccess,
   resendError,
+  isChangingEmail,
+  changeEmailError,
   onResend,
+  onUseAnotherEmail,
 }: CheckEmailViewProps) {
   return (
     <View style={styles.root}>
@@ -54,15 +60,41 @@ export function CheckEmailView({
           {resendError}
         </Text>
       ) : null}
+      {changeEmailError ? (
+        <Text style={styles.error} maxFontSizeMultiplier={1.1}>
+          {changeEmailError}
+        </Text>
+      ) : null}
 
       <Button
         label={isResending ? AUTH_VERIFICATION_COPY.resendSubmitting : AUTH_VERIFICATION_COPY.resend}
         variant="onboarding"
-        disabled={isResending || !canResend}
-        accessibilityState={{ disabled: isResending || !canResend, busy: isResending }}
+        disabled={isResending || isChangingEmail || !canResend}
+        accessibilityState={{
+          disabled: isResending || isChangingEmail || !canResend,
+          busy: isResending,
+        }}
         onPress={onResend}
-        style={[styles.resendButton, (isResending || !canResend) && styles.resendButtonDisabled]}
+        style={[
+          styles.resendButton,
+          (isResending || isChangingEmail || !canResend) && styles.resendButtonDisabled,
+        ]}
       />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={AUTH_VERIFICATION_COPY.useAnotherEmail}
+        accessibilityState={{ disabled: isResending || isChangingEmail, busy: isChangingEmail }}
+        disabled={isResending || isChangingEmail}
+        onPress={onUseAnotherEmail}
+        style={({ pressed }) => [
+          styles.changeEmailHit,
+          (isResending || isChangingEmail) && styles.changeEmailDisabled,
+          pressed && styles.footerLinkPressed,
+        ]}
+      >
+        <Text style={styles.footerLink}>{AUTH_VERIFICATION_COPY.useAnotherEmail}</Text>
+      </Pressable>
 
       <View style={styles.footer}>
         <Link href={routes.authSignIn} asChild>
@@ -114,6 +146,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   resendButtonDisabled: {
+    opacity: 0.45,
+  },
+  changeEmailHit: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  changeEmailDisabled: {
     opacity: 0.45,
   },
   footer: {

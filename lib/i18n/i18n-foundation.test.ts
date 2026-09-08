@@ -7,7 +7,6 @@ import {
   getProfileGenderOptions,
 } from '../domain/profile/profile-field-options';
 import { WEEKLY_CHECK_IN_SCALE_POLARITY } from '../domain/weekly-check-in';
-import { isCoachHomeBodyFatComparisonQuestion } from '../presentation/coach-home';
 import {
   findInitialLifestyleOptionValue,
   getInitialLifestyleQuestions,
@@ -161,21 +160,100 @@ describe('i18n domain-value isolation', () => {
       );
       assert.deepEqual(
         getProfileGenderOptions().map((option) => option.value),
-        ['male', 'female', 'other'],
+        ['male', 'female'],
+      );
+      assert.equal(
+        getProfileGenderOptions().some((option) => option.value === 'other'),
+        false,
       );
     }
   });
 
-  it('matches translated Coach body-fat chips without using the label as a stored value', () => {
-    assert.equal(isCoachHomeBodyFatComparisonQuestion(sv['coach.quick.bodyFatComparison']), true);
-    assert.equal(isCoachHomeBodyFatComparisonQuestion(nb['coach.quick.bodyFatComparison']), true);
-    assert.equal(isCoachHomeBodyFatComparisonQuestion(sv['coach.quick.whyFocus']), false);
+  it('localizes Coach question-card heading in sv and nb', () => {
+    assert.equal(t('coach.ask.quickQuestions', undefined, 'sv'), 'Frågor för dig');
+    assert.equal(t('coach.ask.quickQuestions', undefined, 'nb'), 'Spørsmål for deg');
+    assert.notEqual(sv['coach.ask.quickQuestions'], 'Snabbfrågor');
+    assert.notEqual(nb['coach.ask.quickQuestions'], 'Hurtigspørsmål');
+  });
+
+  it('localizes NORDYAN Premium information copy in sv and nb', () => {
+    assert.equal(t('profile.subscription.title', undefined, 'sv'), 'NORDYAN Premium');
+    assert.equal(t('profile.subscription.title', undefined, 'nb'), 'NORDYAN Premium');
+    assert.equal(
+      t('profile.subscription.subtitle', undefined, 'sv'),
+      'Få ännu mer ut av din hälsodata med fördjupad analys och fler smarta verktyg.',
+    );
+    assert.equal(
+      t('profile.subscription.subtitle', undefined, 'nb'),
+      'Få enda mer ut av helsedataene dine med dypere analyse og flere smarte verktøy.',
+    );
+    assert.equal(t('profile.subscription.insights.title', undefined, 'sv'), 'Fördjupade insikter');
+    assert.equal(t('profile.subscription.insights.title', undefined, 'nb'), 'Dypere innsikt');
+    assert.equal(t('profile.subscription.footer', undefined, 'sv'), 'NORDYAN Premium kommer snart.');
+    assert.equal(t('profile.subscription.footer', undefined, 'nb'), 'NORDYAN Premium kommer snart.');
+    assert.equal(t('profile.feedback.mailSubject', undefined, 'sv'), 'Feedback – NORDYAN');
+    assert.equal(t('profile.feedback.mailSubject', undefined, 'nb'), 'Tilbakemelding – NORDYAN');
+    assert.equal(t('profile.help.mailSubject', undefined, 'sv'), 'Hjälp & support – NORDYAN');
+    assert.equal(t('profile.help.mailSubject', undefined, 'nb'), 'Hjelp og support – NORDYAN');
+    assert.equal(t('profile.notifications', undefined, 'sv'), 'Aviseringar');
+    assert.equal(t('profile.notifications', undefined, 'nb'), 'Varsler');
+    assert.equal(t('profile.notifications.daily.title', undefined, 'sv'), 'Dagens fokus väntar');
+    assert.equal(t('profile.notifications.daily.title', undefined, 'nb'), 'Dagens fokus venter');
+    assert.equal(t('profile.notifications.weekly.title', undefined, 'sv'), 'Veckokollen väntar');
+    assert.equal(t('profile.notifications.weekly.title', undefined, 'nb'), 'Ukessjekken venter');
+    assert.equal(
+      t('profile.help.mailBody', undefined, 'sv'),
+      'Hej NORDYAN,\n\nJag behöver hjälp med:',
+    );
+    assert.equal(
+      t('profile.help.mailBody', undefined, 'nb'),
+      'Hei NORDYAN,\n\nJeg trenger hjelp med:',
+    );
+    assert.equal(t('health.sources.suggest.action', undefined, 'sv'), 'Föreslå en integration');
+    assert.equal(t('health.sources.suggest.action', undefined, 'nb'), 'Foreslå en integrasjon');
+  });
+
+  it('localizes Coach Home focus-bridge copy in sv and nb', () => {
+    assert.equal(t('coach.bridge.title', undefined, 'sv'), 'Jag har satt ditt fokus');
+    assert.equal(
+      t('coach.bridge.body', undefined, 'sv'),
+      'Jag har valt veckans fokus och dagens uppgift utifrån dina senaste uppgifter.',
+    );
+    assert.equal(t('coach.bridge.cta', undefined, 'sv'), 'Se dagens fokus');
+    assert.equal(t('coach.bridge.title', undefined, 'nb'), 'Jeg har satt fokuset ditt');
+    assert.equal(
+      t('coach.bridge.body', undefined, 'nb'),
+      'Jeg har valgt ukens fokus og dagens oppgave ut fra de siste opplysningene dine.',
+    );
+    assert.equal(t('coach.bridge.cta', undefined, 'nb'), 'Se dagens fokus');
   });
 
   it('localizes user-visible profile validation copy in sv and nb', () => {
+    assert.equal(t('profile.gender.male', undefined, 'sv'), 'Man');
+    assert.equal(t('profile.gender.female', undefined, 'sv'), 'Kvinna');
+    assert.equal(t('profile.gender.male', undefined, 'nb'), 'Mann');
+    assert.equal(t('profile.gender.female', undefined, 'nb'), 'Kvinne');
+    assert.equal(t('onboarding.profile.gender', undefined, 'sv'), 'Kön');
+    assert.equal(t('onboarding.profile.gender', undefined, 'nb'), 'Kjønn');
+    assert.equal(
+      t('onboarding.profile.genderHelper', undefined, 'sv'),
+      'Kön används för könsspecifika hälsoberäkningar, till exempel kroppsfett. Välj man eller kvinna.',
+    );
+    assert.equal(
+      t('onboarding.profile.genderHelper', undefined, 'nb'),
+      'Kjønn brukes til kjønnsspesifikke helseberegninger, for eksempel kroppsfett. Velg mann eller kvinne.',
+    );
     assert.equal(t('profile.validation.gender', undefined, 'sv'), 'Välj kön.');
     assert.equal(t('profile.validation.gender', undefined, 'nb'), 'Velg kjønn.');
     assert.equal(t('profile.validation.dateOfBirth', undefined, 'nb'), 'Oppgi fødselsdato.');
+    assert.equal(
+      t('profile.validation.mustBe18', undefined, 'sv'),
+      'NORDYAN är för personer som är 18 år eller äldre.',
+    );
+    assert.equal(
+      t('profile.validation.mustBe18', undefined, 'nb'),
+      'NORDYAN er for personer som er 18 år eller eldre.',
+    );
     assert.notEqual(t('profile.validation.height', undefined, 'nb'), 'profile.validation.height');
   });
 });
@@ -188,6 +266,11 @@ describe('i18n runtime language selection', () => {
       .sections.flatMap((section) => section.rows)
       .find((row) => row.id === 'language');
     assert.equal(languageSv?.title, 'Språk');
+    const privacySv = buildProfileHomeView()
+      .sections.flatMap((section) => section.rows)
+      .find((row) => row.id === 'privacy-and-data');
+    assert.equal(privacySv?.title, 'Integritet och data');
+    assert.equal(privacySv?.status, 'active');
 
     setActiveLocale('nb');
     assert.equal(buildProfileHomeView().signOut.title, 'Logg ut');
@@ -195,6 +278,10 @@ describe('i18n runtime language selection', () => {
       .sections.flatMap((section) => section.rows)
       .find((row) => row.id === 'language');
     assert.equal(languageNb?.title, 'Språk');
+    const privacyNb = buildProfileHomeView()
+      .sections.flatMap((section) => section.rows)
+      .find((row) => row.id === 'privacy-and-data');
+    assert.equal(privacyNb?.title, 'Personvern og data');
     assert.equal(t('profile.language.nb'), 'Norsk bokmål');
   });
 

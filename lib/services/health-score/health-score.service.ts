@@ -5,6 +5,7 @@ import type { UserProfile } from '@/lib/domain/profile';
 import {
   getLocalCalendarDate,
   mapProfileToHealthScoreInput,
+  type HealthScoreProfileOptions,
 } from './health-score.mapper';
 import { getHealthScoreBandDisplayLabel, t } from '@/lib/i18n';
 import type { HomeHealthScoreState } from './health-score.service.types';
@@ -26,12 +27,13 @@ export type CalculatedHomeHealthScore = {
 export function calculateHomeHealthScoreFromProfile(
   profile: UserProfile | null,
   asOfDate: string = getLocalCalendarDate(),
+  options?: HealthScoreProfileOptions,
 ): CalculatedHomeHealthScore | null {
   if (!profile) {
     return null;
   }
 
-  const input = mapProfileToHealthScoreInput(profile, asOfDate);
+  const input = mapProfileToHealthScoreInput(profile, asOfDate, options);
   if (!input) {
     return null;
   }

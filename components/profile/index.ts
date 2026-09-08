@@ -2,6 +2,7 @@ export { HealthSourceCard, type HealthSourceStatus } from './HealthSourceCard';
 export { ProfileAccountField } from './ProfileAccountField';
 export { ProfileAccountHeaderCard } from './ProfileAccountHeaderCard';
 export { ProfileAvatar } from './ProfileAvatar';
+export { ProfileFutureFeatureScreen } from './ProfileFutureFeatureScreen';
 export { ProfileMountainHeader } from './ProfileMountainHeader';
 export { ProfileSectionHeading } from './ProfileSectionHeading';
 export { ProfileSettingsCard, ProfileSettingsDivider } from './ProfileSettingsCard';

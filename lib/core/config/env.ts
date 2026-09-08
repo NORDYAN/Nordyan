@@ -5,6 +5,8 @@ export const envKeys = {
   supabaseAnonKey: 'EXPO_PUBLIC_SUPABASE_ANON_KEY',
   /** Public base URL only — never an OpenAI key. */
   coachLanguageApiUrl: 'EXPO_PUBLIC_COACH_LANGUAGE_API_URL',
+  /** Public account-delete API URL only — never an Auth Admin secret. */
+  accountApiUrl: 'EXPO_PUBLIC_ACCOUNT_API_URL',
   revenueCatAppleApiKey: 'EXPO_PUBLIC_REVENUECAT_APPLE_API_KEY',
   revenueCatGoogleApiKey: 'EXPO_PUBLIC_REVENUECAT_GOOGLE_API_KEY',
 } as const;
@@ -19,7 +21,7 @@ export type SupabaseEnvConfig = {
 /**
  * Reads public Supabase client credentials.
  * Prefers EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY; falls back to legacy anon key.
- * Never use service_role or other secret keys here.
+ * Never use Auth Admin secrets or other secret keys here.
  */
 export function getSupabaseConfig(): SupabaseEnvConfig | null {
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();

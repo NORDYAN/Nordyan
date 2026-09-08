@@ -1,24 +1,43 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { routes } from '@/constants/routes';
+import { logNordyanOnboardingRedirect } from '@/lib/onboarding/nordyan-nav-dev';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { persistPendingHealthDataConsentAfterAuth } from '@/lib/onboarding/persist-pending-health-data-consent.runtime';
 import {
   resolveAuthenticatedOnboardingGate,
   type AuthenticatedOnboardingGateDestination,
 } from '@/lib/onboarding/resolve-app-gate';
+import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
+import { healthDataConsentService } from '@/lib/services/health-data-consent';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme';
 
 export default function TabsLayout() {
   useI18n();
+  const pathname = usePathname();
   const { status, isReady, session } = useAuth();
   const [gateDestination, setGateDestination] = useState<
-    AuthenticatedOnboardingGateDestination | 'loading' | 'allowed'
+    | AuthenticatedOnboardingGateDestination
+    | 'authenticated-health-data-consent'
+    | 'loading'
+    | 'allowed'
   >('loading');
+
+  useEffect(() => {
+    const loadingUi = !isReady || (status === 'authenticated' && gateDestination === 'loading');
+    logNordyanAuthTrace('tabs.gate', {
+      destination: gateDestination,
+      authReady: isReady,
+      authenticated: status === 'authenticated',
+      loadingUi,
+      homeRendered: gateDestination === 'allowed' && status === 'authenticated' && isReady,
+    });
+  }, [gateDestination, isReady, status]);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +50,15 @@ export default function TabsLayout() {
       if (status !== 'authenticated' || !session?.user.id) {
         if (!cancelled) {
           setGateDestination('allowed');
+        }
+        return;
+      }
+
+      await persistPendingHealthDataConsentAfterAuth(session.user.id);
+      const hasConsent = await healthDataConsentService.hasActiveCurrentConsent(session.user.id);
+      if (!hasConsent) {
+        if (!cancelled) {
+          setGateDestination('authenticated-health-data-consent');
         }
         return;
       }
@@ -61,11 +89,21 @@ export default function TabsLayout() {
   }
 
   if (gateDestination === 'onboarding') {
+    logNordyanOnboardingRedirect({
+      source: 'app/(tabs)/_layout.tsx',
+      href: routes.onboarding,
+      gateDestination,
+      pathname,
+    });
     return <Redirect href={routes.onboarding} />;
   }
 
   if (gateDestination === 'onboarding-step-4') {
     return <Redirect href={routes.onboardingStep4} />;
+  }
+
+  if (gateDestination === 'authenticated-health-data-consent') {
+    return <Redirect href={routes.authenticatedHealthDataConsent} />;
   }
 
   return (

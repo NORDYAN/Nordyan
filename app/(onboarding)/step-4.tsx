@@ -25,10 +25,12 @@ import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { isPositiveMeasurementInput, parseMeasurementNumericInput } from '@/components/measurement/measurement-input.utils';
 import { routes } from '@/constants/routes';
+import { isEligibleAdultDateOfBirth } from '@/lib/domain/age-eligibility';
 import type { ProfileActivityLevel, ProfileGender } from '@/lib/domain/profile';
 import {
   PROFILE_ACTIVITY_LEVEL_OPTIONS,
   PROFILE_GENDER_OPTIONS,
+  isWritableProfileGender,
 } from '@/lib/domain/profile';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -39,7 +41,11 @@ import {
   getVisiblePendingProfileMeasurements,
   setPendingProfileMeasurements,
 } from '@/lib/onboarding/pending-profile-storage';
-import { onboardingProfileDobHeightLayout } from '@/lib/presentation/onboarding-profile';
+import {
+  canContinueOnboardingPersonalProfile,
+  onboardingProfileDobHeightLayout,
+  resolveSelectableProfileGender,
+} from '@/lib/presentation/onboarding-profile';
 import { useAuth } from '@/providers/auth-provider';
 import { colors, onboardingLayout, onboardingProfileLayout, typography } from '@/theme';
 
@@ -102,22 +108,28 @@ export default function OnboardingProfileScreen() {
 
   const heightCm = parseMeasurementNumericInput(height);
   const weightKg = parseMeasurementNumericInput(weight);
-  const canContinue =
-    isValidDateOfBirth(dateOfBirth) &&
-    isPositiveMeasurementInput(height) &&
-    isPositiveMeasurementInput(weight) &&
-    gender !== null &&
-    activityLevel !== null;
+  const canContinue = canContinueOnboardingPersonalProfile({
+    dateOfBirthValid: isValidDateOfBirth(dateOfBirth),
+    heightValid: isPositiveMeasurementInput(height),
+    weightValid: isPositiveMeasurementInput(weight),
+    gender,
+    activityLevel,
+  });
 
   const handleCalculateProfile = async () => {
     if (
       !canContinue ||
       isSaving ||
-      !gender ||
+      !isWritableProfileGender(gender) ||
       !activityLevel ||
       heightCm === null ||
       weightKg === null
     ) {
+      return;
+    }
+
+    if (!isEligibleAdultDateOfBirth(dateOfBirth.trim())) {
+      setSaveError(t('profile.validation.mustBe18'));
       return;
     }
 
@@ -184,11 +196,12 @@ export default function OnboardingProfileScreen() {
 
               <ProfileSingleChoiceGroup
                 label={t('onboarding.profile.gender')}
-                value={gender}
+                value={resolveSelectableProfileGender(gender)}
                 options={PROFILE_GENDER_OPTIONS}
                 onChange={setGender}
                 layout="row"
                 optionIcons={PROFILE_GENDER_ICONS}
+                helper={t('onboarding.profile.genderHelper')}
               />
 
               <ProfileDateOfBirthField

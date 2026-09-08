@@ -45,7 +45,7 @@ export default function SignInScreen() {
         submitLabel={t('auth.signIn.submit')}
         loadingLabel={authMessages.signingIn}
         alternatePrompt={t('auth.signIn.alternatePrompt')}
-        alternateHref={routes.authSignUp}
+        alternateHref={routes.onboarding}
         alternateLabel={t('auth.signIn.alternateLabel')}
         email={email}
         password={password}

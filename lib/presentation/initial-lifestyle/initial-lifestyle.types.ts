@@ -100,7 +100,6 @@ export type InitialLifestyleCopy = {
   introBody: string;
   introTimeHint: string;
   introStartCta: string;
-  introSkipCta: string;
 };
 
 export type InitialLifestyleAnswerValue = InitialLifestyleAnswers[InitialLifestyleAnswerField];

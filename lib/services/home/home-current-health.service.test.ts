@@ -113,4 +113,51 @@ describe('buildHomeCurrentHealthState body-fat presentation', () => {
     assert.equal(state.data.metrics.bodyFatAvailability, 'unavailable');
     assert.equal(state.data.metrics.bodyFatPct, null);
   });
+
+  it('shows female US Navy body fat from a measurement snapshot with hip', () => {
+    const state = buildHomeCurrentHealthState(
+      { ...profile, gender: 'female', heightCm: 168, waistCm: null, neckCm: null },
+      {
+        ...snapshot,
+        snapshotReason: 'measurement',
+        waistCm: 80,
+        neckCm: 33,
+        hipCm: 98,
+        bodyFatPct: 28.4,
+      },
+      '2026-08-17',
+    );
+
+    assert.equal(state.status, 'ready');
+    if (state.status !== 'ready') {
+      return;
+    }
+
+    assert.equal(state.data.metrics.bodyFatAvailability, 'available');
+    assert.equal(state.data.metrics.bodyFatPct, 28.4);
+  });
+
+  it('shows female US Navy body fat from an onboarding snapshot with real hip', () => {
+    const state = buildHomeCurrentHealthState(
+      { ...profile, gender: 'female', heightCm: 168 },
+      {
+        ...snapshot,
+        snapshotReason: 'onboarding',
+        waistCm: 80,
+        neckCm: 33,
+        hipCm: 98,
+        bodyFatPct: 28.4,
+      },
+      '2026-08-17',
+    );
+
+    assert.equal(state.status, 'ready');
+    if (state.status !== 'ready') {
+      return;
+    }
+
+    assert.equal(state.data.metrics.bodyFatAvailability, 'available');
+    assert.equal(state.data.metrics.bodyFatPct, 28.4);
+    assert.match(state.data.metrics.bodyFatDisplay, /28[,.]4/);
+  });
 });

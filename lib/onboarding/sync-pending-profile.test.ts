@@ -37,9 +37,15 @@ function createDeps(input: {
   existingProfile?: UserProfile | null;
   pendingOwnerId?: string;
   currentUserId?: string;
-}): { deps: SyncPendingProfileDeps; snapshots: number; pendingAfter: () => ProfileMeasurements | null } {
+}): {
+  deps: SyncPendingProfileDeps;
+  snapshots: number;
+  lastHipCm: number | null;
+  pendingAfter: () => ProfileMeasurements | null;
+} {
   let pendingState = input.pending;
   let snapshots = 0;
+  let lastHipCm: number | null = null;
   const pendingOwnerId = input.pendingOwnerId ?? 'user-1';
   const currentUserId = input.currentUserId ?? 'user-1';
 
@@ -57,8 +63,9 @@ function createDeps(input: {
       ok: true,
       value: input.existingProfile === undefined ? completeProfile : input.existingProfile,
     }),
-    createOnboardingSnapshot: async () => {
+    createOnboardingSnapshot: async (_profile, options) => {
       snapshots += 1;
+      lastHipCm = options?.hipCm ?? null;
       return { ok: true, value: { id: `snap-${snapshots}` } };
     },
     setOnboardingCompleteForUser: async () => undefined,
@@ -68,6 +75,9 @@ function createDeps(input: {
     deps,
     get snapshots() {
       return snapshots;
+    },
+    get lastHipCm() {
+      return lastHipCm;
     },
     pendingAfter: () => pendingState,
   };
@@ -84,7 +94,15 @@ describe('syncPendingProfileAfterAuth — snapshot idempotency', () => {
       assert.equal(result.snapshotCreated, true);
     }
     assert.equal(harness.snapshots, 1);
+    assert.equal(harness.lastHipCm, null);
     assert.equal(harness.pendingAfter(), null);
+  });
+
+  it('passes pending hip into the onboarding snapshot and does not invent hip when skipped', async () => {
+    const harness = createDeps({ pending: { ...pending, hipCm: 98 } });
+    const result = await runSyncPendingProfile(harness.deps);
+    assert.equal(result.ok, true);
+    assert.equal(harness.lastHipCm, 98);
   });
 
   it('does not create another onboarding snapshot when pending is already gone', async () => {

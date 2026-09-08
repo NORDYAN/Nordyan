@@ -133,13 +133,16 @@ function buildSnapshotBodyFat(snapshot: HealthSnapshot, profile: UserProfile | n
   bodyFatSourceLabel: string;
   bodyFatAvailability: 'available' | 'unavailable';
 } {
-  const measuredCircumferences =
-    snapshot.snapshotReason === 'measurement'
-      ? { waistCm: snapshot.waistCm, neckCm: snapshot.neckCm }
-      : null;
+  const evidence = {
+    waistCm: snapshot.waistCm,
+    neckCm: snapshot.neckCm,
+    hipCm: snapshot.hipCm ?? null,
+    snapshotReason: snapshot.snapshotReason,
+    bodyFatPct: snapshot.bodyFatPct,
+  };
 
   if (
-    !canPresentBodyFatEstimate(profile, measuredCircumferences) ||
+    !canPresentBodyFatEstimate(profile, evidence) ||
     snapshot.bodyFatPct == null ||
     !Number.isFinite(snapshot.bodyFatPct)
   ) {

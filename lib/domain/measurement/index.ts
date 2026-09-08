@@ -13,3 +13,4 @@ export type {
 } from './measurement.validation';
 
 export { DefaultMeasurementValidator, measurementValidator } from './measurement.validator';
+export { HIP_CM_LIMITS, isSupportedHipCm, resolveOptionalHipCm } from './hip-cm';

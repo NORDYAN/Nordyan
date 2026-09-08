@@ -25,8 +25,8 @@ export function ProfileSettingsRow({
   onPress,
   accessibilityLabel,
 }: ProfileSettingsRowProps) {
-  const interactive = !comingSoon && onPress != null;
-  const resolvedChevron = comingSoon ? false : showChevron;
+  const interactive = onPress != null;
+  const resolvedChevron = showChevron;
   const label = accessibilityLabel ?? (comingSoon && subtitle ? `${title}, ${subtitle}` : title);
 
   const body = (

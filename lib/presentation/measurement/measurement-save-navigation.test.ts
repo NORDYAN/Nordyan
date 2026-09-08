@@ -49,6 +49,11 @@ describe('measurement save success navigation', () => {
     assert.equal(decision.destination, routes.healthMeasurementHistory);
   });
 
+  it('keeps Home reminder and Health + on the same new-measurement workflow route', () => {
+    assert.equal(MEASUREMENT_SAVE_SUCCESS_NAVIGATION.entryRoute, routes.healthNewMeasurement);
+    assert.equal(routes.healthNewMeasurement, '/(tabs)/health/new-measurement');
+  });
+
   it('does not alter snapshot pipeline fields', () => {
     assert.deepEqual(Object.keys(MEASUREMENT_SAVE_SUCCESS_NAVIGATION).sort(), [
       'destination',

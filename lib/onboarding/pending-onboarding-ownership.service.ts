@@ -62,6 +62,29 @@ export async function bindPendingOnboardingOwnership(
   };
 }
 
+export type ReleasePendingOnboardingDeps = {
+  releaseProfileBinding: (userId: string) => Promise<void>;
+  releaseLifestyleBinding: (userId: string) => Promise<void>;
+};
+
+/**
+ * Moves a typo/unverified owner's pending profile + Initial Lifestyle back to
+ * the anonymous slots so a later signup can bind them to a new ownerId.
+ * Does not delete values and does not attach one UUID's data to another.
+ */
+export async function releasePendingOnboardingFromOwner(
+  ownerId: string,
+  deps: ReleasePendingOnboardingDeps,
+): Promise<void> {
+  const trimmed = ownerId.trim();
+  if (!trimmed) {
+    return;
+  }
+
+  await deps.releaseProfileBinding(trimmed);
+  await deps.releaseLifestyleBinding(trimmed);
+}
+
 export async function clearUnownedPendingOnboarding(
   deps: PendingOnboardingOwnershipDeps,
 ): Promise<void> {

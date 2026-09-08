@@ -20,6 +20,7 @@ import {
 import { weeklyCheckInService } from '@/lib/services/weekly-check-in';
 import type { WeeklyCheckInService } from '@/lib/services/weekly-check-in/weekly-check-in.service.types';
 import { useAuth } from '@/providers/auth-provider';
+import { syncWeeklyCheckInReminderForUser } from '@/lib/presentation/notifications/sync-nordyan-notifications.runtime';
 
 type UseWeeklyCheckInOptions = {
   service?: WeeklyCheckInService;
@@ -144,6 +145,7 @@ export function useWeeklyCheckIn(options?: UseWeeklyCheckInOptions): UseWeeklyCh
 
     setSaving(false);
     setStep({ kind: 'success' });
+    void syncWeeklyCheckInReminderForUser(sessionUserId);
   }, [answers, saving, service, sessionUserId]);
 
   const retryLoad = useCallback(async () => {

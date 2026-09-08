@@ -1,7 +1,13 @@
 import type { CreateMeasurementInput } from './measurement.types';
 
 /** Identifies which measurement field failed validation. */
-export type MeasurementField = 'userId' | 'measuredAt' | 'weightKg' | 'waistCm' | 'neckCm';
+export type MeasurementField =
+  | 'userId'
+  | 'measuredAt'
+  | 'weightKg'
+  | 'waistCm'
+  | 'neckCm'
+  | 'hipCm';
 
 export type MeasurementValidationError = {
   field: MeasurementField;
@@ -26,7 +32,8 @@ export type MeasurementValidationContext = {
  *
  * Expected rules (implemented in a future milestone):
  * - userId must be a non-empty string
- * - weightKg, waistCm, neckCm must be finite numbers greater than zero
+ * - weightKg, waistCm, neckCm, hipCm must be finite numbers greater than zero
+ * - hipCm must be within the Health Score engine range
  * - measuredAt must be a valid ISO calendar date (YYYY-MM-DD)
  * - measuredAt must not be after todayLocalDate
  */

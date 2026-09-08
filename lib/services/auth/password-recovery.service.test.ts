@@ -16,6 +16,7 @@ function createRepository(overrides: Partial<AuthRepository> = {}): AuthReposito
     getSession: async () => ({ ok: true, value: session }),
     getStatus: async () => ({ ok: true, value: 'authenticated' }),
     getCurrentUser: async () => ({ ok: true, value: session.user }),
+    getServerUser: async () => ({ ok: true, value: session.user }),
     signInWithEmail: async () => ({ ok: true, value: session }),
     signUpWithEmail: async () => ({
       ok: true,

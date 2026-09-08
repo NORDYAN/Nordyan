@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import {
@@ -11,17 +12,13 @@ import {
 
 import { CoachAskComposer } from '@/components/coach/CoachAskComposer';
 import { CoachAskSuggestions } from '@/components/coach/CoachAskSuggestions';
-import { CoachFocusCard } from '@/components/coach/CoachFocusCard';
+import { CoachFocusBridgeCard } from '@/components/coach/CoachFocusBridgeCard';
 import { CoachHomeHeader } from '@/components/coach/CoachHomeHeader';
-import { CoachPlanCard } from '@/components/coach/CoachPlanCard';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
-import { useCoachHomeBodyFatDiscovery, type CoachQuestionUiState } from '@/lib/hooks/coach';
-import {
-  isCoachHomeBodyFatComparisonQuestion,
-  selectCoachHomeQuickQuestionSlots,
-  type CoachHomeFetchState,
-} from '@/lib/presentation/coach-home';
+import { homeHrefWithScrollToTop } from '@/lib/presentation/home';
+import { useCoachQuickQuestions, type CoachQuestionUiState } from '@/lib/hooks/coach';
+import { type CoachHomeFetchState } from '@/lib/presentation/coach-home';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { colors, coachLayout, coachTypography, typography } from '@/theme';
@@ -41,7 +38,13 @@ export function CoachHomeView({
 }: CoachHomeViewProps) {
   useI18n();
   const scrollRef = useRef<ScrollView>(null);
-  const { bodyFatComparisonUsed, markBodyFatComparisonUsed } = useCoachHomeBodyFatDiscovery();
+  const readyFocusType =
+    state.status === 'ready' ? state.model.ask.askContext?.focus.type ?? null : null;
+  const hasHealthContext = state.status === 'ready' && state.model.ask.canAsk;
+  const { slots: quickQuestionSlots } = useCoachQuickQuestions({
+    hasHealthContext,
+    focusType: readyFocusType,
+  });
 
   const scrollComposerIntoView = () => {
     requestAnimationFrame(() => {
@@ -61,15 +64,8 @@ export function CoachHomeView({
   }, [askState.status]);
 
   const handleSubmitQuestion = (question: string) => {
-    if (isCoachHomeBodyFatComparisonQuestion(question)) {
-      markBodyFatComparisonUsed();
-    }
     onSubmitQuestion(question);
   };
-
-  const quickQuestionSlots = selectCoachHomeQuickQuestionSlots({
-    bodyFatComparisonUsed,
-  });
 
   return (
     <ScreenContainer variant="development" style={styles.screen}>
@@ -126,6 +122,14 @@ export function CoachHomeView({
                 coachSubtitle={state.model.header.coachSubtitle}
               />
               <View style={styles.body}>
+                {state.model.focusBridge.visible ? (
+                  <CoachFocusBridgeCard
+                    bridge={state.model.focusBridge}
+                    onPressHome={() => {
+                      router.push(homeHrefWithScrollToTop());
+                    }}
+                  />
+                ) : null}
                 <CoachAskComposer
                   key={askVisitKey}
                   ask={state.model.ask}
@@ -133,12 +137,6 @@ export function CoachHomeView({
                   onSubmit={handleSubmitQuestion}
                   onInputFocus={scrollComposerIntoView}
                 />
-                <CoachFocusCard
-                  sectionLabel={state.model.focus.sectionLabel}
-                  title={state.model.focus.title}
-                  body={state.model.focus.body}
-                />
-                <CoachPlanCard plan={state.model.plan} />
                 <CoachAskSuggestions
                   sectionLabel={state.model.ask.quickQuestionsSectionLabel}
                   slots={quickQuestionSlots}

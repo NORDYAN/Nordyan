@@ -7,26 +7,6 @@ export {
 } from './home-progress.presentation';
 
 export type {
-  HomeAdviceCategory,
-  HomeAdviceItem,
-  HomePersonalPriorityInput,
-  HomePriorityItemModel,
-  HomePriorityKind,
-} from './home-priorities.types';
-export {
-  HOME_ADVICE_CATEGORY_PAIRS,
-  HOME_GENERAL_ADVICE_BANK,
-  HOME_PERSONAL_PRIORITY_FALLBACK,
-  HOME_PRIORITY_FORBIDDEN_PROGRESS_PATTERNS,
-} from './home-priorities.advice';
-export {
-  buildHomeDailyPriorities,
-  buildPersonalHomePriority,
-  hashHomeDayKey,
-  selectGeneralHomeAdvice,
-} from './home-priorities.presentation';
-
-export type {
   HomeWeeklyCheckInResolvedStatus,
   HomeWeeklyCheckInStatus,
 } from './home-weekly-check-in.types';
@@ -41,3 +21,30 @@ export {
   toLocalCalendarDateFromTimestamp,
 } from './home-weekly-check-in.presentation';
 export type { ResolveHomeWeeklyCheckInStatusInput } from './home-weekly-check-in.presentation';
+
+export type { HomeWeeklyFocusStatus } from './home-weekly-focus.presentation';
+export { toHomeWeeklyFocusStatus } from './home-weekly-focus.presentation';
+export {
+  formatHomeWeekCompletedCount,
+  toHomeWeeklyFocusAreas,
+  weeklyFocusAreaDisplayName,
+} from './home-weekly-focus-copy';
+
+export {
+  HOME_SCROLL_TO_TOP_PARAM,
+  consumeHomeScrollToTopIntent,
+  homeHrefWithScrollToTop,
+} from './home-scroll-to-top';
+
+export type { HomeDailyFocusModel, HomeDailyFocusView } from './home-daily-focus.presentation';
+export {
+  applyHomeDailyFocusGetResult,
+  applyHomeDailyFocusMutationResult,
+  canMutateHomeDailyFocus,
+  canSwapHomeDailyFocus,
+  createInitialHomeDailyFocusModel,
+  isHomeDailyFocusCompleted,
+  startHomeDailyFocusMutation,
+  toDailyFocusWeeklyFocusInput,
+  toHomeDailyFocusView,
+} from './home-daily-focus.presentation';

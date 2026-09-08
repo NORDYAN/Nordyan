@@ -231,6 +231,47 @@ describe('pending Initial Lifestyle storage', () => {
     assert.match((await storage.getItem(PENDING_INITIAL_LIFESTYLE_KEY)) ?? '', /"version":2/);
   });
 
+  it('releases a bound retry back to anonymous without deleting answers', async () => {
+    const storage = createMemoryPendingKeyValueStore();
+    const pending = createPendingInitialLifestyleStore(storage);
+    await pending.savePendingInitialLifestyle(answers);
+    await pending.bindPendingInitialLifestyleToUser('typo-owner');
+
+    await pending.releaseBinding('typo-owner');
+
+    assert.deepEqual(await pending.getPendingInitialLifestyle(), {
+      ok: true,
+      value: answers,
+    });
+    assert.deepEqual(
+      await pending.getPendingInitialLifestyleForUser('typo-owner'),
+      { ok: true, value: null },
+    );
+  });
+
+  it('refuses to release a bound retry over an occupied anonymous slot', async () => {
+    const storage = createMemoryPendingKeyValueStore();
+    const pending = createPendingInitialLifestyleStore(storage);
+    await pending.savePendingInitialLifestyle(answers);
+    await pending.bindPendingInitialLifestyleToUser('typo-owner');
+
+    const anonymous = { ...answers, energy: 2 as const };
+    await pending.savePendingInitialLifestyle(anonymous);
+
+    await assert.rejects(
+      pending.releaseBinding('typo-owner'),
+      /cannot release a bound lifestyle over an anonymous draft/,
+    );
+    assert.deepEqual(await pending.getPendingInitialLifestyle(), {
+      ok: true,
+      value: anonymous,
+    });
+    assert.deepEqual(
+      await pending.getPendingInitialLifestyleForUser('typo-owner'),
+      { ok: true, value: answers },
+    );
+  });
+
   it('fails closed when an anonymous save cannot be persisted', async () => {
     const storage = createMemoryPendingKeyValueStore();
     const pending = createPendingInitialLifestyleStore({

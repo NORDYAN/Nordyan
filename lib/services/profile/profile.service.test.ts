@@ -207,6 +207,32 @@ describe('updateAccountProfile', () => {
 });
 
 describe('completeOnboarding remains available for health profile', () => {
+  it('rejects an under-18 date of birth before persistence', async () => {
+    const { service, calls } = createService();
+    const result = await service.completeOnboarding({
+      ...healthMeasurements,
+      dateOfBirth: '2015-01-01',
+    });
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.code, 'VALIDATION');
+      assert.equal(result.error.message, t('profile.validation.mustBe18'));
+    }
+    assert.equal(calls.update.length, 0);
+    assert.equal(calls.createFromMeasurements, 0);
+
+    setActiveLocale('nb');
+    const norwegian = await service.completeOnboarding({
+      ...healthMeasurements,
+      dateOfBirth: '2015-01-01',
+    });
+    assert.equal(norwegian.ok, false);
+    if (!norwegian.ok) {
+      assert.equal(norwegian.error.message, 'NORDYAN er for personer som er 18 år eller eldre.');
+    }
+  });
+
   it('still updates health fields through completeOnboarding', async () => {
     const { service, calls } = createService();
     const result = await service.completeOnboarding(healthMeasurements);
@@ -214,6 +240,49 @@ describe('completeOnboarding remains available for health profile', () => {
     assert.equal(result.ok, true);
     assert.equal(calls.completeOnboarding, 1);
     assert.ok(calls.update[0]?.patch.heightCm === 180);
+    assert.equal(calls.update[0]?.patch.gender, 'male');
+  });
+
+  it('persists female gender through completeOnboarding', async () => {
+    const { service, calls } = createService();
+    const result = await service.completeOnboarding({
+      ...healthMeasurements,
+      gender: 'female',
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(calls.update[0]?.patch.gender, 'female');
+  });
+
+  it('rejects other gender on new health-profile writes', async () => {
+    const { service, calls } = createService();
+    const result = await service.completeOnboarding({
+      ...healthMeasurements,
+      gender: 'other',
+    });
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.code, 'VALIDATION');
+      assert.equal(result.error.message, t('profile.validation.gender'));
+    }
+    assert.equal(calls.update.length, 0);
+    assert.equal(calls.createFromMeasurements, 0);
+  });
+
+  it('rejects null gender on new health-profile writes', async () => {
+    const { service, calls } = createService();
+    const result = await service.completeOnboarding({
+      ...healthMeasurements,
+      gender: null,
+    });
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.error.code, 'VALIDATION');
+      assert.equal(result.error.message, t('profile.validation.gender'));
+    }
+    assert.equal(calls.update.length, 0);
   });
 
   it('returns localized health-profile validation errors', async () => {

@@ -7,6 +7,7 @@ export const AUTH_VERIFICATION_COPY = liveCopy({
   resendSubmitting: () => t('auth.checkEmail.resendSubmitting'),
   resendSuccess: () => t('auth.checkEmail.resendSuccess'),
   returnToSignIn: () => t('auth.checkEmail.returnToSignIn'),
+  useAnotherEmail: () => t('auth.checkEmail.useAnotherEmail'),
   callbackLoading: () => t('auth.callback.loading'),
 });
 
@@ -55,10 +56,38 @@ export type AuthCallbackParseResult =
   | { kind: 'code'; code: string }
   | { kind: 'invalid' };
 
-export function parseAuthCallbackParams(input: {
+export type AuthCallbackParamsInput = {
   code?: string | string[];
   error?: string | string[];
-}): AuthCallbackParseResult {
+};
+
+/**
+ * Deep-link search params can arrive after the callback screen mounts.
+ * Missing code/error means "not ready yet", not an auth failure.
+ */
+export function hasActionableAuthCallbackParams(input: AuthCallbackParamsInput): boolean {
+  return firstParam(input.code) !== null || firstParam(input.error) !== null;
+}
+
+export type AuthCallbackStartDecision = { action: 'wait' } | { action: 'start' };
+
+/** One-shot start gate for the callback screen effect. */
+export function decideAuthCallbackStart(input: {
+  alreadyStarted: boolean;
+  params: AuthCallbackParamsInput;
+}): AuthCallbackStartDecision {
+  if (input.alreadyStarted) {
+    return { action: 'wait' };
+  }
+
+  if (!hasActionableAuthCallbackParams(input.params)) {
+    return { action: 'wait' };
+  }
+
+  return { action: 'start' };
+}
+
+export function parseAuthCallbackParams(input: AuthCallbackParamsInput): AuthCallbackParseResult {
   if (firstParam(input.error)) {
     return { kind: 'invalid' };
   }
