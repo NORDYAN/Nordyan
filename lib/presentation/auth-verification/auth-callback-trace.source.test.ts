@@ -22,6 +22,7 @@ describe('auth callback temporary runtime trace', () => {
     assert.match(callback, /logNordyanAuthTrace\('callback\.start-decision'/);
     assert.match(callback, /logNordyanAuthTrace\('callback\.completion\.start'\)/);
     assert.match(callback, /logNordyanAuthTrace\('callback\.replace\.root'\)/);
+    assert.match(callback, /toAuthCallbackFailureTraceDetails/);
     assert.match(callback, /logNordyanAuthTrace\('callback\.unmount'\)/);
     assert.doesNotMatch(callback, /console\.(log|info|debug|warn|error)/);
     assert.doesNotMatch(callback, /access_token|refresh_token/);

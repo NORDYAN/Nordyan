@@ -299,6 +299,9 @@ describe('completeAuthEmailCallback', () => {
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.message, authMessages.callbackExpired);
+      assert.equal(result.diagnostic.failureStage, 'exchange');
+      assert.equal(result.diagnostic.exchangeAttempted, true);
+      assert.equal(result.diagnostic.exchangeSucceeded, false);
     }
   });
 
@@ -323,6 +326,8 @@ describe('completeAuthEmailCallback', () => {
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.message, authMessages.callbackExpired);
+      assert.equal(result.diagnostic.failureStage, 'invalid_params');
+      assert.equal(result.diagnostic.exchangeAttempted, false);
     }
   });
 
@@ -351,6 +356,7 @@ describe('completeAuthEmailCallback', () => {
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.message, 'Det gick inte att spara din profil. Försök igen.');
+      assert.equal(result.diagnostic.failureStage, 'profile_persist');
     }
     assert.equal(lifestyleCalls, 0);
     assert.equal(waitCleared, 0);
@@ -397,6 +403,7 @@ describe('completeAuthEmailCallback', () => {
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.message, 'Kunde inte spara din livsstilskoll. Försök igen.');
+      assert.equal(result.diagnostic.failureStage, 'lifestyle_persist');
     }
     assert.equal(waitCleared, 0);
   });

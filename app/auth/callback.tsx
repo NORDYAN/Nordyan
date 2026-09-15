@@ -14,6 +14,7 @@ import {
   decideAuthCallbackStart,
 } from '@/lib/presentation/auth-verification';
 import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
+import { toAuthCallbackFailureTraceDetails } from '@/lib/presentation/auth-verification/auth-callback-failure-diagnostic';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { authService } from '@/lib/services/auth/auth.service';
 
@@ -69,13 +70,14 @@ export default function AuthCallbackScreen() {
       });
 
       if (!result.ok) {
-        logNordyanAuthTrace('callback.completion.result', {
-          result: 'failure',
-          errorCode: result.error.code,
-        });
         setErrorMessage(result.error.message || authMessages.callbackGeneric);
         const session = await authService.getSession();
-        setCanRetry(session.ok && session.value !== null);
+        const sessionAfter = session.ok && session.value !== null;
+        setCanRetry(sessionAfter);
+        logNordyanAuthTrace(
+          'callback.completion.result',
+          toAuthCallbackFailureTraceDetails(result.diagnostic, sessionAfter),
+        );
         return;
       }
 

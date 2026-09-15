@@ -13,7 +13,6 @@ export function canSubmitAgeConfirmation(checked: boolean): boolean {
 
 export function isAgeGatedOnboardingPath(pathname: string): boolean {
   return (
-    pathname.includes('health-data-consent') ||
     pathname.includes('step-3') ||
     pathname.includes('step-4') ||
     pathname.includes('measurement-choice') ||

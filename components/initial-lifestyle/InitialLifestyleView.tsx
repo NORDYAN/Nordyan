@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InitialLifestyleIntro } from '@/components/initial-lifestyle/InitialLifestyleIntro';
 import { InitialLifestyleQuestion } from '@/components/initial-lifestyle/InitialLifestyleQuestion';
-import { OnboardingMountainBackground } from '@/components/onboarding';
+import { OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
 import type { UseOnboardingInitialLifestyleResult } from '@/lib/hooks/initial-lifestyle';
 import { getInitialLifestyleQuestion } from '@/lib/presentation/initial-lifestyle';
 import { colors } from '@/theme';
@@ -32,6 +32,7 @@ export function InitialLifestyleView({ flow }: InitialLifestyleViewProps) {
         style={[styles.safeArea, !isIntro && styles.questionSafeArea]}
         edges={['top', 'bottom']}
       >
+        <OnboardingMajorProgress step="lifestyle" />
         {isIntro ? (
           <InitialLifestyleIntro
             saving={flow.saving}

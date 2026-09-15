@@ -8,24 +8,25 @@ function source(relativePath: string): string {
 }
 
 describe('health data consent source contracts', () => {
-  it('inserts the onboarding consent screen between age confirmation and step-3', () => {
+  it('inserts the onboarding consent screen between product value and step-3', () => {
     const step2 = source('app/(onboarding)/step-2.tsx');
     const age = source('app/(onboarding)/age-confirmation.tsx');
     const screen = source('app/(onboarding)/health-data-consent.tsx');
     const routes = source('constants/routes.ts');
 
-    assert.match(step2, /routes\.onboardingAgeConfirmation/);
-    assert.doesNotMatch(step2, /routes\.onboardingHealthDataConsent/);
-    assert.match(age, /routes\.onboardingHealthDataConsent/);
+    assert.match(step2, /routes\.onboardingHealthDataConsent/);
+    assert.doesNotMatch(step2, /routes\.onboardingAgeConfirmation/);
+    assert.match(age, /Redirect href=\{routes\.onboardingHealthDataConsent\}/);
     assert.doesNotMatch(step2, /routes\.onboardingLifestyleIntro/);
     assert.match(routes, /onboardingHealthDataConsent: '\/\(onboarding\)\/health-data-consent'/);
     assert.match(screen, /createCurrentHealthDataConsentGrant/);
     assert.match(screen, /savePendingHealthDataConsent/);
+    assert.match(screen, /savePendingAgeConfirmation/);
     assert.match(screen, /routes\.onboardingStep3/);
     assert.match(screen, /router\.push\(routes\.onboardingStep3\)/);
     assert.doesNotMatch(screen, /persistPendingHealthDataConsentAfterAuth/);
     assert.doesNotMatch(screen, /routes\.root/);
-    assert.doesNotMatch(screen, /onboardingStep2|age-confirmation/);
+    assert.doesNotMatch(screen, /routes\.onboardingAgeConfirmation/);
     assert.match(screen, /HealthDataConsentView/);
     assert.doesNotMatch(screen, /withdrawn|Account Deletion|radera konto/i);
   });

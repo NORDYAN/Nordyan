@@ -57,7 +57,7 @@ export default function SignUpScreen() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout progressStep="account">
       <AuthForm
         title={t('auth.signUp.title')}
         submitLabel={t('auth.signUp.submit')}

@@ -11,12 +11,31 @@ export const HEALTH_DATA_CONSENT_COPY = liveCopy({
   bodySecondary: () => t('onboarding.healthDataConsent.bodySecondary'),
   checkbox: () => t('onboarding.healthDataConsent.checkbox'),
   policyLink: () => t('onboarding.healthDataConsent.policyLink'),
+  legalAgePrefix: () => t('onboarding.healthDataConsent.legalAge.prefix'),
+  legalAgeTerms: () => t('onboarding.healthDataConsent.legalAge.terms'),
+  legalAgeMiddle: () => t('onboarding.healthDataConsent.legalAge.middle'),
+  legalAgePrivacy: () => t('onboarding.healthDataConsent.legalAge.privacy'),
+  legalAgeSuffix: () => t('onboarding.healthDataConsent.legalAge.suffix'),
   saveError: () => t('onboarding.healthDataConsent.saveError'),
   continue: () => t('common.continue'),
 });
 
+export function legalAgeAcceptanceLabel(): string {
+  return (
+    HEALTH_DATA_CONSENT_COPY.legalAgePrefix +
+    HEALTH_DATA_CONSENT_COPY.legalAgeTerms +
+    HEALTH_DATA_CONSENT_COPY.legalAgeMiddle +
+    HEALTH_DATA_CONSENT_COPY.legalAgePrivacy +
+    HEALTH_DATA_CONSENT_COPY.legalAgeSuffix
+  );
+}
+
 export function canSubmitHealthDataConsent(checked: boolean): boolean {
   return checked === true;
+}
+
+export function canSubmitOnboardingHealthDataConsent(accepted: boolean): boolean {
+  return accepted === true;
 }
 
 export function isHealthOnboardingCollectionPath(pathname: string): boolean {

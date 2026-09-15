@@ -8,25 +8,26 @@ function source(relativePath: string): string {
 }
 
 describe('age confirmation source contracts', () => {
-  it('sends step-2 into age confirmation before Health Data Consent', () => {
+  it('keeps the old age-confirmation route as a redirect into Health Data Consent', () => {
     const step2 = source('app/(onboarding)/step-2.tsx');
     const screen = source('app/(onboarding)/age-confirmation.tsx');
     const routes = source('constants/routes.ts');
+    const consent = source('app/(onboarding)/health-data-consent.tsx');
 
-    assert.match(step2, /routes\.onboardingAgeConfirmation/);
-    assert.doesNotMatch(step2, /routes\.onboardingHealthDataConsent/);
+    assert.match(step2, /routes\.onboardingHealthDataConsent/);
+    assert.doesNotMatch(step2, /routes\.onboardingAgeConfirmation/);
     assert.match(routes, /onboardingAgeConfirmation: '\/\(onboarding\)\/age-confirmation'/);
-    assert.match(screen, /useState\(false\)/);
-    assert.match(screen, /canSubmitAgeConfirmation\(checked\)/);
-    assert.match(screen, /savePendingAgeConfirmation/);
-    assert.match(screen, /routes\.onboardingHealthDataConsent/);
+    assert.match(screen, /Redirect href=\{routes\.onboardingHealthDataConsent\}/);
+    assert.doesNotMatch(screen, /savePendingAgeConfirmation/);
+    assert.doesNotMatch(screen, /canSubmitAgeConfirmation/);
+    assert.match(consent, /savePendingAgeConfirmation/);
   });
 
   it('guards age-gated onboarding routes before existing consent gating', () => {
     const layout = source('app/(onboarding)/_layout.tsx');
     assert.match(layout, /isAgeGatedOnboardingPath/);
     assert.match(layout, /hasPendingAgeConfirmation/);
-    assert.match(layout, /routes\.onboardingAgeConfirmation/);
+    assert.match(layout, /routes\.onboardingHealthDataConsent/);
     assert.match(layout, /isHealthOnboardingCollectionPath/);
     assert.match(layout, /routes\.onboardingHealthDataConsent/);
     assert.ok(

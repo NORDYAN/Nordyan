@@ -40,8 +40,8 @@ describe('age confirmation presentation', () => {
     setActiveLocale('sv');
   });
 
-  it('gates health-data routes and leaves the confirmation and intro screens open', () => {
-    assert.equal(isAgeGatedOnboardingPath('/health-data-consent'), true);
+  it('gates later onboarding routes and leaves consent, confirmation, and intro screens open', () => {
+    assert.equal(isAgeGatedOnboardingPath('/health-data-consent'), false);
     assert.equal(isAgeGatedOnboardingPath('/step-3'), true);
     assert.equal(isAgeGatedOnboardingPath('/step-4'), true);
     assert.equal(isAgeGatedOnboardingPath('/measurement-choice'), true);

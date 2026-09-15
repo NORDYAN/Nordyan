@@ -28,7 +28,7 @@ describe('onboarding layout stack contract', () => {
     const render = layout.slice(renderStart);
 
     assert.match(render, /chrome\.redirect === 'age'/);
-    assert.match(render, /routes\.onboardingAgeConfirmation/);
+    assert.match(render, /routes\.onboardingHealthDataConsent/);
     assert.match(render, /chrome\.redirect === 'consent'/);
     assert.match(render, /routes\.onboardingHealthDataConsent/);
     assert.ok(render.indexOf('<Stack') < render.indexOf("chrome.redirect === 'age'"));
@@ -43,6 +43,7 @@ describe('onboarding layout stack contract', () => {
     );
 
     assert.match(handler, /await savePendingHealthDataConsent/);
+    assert.match(handler, /await savePendingAgeConfirmation/);
     assert.match(handler, /router\.push\(routes\.onboardingStep3\)/);
     assert.doesNotMatch(handler, /persistPendingHealthDataConsentAfterAuth/);
     assert.doesNotMatch(handler, /routes\.root/);

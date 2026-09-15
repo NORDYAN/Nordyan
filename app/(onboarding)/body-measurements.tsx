@@ -16,6 +16,7 @@ import {
   DEFAULT_MEASUREMENT_HELP_SECTIONS,
   HomeIndicator,
   MeasurementHelpModal,
+  OnboardingMajorProgress,
   OnboardingMountainBackground,
   ProfileMeasurementField,
 } from '@/components/onboarding';
@@ -135,6 +136,7 @@ export default function OnboardingBodyMeasurementsScreen() {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground overlayColor={colors.onboardingProfileOverlay} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <OnboardingMajorProgress step="profile" />
         <KeyboardAvoidingView
           style={styles.keyboardAvoiding}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

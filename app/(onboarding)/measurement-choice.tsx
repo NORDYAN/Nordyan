@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HomeIndicator, OnboardingMountainBackground } from '@/components/onboarding';
+import { HomeIndicator, OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
@@ -52,6 +52,7 @@ export default function OnboardingMeasurementChoiceScreen() {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground overlayColor={MEASUREMENT_CHOICE_OVERLAY} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <OnboardingMajorProgress step="profile" />
         <View style={styles.content}>
           <View style={styles.mainBody}>
             <View style={styles.headerBlock}>

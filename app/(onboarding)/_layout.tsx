@@ -101,7 +101,7 @@ export default function OnboardingLayout() {
           <ActivityIndicator color={colors.onboardingAccent} size="large" />
         </View>
       ) : null}
-      {chrome.redirect === 'age' ? <Redirect href={routes.onboardingAgeConfirmation} /> : null}
+      {chrome.redirect === 'age' ? <Redirect href={routes.onboardingHealthDataConsent} /> : null}
       {chrome.redirect === 'consent' ? (
         <Redirect href={routes.onboardingHealthDataConsent} />
       ) : null}

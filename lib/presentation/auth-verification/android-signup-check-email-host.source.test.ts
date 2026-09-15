@@ -78,9 +78,9 @@ describe('Android signup check-email Fabric host contracts', () => {
 
     assert.match(signIn, /router\.replace\(routes\.root\)/);
     assert.match(callback, /router\.replace\(routes\.root\)/);
-    assert.match(step2, /routes\.onboardingAgeConfirmation/);
-    assert.doesNotMatch(step2, /routes\.onboardingHealthDataConsent/);
-    assert.match(age, /routes\.onboardingHealthDataConsent/);
+    assert.match(step2, /routes\.onboardingHealthDataConsent/);
+    assert.doesNotMatch(step2, /routes\.onboardingAgeConfirmation/);
+    assert.match(age, /Redirect href=\{routes\.onboardingHealthDataConsent\}/);
     assert.match(step5, /routes\.authSignUp/);
     assert.match(lifecycle, /decideNotificationScheduleSync/);
     assert.match(provider, /savePendingSignupVerification/);

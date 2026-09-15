@@ -138,7 +138,7 @@ export default function CheckEmailScreen() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout progressStep="account">
       <CheckEmailView
         maskedEmail={maskedEmail}
         isResending={isResending}

@@ -12,16 +12,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { onboardingAssets } from '@/assets/images/onboarding';
 import { NordicIdentityFlags } from '@/components/auth/NordicIdentityFlags';
 import { NordyanMountainLogo } from '@/components/branding/NordyanMountainLogo';
-import { OnboardingMountainBackground } from '@/components/onboarding';
+import { OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
 import { Text } from '@/components/ui/Text';
+import type { OnboardingMajorStepId } from '@/lib/presentation/onboarding-progress';
 import { colors, typography } from '@/theme';
 import { authLayout } from '@/theme/auth';
 
 type AuthLayoutProps = {
   children: ReactNode;
+  progressStep?: OnboardingMajorStepId;
 };
 
-export function AuthLayout({ children }: AuthLayoutProps) {
+export function AuthLayout({ children, progressStep }: AuthLayoutProps) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -30,6 +32,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         overlayColor={authLayout.overlay}
       />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {progressStep ? <OnboardingMajorProgress step={progressStep} /> : null}
         <KeyboardAvoidingView
           style={styles.keyboardAvoiding}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

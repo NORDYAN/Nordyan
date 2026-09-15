@@ -122,6 +122,16 @@ export const sv = {
   'onboarding.healthDataConsent.checkbox':
     'Jag samtycker till att NORDYAN behandlar de hälso- och livsstilsuppgifter jag väljer att dela enligt integritetspolicyn.',
   'onboarding.healthDataConsent.policyLink': 'Läs integritetspolicyn',
+  'onboarding.healthDataConsent.legalAge.prefix': 'Jag godkänner ',
+  'onboarding.healthDataConsent.legalAge.terms': 'användarvillkoren',
+  'onboarding.healthDataConsent.legalAge.middle': ' och ',
+  'onboarding.healthDataConsent.legalAge.privacy': 'integritetspolicyn',
+  'onboarding.healthDataConsent.legalAge.suffix':
+    ', samtycker till behandling av mina hälsodata och bekräftar att jag är 18 år eller äldre.',
+  'legal.document.privacyTitle': 'Integritetspolicy',
+  'legal.document.termsTitle': 'Användarvillkor',
+  'legal.document.loadError':
+    'Kunde inte ladda dokumentet. Kontrollera din anslutning och försök igen.',
   'onboarding.healthDataConsent.saveError':
     'Det gick inte att spara ditt samtycke. Försök igen.',
   'onboarding.measureNow': 'Registrera kroppsmått nu',

@@ -124,6 +124,16 @@ export const nb = {
   'onboarding.healthDataConsent.checkbox':
     'Jeg samtykker til at NORDYAN behandler helse- og livsstilsopplysningene jeg velger å dele i samsvar med personvernerklæringen.',
   'onboarding.healthDataConsent.policyLink': 'Les personvernerklæringen',
+  'onboarding.healthDataConsent.legalAge.prefix': 'Jeg godtar ',
+  'onboarding.healthDataConsent.legalAge.terms': 'brukervilkårene',
+  'onboarding.healthDataConsent.legalAge.middle': ' og ',
+  'onboarding.healthDataConsent.legalAge.privacy': 'personvernerklæringen',
+  'onboarding.healthDataConsent.legalAge.suffix':
+    ', samtykker til behandling av helseopplysningene mine og bekrefter at jeg er 18 år eller eldre.',
+  'legal.document.privacyTitle': 'Personvernerklæring',
+  'legal.document.termsTitle': 'Brukervilkår',
+  'legal.document.loadError':
+    'Kunne ikke laste dokumentet. Kontroller tilkoblingen din og prøv igjen.',
   'onboarding.healthDataConsent.saveError':
     'Kunne ikke lagre samtykket ditt. Prøv igjen.',
   'onboarding.measureNow': 'Registrer kroppsmål nå',

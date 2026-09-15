@@ -11,7 +11,14 @@ export {
 } from './auth-verification.presentation';
 export { completeAuthEmailCallback } from './complete-auth-email-callback';
 export { shouldPreventCheckEmailNativeBack } from './check-email-native-back';
-export type { CompleteAuthEmailCallbackDeps } from './complete-auth-email-callback';
+export type {
+  CompleteAuthEmailCallbackDeps,
+  CompleteAuthEmailCallbackResult,
+} from './complete-auth-email-callback';
+export type {
+  AuthCallbackFailureDiagnostic,
+  AuthCallbackFailureStage,
+} from './auth-callback-failure-diagnostic';
 export type {
   AuthCallbackParamsInput,
   AuthCallbackParseResult,

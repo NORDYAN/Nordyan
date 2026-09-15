@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityHelpModal,
   HomeIndicator,
+  OnboardingMajorProgress,
   OnboardingMountainBackground,
   ProfileDateOfBirthField,
   ProfileMeasurementField,
@@ -174,6 +175,7 @@ export default function OnboardingProfileScreen() {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground overlayColor={colors.onboardingProfileOverlay} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <OnboardingMajorProgress step="profile" />
         <KeyboardAvoidingView
           style={styles.keyboardAvoiding}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

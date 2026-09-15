@@ -11,7 +11,9 @@ import {
   HEALTH_DATA_CONSENT_COPY,
   PRIVACY_POLICY_URL,
   canSubmitHealthDataConsent,
+  canSubmitOnboardingHealthDataConsent,
   isHealthOnboardingCollectionPath,
+  legalAgeAcceptanceLabel,
   resolveHealthOnboardingCollectionAccess,
 } from './health-data-consent.presentation';
 
@@ -20,6 +22,12 @@ describe('health data consent presentation', () => {
     const checkedByDefault = false;
     assert.equal(canSubmitHealthDataConsent(checkedByDefault), false);
     assert.equal(canSubmitHealthDataConsent(true), true);
+    assert.equal(canSubmitOnboardingHealthDataConsent(false), false);
+    assert.equal(canSubmitOnboardingHealthDataConsent(true), true);
+    assert.equal(
+      legalAgeAcceptanceLabel(),
+      'Jag godkänner användarvillkoren och integritetspolicyn, samtycker till behandling av mina hälsodata och bekräftar att jag är 18 år eller äldre.',
+    );
   });
 
   it('uses the public privacy policy URL', () => {
@@ -42,6 +50,14 @@ describe('health data consent presentation', () => {
       'Jag samtycker till att NORDYAN behandlar de hälso- och livsstilsuppgifter jag väljer att dela enligt integritetspolicyn.',
     );
     assert.equal(HEALTH_DATA_CONSENT_COPY.policyLink, 'Läs integritetspolicyn');
+    assert.equal(
+      HEALTH_DATA_CONSENT_COPY.legalAgePrefix +
+        HEALTH_DATA_CONSENT_COPY.legalAgeTerms +
+        HEALTH_DATA_CONSENT_COPY.legalAgeMiddle +
+        HEALTH_DATA_CONSENT_COPY.legalAgePrivacy +
+        HEALTH_DATA_CONSENT_COPY.legalAgeSuffix,
+      'Jag godkänner användarvillkoren och integritetspolicyn, samtycker till behandling av mina hälsodata och bekräftar att jag är 18 år eller äldre.',
+    );
     assert.equal(
       HEALTH_DATA_CONSENT_COPY.saveError,
       'Det gick inte att spara ditt samtycke. Försök igen.',
@@ -66,6 +82,14 @@ describe('health data consent presentation', () => {
       'Jeg samtykker til at NORDYAN behandler helse- og livsstilsopplysningene jeg velger å dele i samsvar med personvernerklæringen.',
     );
     assert.equal(t('onboarding.healthDataConsent.policyLink'), 'Les personvernerklæringen');
+    assert.equal(
+      t('onboarding.healthDataConsent.legalAge.prefix') +
+        t('onboarding.healthDataConsent.legalAge.terms') +
+        t('onboarding.healthDataConsent.legalAge.middle') +
+        t('onboarding.healthDataConsent.legalAge.privacy') +
+        t('onboarding.healthDataConsent.legalAge.suffix'),
+      'Jeg godtar brukervilkårene og personvernerklæringen, samtykker til behandling av helseopplysningene mine og bekrefter at jeg er 18 år eller eldre.',
+    );
     assert.equal(
       t('onboarding.healthDataConsent.saveError'),
       'Kunne ikke lagre samtykket ditt. Prøv igjen.',

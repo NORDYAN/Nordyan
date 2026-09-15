@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HomeIndicator,
   OnboardingCoachCard,
+  OnboardingMajorProgress,
   OnboardingMountainBackground,
   OnboardingResultMetricCard,
 } from '@/components/onboarding';
@@ -148,6 +149,7 @@ export default function OnboardingResultScreen() {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground overlayColor={onboardingResultLayout.mountainOverlay} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <OnboardingMajorProgress step="result" />
         <View style={styles.content}>
           <ScrollView
             style={styles.scrollView}

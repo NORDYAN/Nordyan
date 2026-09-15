@@ -112,10 +112,10 @@ describe('onboarding-first auth flow source contracts', () => {
     assert.doesNotMatch(authenticatedGate, /initialLifestyle|getPendingInitialLifestyle|hasRequiredAnonymousSignupBaseline/);
   });
 
-  it('sends step-2 into age confirmation before Health Data Consent', () => {
+  it('sends step-2 into Health Data Consent after product value', () => {
     const step2 = fs.readFileSync(path.join(process.cwd(), 'app/(onboarding)/step-2.tsx'), 'utf8');
-    assert.match(step2, /routes\.onboardingAgeConfirmation/);
-    assert.doesNotMatch(step2, /routes\.onboardingHealthDataConsent/);
+    assert.match(step2, /routes\.onboardingHealthDataConsent/);
+    assert.doesNotMatch(step2, /routes\.onboardingAgeConfirmation/);
     assert.doesNotMatch(step2, /routes\.onboardingLifestyleIntro/);
   });
 
