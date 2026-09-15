@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HomeIndicator, OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
+import { HomeIndicator, OnboardingBackHeader, OnboardingMountainBackground } from '@/components/onboarding';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { onboardingAssets } from '@/assets/images/onboarding';
@@ -41,7 +41,7 @@ export default function OnboardingProductValueScreen() {
       />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.stage}>
-          <OnboardingMajorProgress step="product-value" />
+          <OnboardingBackHeader step="product-value" />
           <View style={styles.hero}>
             <View style={styles.headline}>
               <Text style={styles.overline} maxFontSizeMultiplier={1.1}>

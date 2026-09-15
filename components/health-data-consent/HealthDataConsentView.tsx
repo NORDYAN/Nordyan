@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LegalDocumentModal } from '@/components/legal/LegalDocumentModal';
-import { HomeIndicator, OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
+import { HomeIndicator, OnboardingBackHeader, OnboardingMountainBackground } from '@/components/onboarding';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -48,8 +48,8 @@ export function HealthDataConsentView(props: {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <OnboardingMountainBackground />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {props.progressStep ? <OnboardingBackHeader step={props.progressStep} /> : null}
         <View style={styles.stage}>
-          {props.progressStep ? <OnboardingMajorProgress step={props.progressStep} /> : null}
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={[

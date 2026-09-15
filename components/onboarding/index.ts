@@ -2,6 +2,7 @@ export { AccentLine } from './AccentLine';
 export { ActivityHelpModal } from './ActivityHelpModal';
 export { HomeIndicator } from './HomeIndicator';
 export { OnboardingInfoModalShell } from './OnboardingInfoModalShell';
+export { OnboardingBackButton, OnboardingBackHeader } from './OnboardingBackButton';
 export { OnboardingMajorProgress } from './OnboardingMajorProgress';
 export { MeasurementHelpModal, DEFAULT_MEASUREMENT_HELP_SECTIONS } from './MeasurementHelpModal';
 export type { MeasurementHelpSection } from './MeasurementHelpModal';
