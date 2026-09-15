@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
@@ -17,6 +18,7 @@ type ProfileSingleChoiceGroupProps<T extends string> = {
   layout?: 'row' | 'stack';
   optionIcons?: Partial<Record<T, keyof typeof Ionicons.glyphMap>>;
   helper?: string;
+  beforeOptions?: ReactNode;
 };
 
 export function ProfileSingleChoiceGroup<T extends string>({
@@ -27,10 +29,12 @@ export function ProfileSingleChoiceGroup<T extends string>({
   layout = 'stack',
   optionIcons,
   helper,
+  beforeOptions,
 }: ProfileSingleChoiceGroupProps<T>) {
   return (
     <View style={styles.root}>
       <Text style={styles.label}>{label}</Text>
+      {beforeOptions}
       <View style={layout === 'row' ? styles.optionsRow : styles.optionsStack}>
         {options.map((option) => {
           const selected = value === option.value;

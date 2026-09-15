@@ -155,6 +155,31 @@ export default function OnboardingBodyMeasurementsScreen() {
             <View style={styles.formSection}>
               <Text style={styles.helperText}>{t('onboarding.bodyMeasurements.helperText')}</Text>
               <Text style={styles.sectionLabel}>{t('onboarding.bodyMeasurements.sectionLabel')}</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.measurementHelpLink,
+                  pressed && styles.measurementHelpLinkPressed,
+                ]}
+                onPress={() => setMeasurementHelpVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('onboarding.measureHelp')}
+              >
+                <View style={styles.measurementHelpLabelGroup}>
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={onboardingProfileLayout.helpIconSize}
+                    color={colors.onboardingAccent}
+                  />
+                  <Text style={styles.measurementHelpLinkText} numberOfLines={1}>
+                    {t('onboarding.measureHelp')}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={onboardingProfileLayout.helpChevronSize}
+                  color={colors.onboardingAccent}
+                />
+              </Pressable>
               <Card
                 padding={onboardingProfileLayout.formCardPadding}
                 borderRadius={onboardingProfileLayout.formCardRadius}
@@ -189,32 +214,6 @@ export default function OnboardingBodyMeasurementsScreen() {
                 />
               </Card>
             </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.measurementHelpLink,
-                pressed && styles.measurementHelpLinkPressed,
-              ]}
-              onPress={() => setMeasurementHelpVisible(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t('onboarding.measureHelp')}
-            >
-              <View style={styles.measurementHelpLabelGroup}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={onboardingProfileLayout.helpIconSize}
-                  color={colors.onboardingAccent}
-                />
-                <Text style={styles.measurementHelpLinkText} numberOfLines={1}>
-                  {t('onboarding.measureHelp')}
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={onboardingProfileLayout.helpChevronSize}
-                color={colors.onboardingAccent}
-              />
-            </Pressable>
 
             <View style={styles.footer}>
               <Button
@@ -323,7 +322,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    marginTop: onboardingProfileLayout.sectionGap,
   },
   measurementHelpLinkPressed: {
     opacity: 0.75,

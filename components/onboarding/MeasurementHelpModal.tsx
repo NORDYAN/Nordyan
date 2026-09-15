@@ -1,14 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useRef, type ReactNode } from 'react';
-import {
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import type { ReactNode } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -22,6 +14,8 @@ import {
   onboardingMeasurementHelpLayout,
   typography,
 } from '@/theme';
+
+import { OnboardingInfoModalShell } from './OnboardingInfoModalShell';
 
 export type MeasurementHelpSection = {
   title: string;
@@ -73,8 +67,6 @@ type MeasurementHelpModalProps = {
   onClose: () => void;
 };
 
-const SHEET_SLIDE_OFFSET = 28;
-
 type GuidelineCardProps = {
   icon: ReactNode;
   title: string;
@@ -113,176 +105,85 @@ export function MeasurementHelpModal({
   onClose,
 }: MeasurementHelpModalProps) {
   useI18n();
-  const screenOpacity = useRef(new Animated.Value(0)).current;
-  const screenTranslateY = useRef(new Animated.Value(SHEET_SLIDE_OFFSET)).current;
-
-  useEffect(() => {
-    if (visible) {
-      screenOpacity.setValue(0);
-      screenTranslateY.setValue(SHEET_SLIDE_OFFSET);
-
-      Animated.parallel([
-        Animated.timing(screenOpacity, {
-          toValue: 1,
-          duration: 260,
-          useNativeDriver: true,
-        }),
-        Animated.timing(screenTranslateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, screenOpacity, screenTranslateY]);
-
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(screenOpacity, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-      Animated.timing(screenTranslateY, {
-        toValue: SHEET_SLIDE_OFFSET,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) {
-        onClose();
-      }
-    });
-  };
 
   return (
-    <Modal
+    <OnboardingInfoModalShell
       visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
+      onClose={onClose}
+      footer={(close) => (
+        <Button
+          label={t('measureHelp.understood')}
+          variant="onboarding"
+          style={styles.confirmButton}
+          labelStyle={styles.confirmButtonLabel}
+          onPress={close}
+        />
+      )}
     >
-      <Animated.View
-        style={[
-          styles.screen,
-          {
-            opacity: screenOpacity,
-            transform: [{ translateY: screenTranslateY }],
-          },
-        ]}
+      <ScrollView
+        style={styles.contentScroll}
+        contentContainerStyle={styles.contentScrollInner}
+        showsVerticalScrollIndicator={false}
       >
-        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <View style={styles.navigation}>
-            <Pressable
-              style={styles.backButton}
-              onPress={handleClose}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.close')}
-              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={onboardingMeasurementHelpLayout.backIconSize}
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>{t('measureHelp.title')}</Text>
+          <Text style={styles.subtitle}>{t('measureHelp.subtitle')}</Text>
+        </View>
+
+        <View style={styles.cardsSpacer} />
+
+        <View style={styles.guidelinesContainer}>
+          <MeasurementHelpGuidelineCard
+            icon={
+              <MaterialCommunityIcons
+                name="ruler"
+                size={onboardingMeasurementHelpLayout.cardIconSize}
                 color={colors.onboardingMeasurementHelpText}
               />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.contentScroll}
-            contentContainerStyle={styles.contentScrollInner}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.titleSection}>
-              <Text style={styles.title}>{t('measureHelp.title')}</Text>
-              <Text style={styles.subtitle}>{t('measureHelp.subtitle')}</Text>
-            </View>
-
-            <View style={styles.cardsSpacer} />
-
-            <View style={styles.guidelinesContainer}>
-              <MeasurementHelpGuidelineCard
-                icon={
-                  <MaterialCommunityIcons
-                    name="ruler"
-                    size={onboardingMeasurementHelpLayout.cardIconSize}
-                    color={colors.onboardingMeasurementHelpText}
-                  />
-                }
-                title={t('measureHelp.waistHeading')}
-                itemKeys={MEASUREMENT_HELP_MIDJA_ITEM_KEYS}
+            }
+            title={t('measureHelp.waistHeading')}
+            itemKeys={MEASUREMENT_HELP_MIDJA_ITEM_KEYS}
+          />
+          <MeasurementHelpGuidelineCard
+            icon={
+              <MaterialCommunityIcons
+                name="ruler"
+                size={onboardingMeasurementHelpLayout.cardIconSize}
+                color={colors.onboardingMeasurementHelpText}
               />
-              <MeasurementHelpGuidelineCard
-                icon={
-                  <MaterialCommunityIcons
-                    name="ruler"
-                    size={onboardingMeasurementHelpLayout.cardIconSize}
-                    color={colors.onboardingMeasurementHelpText}
-                  />
-                }
-                title={t('measureHelp.neckHeading')}
-                itemKeys={MEASUREMENT_HELP_HALS_ITEM_KEYS}
+            }
+            title={t('measureHelp.neckHeading')}
+            itemKeys={MEASUREMENT_HELP_HALS_ITEM_KEYS}
+          />
+          <MeasurementHelpGuidelineCard
+            icon={
+              <MaterialCommunityIcons
+                name="ruler"
+                size={onboardingMeasurementHelpLayout.cardIconSize}
+                color={colors.onboardingMeasurementHelpText}
               />
-              <MeasurementHelpGuidelineCard
-                icon={
-                  <MaterialCommunityIcons
-                    name="ruler"
-                    size={onboardingMeasurementHelpLayout.cardIconSize}
-                    color={colors.onboardingMeasurementHelpText}
-                  />
-                }
-                title={t('measureHelp.hipHeading')}
-                itemKeys={MEASUREMENT_HELP_HIP_ITEM_KEYS}
+            }
+            title={t('measureHelp.hipHeading')}
+            itemKeys={MEASUREMENT_HELP_HIP_ITEM_KEYS}
+          />
+          <MeasurementHelpGuidelineCard
+            icon={
+              <Ionicons
+                name="bulb-outline"
+                size={onboardingMeasurementHelpLayout.cardIconSize}
+                color={colors.onboardingMeasurementHelpText}
               />
-              <MeasurementHelpGuidelineCard
-                icon={
-                  <Ionicons
-                    name="bulb-outline"
-                    size={onboardingMeasurementHelpLayout.cardIconSize}
-                    color={colors.onboardingMeasurementHelpText}
-                  />
-                }
-                title={t('measureHelp.tipsHeading')}
-                itemKeys={MEASUREMENT_HELP_TIPS_ITEM_KEYS}
-              />
-            </View>
-          </ScrollView>
-
-          <View style={styles.ctaContainer}>
-            <Button
-              label={t('measureHelp.understood')}
-              variant="onboarding"
-              style={styles.confirmButton}
-              labelStyle={styles.confirmButtonLabel}
-              onPress={handleClose}
-            />
-          </View>
-        </SafeAreaView>
-      </Animated.View>
-    </Modal>
+            }
+            title={t('measureHelp.tipsHeading')}
+            itemKeys={MEASUREMENT_HELP_TIPS_ITEM_KEYS}
+          />
+        </View>
+      </ScrollView>
+    </OnboardingInfoModalShell>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.onboardingMeasurementHelpBackground,
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: onboardingMeasurementHelpLayout.horizontalPadding,
-    paddingBottom: onboardingMeasurementHelpLayout.bottomPadding,
-  },
-  navigation: {
-    paddingTop: onboardingMeasurementHelpLayout.navPaddingTop,
-    paddingBottom: onboardingMeasurementHelpLayout.navPaddingBottom,
-  },
-  backButton: {
-    width: onboardingMeasurementHelpLayout.backTouchSize,
-    height: onboardingMeasurementHelpLayout.backTouchSize,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   contentScroll: {
     flex: 1,
   },
@@ -357,10 +258,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.regular,
     lineHeight:
       onboardingMeasurementHelpLayout.bulletTextFontSize * typography.lineHeight.normal,
-  },
-  ctaContainer: {
-    paddingTop: onboardingMeasurementHelpLayout.ctaPaddingTop,
-    width: '100%',
   },
   confirmButton: {
     width: '100%',

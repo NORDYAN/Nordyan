@@ -240,33 +240,34 @@ export default function OnboardingProfileScreen() {
                   value={activityLevel}
                   options={PROFILE_ACTIVITY_LEVEL_OPTIONS}
                   onChange={setActivityLevel}
+                  beforeOptions={
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.activityHelpLink,
+                        pressed && styles.activityHelpLinkPressed,
+                      ]}
+                      onPress={() => setActivityHelpVisible(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('onboarding.activityHelp')}
+                    >
+                      <View style={styles.activityHelpLabelGroup}>
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={onboardingProfileLayout.helpIconSize}
+                          color={colors.onboardingAccent}
+                        />
+                        <Text style={styles.activityHelpLinkText} numberOfLines={1}>
+                          {t('onboarding.activityHelp')}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={onboardingProfileLayout.helpChevronSize}
+                        color={colors.onboardingAccent}
+                      />
+                    </Pressable>
+                  }
                 />
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.activityHelpLink,
-                    pressed && styles.activityHelpLinkPressed,
-                  ]}
-                  onPress={() => setActivityHelpVisible(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('onboarding.activityHelp')}
-                >
-                  <View style={styles.activityHelpLabelGroup}>
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={onboardingProfileLayout.helpIconSize}
-                      color={colors.onboardingAccent}
-                    />
-                    <Text style={styles.activityHelpLinkText} numberOfLines={1}>
-                      {t('onboarding.activityHelp')}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={onboardingProfileLayout.helpChevronSize}
-                    color={colors.onboardingAccent}
-                  />
-                </Pressable>
               </View>
             </View>
 
