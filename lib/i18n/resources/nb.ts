@@ -486,14 +486,15 @@ export const nb = {
   'profile.privacy.delete.title': 'Slett konto',
   'profile.privacy.delete.body':
     'Når du sletter kontoen din, fjernes profilen og helsehistorikken din permanent fra NORDYAN. Dette kan ikke angres.',
-  'profile.privacy.delete.confirmCheck': 'Jeg forstår at dette ikke kan angres',
-  'profile.privacy.delete.action': 'Slett konto',
+  'profile.privacy.delete.confirmCheck':
+    'Jeg vil slette kontoen min permanent og forstår at dette ikke kan angres.',
+  'profile.privacy.delete.action': 'Slett kontoen min',
   'profile.privacy.delete.processing': 'Sletter konto…',
   'profile.privacy.delete.error': 'Kunne ikke slette kontoen. Prøv igjen.',
-  'profile.privacy.delete.alertTitle': 'Slette konto?',
+  'profile.privacy.delete.alertTitle': 'Slette kontoen din permanent?',
   'profile.privacy.delete.alertMessage':
-    'Profilen og helsehistorikken din blir fjernet permanent.',
-  'profile.privacy.delete.alertConfirm': 'Slett',
+    'Profilen og helsehistorikken din fjernes permanent fra NORDYAN. Dette kan ikke angres.',
+  'profile.privacy.delete.alertConfirm': 'Slett kontoen min',
   'profile.help': 'Hjelp og support',
   'profile.help.mailSubject': 'Hjelp og support – NORDYAN',
   'profile.help.mailBody': 'Hei NORDYAN,\n\nJeg trenger hjelp med:',

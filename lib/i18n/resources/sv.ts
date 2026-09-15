@@ -484,14 +484,15 @@ export const sv = {
   'profile.privacy.delete.title': 'Radera konto',
   'profile.privacy.delete.body':
     'När du raderar ditt konto tas din profil och din hälsohistorik bort permanent från NORDYAN. Detta kan inte ångras.',
-  'profile.privacy.delete.confirmCheck': 'Jag förstår att detta inte kan ångras',
-  'profile.privacy.delete.action': 'Radera konto',
+  'profile.privacy.delete.confirmCheck':
+    'Jag vill permanent radera mitt konto och förstår att detta inte kan ångras.',
+  'profile.privacy.delete.action': 'Radera mitt konto',
   'profile.privacy.delete.processing': 'Raderar konto…',
   'profile.privacy.delete.error': 'Kunde inte radera kontot. Försök igen.',
-  'profile.privacy.delete.alertTitle': 'Radera konto?',
+  'profile.privacy.delete.alertTitle': 'Radera ditt konto permanent?',
   'profile.privacy.delete.alertMessage':
-    'Din profil och hälsohistorik kommer att tas bort permanent.',
-  'profile.privacy.delete.alertConfirm': 'Radera',
+    'Din profil och hälsohistorik tas bort permanent från NORDYAN. Detta kan inte ångras.',
+  'profile.privacy.delete.alertConfirm': 'Radera mitt konto',
   'profile.help': 'Hjälp och support',
   'profile.help.mailSubject': 'Hjälp & support – NORDYAN',
   'profile.help.mailBody': 'Hej NORDYAN,\n\nJag behöver hjälp med:',
