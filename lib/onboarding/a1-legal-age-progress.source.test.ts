@@ -86,12 +86,14 @@ describe('A1 legal + 18+ + progress source contracts', () => {
     const body = source('app/(onboarding)/body-measurements.tsx');
     const lifestyle = source('components/initial-lifestyle/InitialLifestyleView.tsx');
     const question = source('components/initial-lifestyle/InitialLifestyleQuestion.tsx');
+    const notifications = source('app/(onboarding)/notification-setup.tsx');
     const signUp = source('app/(auth)/sign-up.tsx');
     const signIn = source('app/(auth)/sign-in.tsx');
 
     assert.match(step2, /OnboardingBackHeader step="product-value"/);
     assert.match(choice, /OnboardingBackHeader step="profile"/);
     assert.match(body, /OnboardingBackHeader step="profile"/);
+    assert.match(notifications, /OnboardingBackHeader step="profile"/);
     assert.match(lifestyle, /OnboardingBackHeader step="lifestyle"/);
     assert.match(lifestyle, /OnboardingMajorProgress step="lifestyle"/);
     assert.match(question, /formatInitialLifestyleProgress/);

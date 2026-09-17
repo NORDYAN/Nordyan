@@ -4,6 +4,7 @@ import {
   onboardingCompleteKeyForUser,
 } from '@/lib/onboarding/onboarding-complete-keys';
 import { coachHomeBodyFatDiscoveryKey } from '@/lib/presentation/coach-home/coach-home-body-fat-discovery.store';
+import { PENDING_NOTIFICATION_CHOICE_KEY } from '@/lib/onboarding/pending-notification-choice';
 import { notificationPreferencesStorageKey } from '@/lib/presentation/notifications/notification-preferences';
 
 export type AccountLocalCleanupDeps = {
@@ -35,6 +36,7 @@ export async function clearAccountLocalData(
   await deps.removeItem(languageStorageUserKey(trimmed));
   await deps.removeItem(coachHomeBodyFatDiscoveryKey(trimmed));
   await deps.removeItem(notificationPreferencesStorageKey(trimmed));
+  await deps.removeItem(PENDING_NOTIFICATION_CHOICE_KEY);
 
   const pendingSignup = await deps.getPendingSignupVerification();
   if (pendingSignup?.ownerId === trimmed) {

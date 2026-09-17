@@ -16,6 +16,7 @@ import {
   type AppGateResult,
 } from '@/lib/onboarding/resolve-app-gate';
 import { persistPendingHealthDataConsentAfterAuth } from '@/lib/onboarding/persist-pending-health-data-consent.runtime';
+import { applyPendingNotificationChoiceForAuthenticatedUser } from '@/lib/onboarding/apply-pending-notification-choice.runtime';
 import { getPendingSignupVerification } from '@/lib/onboarding/pending-signup-verification-storage';
 import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
 import { healthDataConsentService } from '@/lib/services/health-data-consent';
@@ -54,6 +55,10 @@ export default function Index() {
     setGate(APP_GATE_LOADING);
 
     const run = async () => {
+      if (status === 'authenticated' && userId) {
+        await applyPendingNotificationChoiceForAuthenticatedUser(userId);
+      }
+
       const next = await resolveAppGate({
         isReady,
         isAuthenticated: status === 'authenticated',

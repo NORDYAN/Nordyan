@@ -44,6 +44,7 @@ describe('age confirmation presentation', () => {
     assert.equal(isAgeGatedOnboardingPath('/health-data-consent'), false);
     assert.equal(isAgeGatedOnboardingPath('/step-3'), true);
     assert.equal(isAgeGatedOnboardingPath('/step-4'), true);
+    assert.equal(isAgeGatedOnboardingPath('/notification-setup'), true);
     assert.equal(isAgeGatedOnboardingPath('/measurement-choice'), true);
     assert.equal(isAgeGatedOnboardingPath('/body-measurements'), true);
     assert.equal(isAgeGatedOnboardingPath('/step-5'), true);

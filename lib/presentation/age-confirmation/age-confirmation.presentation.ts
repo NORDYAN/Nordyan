@@ -15,6 +15,7 @@ export function isAgeGatedOnboardingPath(pathname: string): boolean {
   return (
     pathname.includes('step-3') ||
     pathname.includes('step-4') ||
+    pathname.includes('notification-setup') ||
     pathname.includes('measurement-choice') ||
     pathname.includes('body-measurements') ||
     pathname.includes('step-5')

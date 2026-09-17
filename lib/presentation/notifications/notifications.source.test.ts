@@ -96,71 +96,33 @@ describe('Push Notifications v1 source contracts', () => {
     assert.doesNotMatch(weeklyHook, /saveCurrentWeek\(/);
   });
 
-  it('commits Daily time from a local iOS draft on Klar with a dark spinner', () => {
+  it('uses six fixed Daily Focus hours instead of a native time picker', () => {
     const screen = source('app/(tabs)/profile/notifications.tsx');
     const picker = source('lib/presentation/notifications/notification-time-picker.ts');
     const lifecycle = source('lib/presentation/notifications/NotificationLifecycle.tsx');
     const permission = source('lib/presentation/notifications/notification-permission.ts');
     const runtime = source('lib/presentation/notifications/nordyan-notifications.runtime.ts');
     const dailyPlan = source('lib/presentation/notifications/daily-focus-schedule.ts');
+    const pending = source('lib/onboarding/pending-notification-choice.ts');
+    const hourChoices = source('components/profile/DailyFocusReminderHourChoices.tsx');
 
-    assert.match(screen, /openTimePicker/);
-    assert.match(screen, /handleTimeConfirm/);
-    assert.match(screen, /commitDailyTimeDraft/);
-    assert.match(screen, /themeVariant=\{IOS_DAILY_TIME_PICKER_THEME\.themeVariant\}/);
-    assert.match(picker, /themeVariant: 'dark'/);
-    assert.match(picker, /date\.getHours\(\)/);
-    assert.match(picker, /date\.getMinutes\(\)/);
-    assert.doesNotMatch(picker, /getUTCHours|getUTCMinutes|Date\.UTC/);
-    assert.doesNotMatch(screen, /getUTCHours|getUTCMinutes|Date\.UTC/);
-    assert.match(picker, /action: 'remember-selection'/);
+    assert.match(pending, /ONBOARDING_DAILY_REMINDER_HOURS = \[7, 8, 9, 16, 17, 18\]/);
+    assert.match(hourChoices, /ONBOARDING_DAILY_REMINDER_HOUR_ROWS/);
+    assert.match(screen, /DailyFocusReminderHourChoices/);
+    assert.match(screen, /handleSelectDailyHour/);
+    assert.match(screen, /dailyMinute: 0/);
+    assert.match(screen, /saveDailyTime\(next\)/);
+    assert.match(screen, /applyDailyFocusNotificationPlan\(planDailyFocusNotification\(next\)\)/);
+    assert.doesNotMatch(screen, /DateTimePicker|beginIosDailyTimePickerSession|openTimePicker|handleTimeConfirm|commitDailyTimeDraft/);
+    assert.doesNotMatch(screen, /Platform\.OS/);
     assert.match(picker, /beginIosDailyTimePickerSession/);
-    assert.match(picker, /applyIosDailyTimePickerWheelEvent/);
-    assert.match(picker, /export function shouldRebindIosPickerValueOnSet/);
-    assert.match(picker, /return false;/);
-    assert.match(screen, /beginIosDailyTimePickerSession/);
-    assert.match(screen, /iosPickerSessionRef/);
-    assert.match(screen, /setTimeDraft\(session\.pickerValue\)/);
-    assert.match(screen, /action === 'remember-selection'/);
-    const rememberBlock = screen.slice(
-      screen.indexOf("if (decision.action === 'remember-selection')"),
-      screen.indexOf("if (decision.action === 'dismiss')"),
-    );
-    assert.match(rememberBlock, /applyIosDailyTimePickerWheelEvent/);
-    assert.doesNotMatch(rememberBlock, /setTimeDraft/);
-    assert.doesNotMatch(rememberBlock, /saveDailyTime|persist\(/);
-    assert.match(
-      screen.slice(screen.indexOf('const handleTimeConfirm'), screen.indexOf('const timeLabel')),
-      /resolveIosDailyTimePickerCommit/,
-    );
-    assert.match(
-      screen.slice(screen.indexOf('const handleTimeConfirm'), screen.indexOf('const timeLabel')),
-      /saveDailyTime\(next\)/,
-    );
-
-    const scrollBody = screen.slice(screen.indexOf('<ScrollView'), screen.indexOf('</ScrollView>'));
-    const afterScroll = screen.slice(screen.indexOf('</ScrollView>'));
-    assert.match(scrollBody, /DailyTimePicker/);
-    assert.match(scrollBody, /display="default"/);
-    assert.doesNotMatch(scrollBody, /display="spinner"/);
-    assert.doesNotMatch(scrollBody, /handleTimeConfirm/);
-    assert.doesNotMatch(scrollBody, /common\.done/);
-    assert.match(afterScroll, /DailyTimePicker/);
-    assert.match(afterScroll, /display="spinner"/);
-    assert.match(afterScroll, /handleTimeConfirm/);
-    assert.match(afterScroll, /common\.done/);
-    assert.doesNotMatch(afterScroll, /<ScrollView/);
-    assert.doesNotMatch(screen, /Modal/);
-    assert.match(scrollBody, /Platform\.OS !== 'ios'/);
-    assert.match(afterScroll, /Platform\.OS === 'ios'/);
-    assert.match(picker, /action: 'commit'/);
-    assert.doesNotMatch(scrollBody, /action === 'commit'/);
-
-    assert.match(lifecycle, /decideNotificationScheduleSync/);
-    assert.doesNotMatch(lifecycle, /commitDailyTimeDraft|timeDraft|themeVariant/);
+    assert.match(picker, /themeVariant: 'dark'/);
+    assert.doesNotMatch(lifecycle, /commitDailyTimeDraft|timeDraft|themeVariant|DateTimePicker/);
     assert.doesNotMatch(permission, /commitDailyTimeDraft|DateTimePicker/);
     assert.match(runtime, /DAILY_FOCUS_NOTIFICATION_ID/);
     assert.match(dailyPlan, /identifier: DAILY_FOCUS_NOTIFICATION_ID/);
+    assert.match(source('lib/presentation/notifications/notification-preferences.ts'), /WEEKLY_CHECK_IN_REMINDER_HOUR = 18/);
+    assert.match(screen, /onboarding\.notifications\.weeklyHint/);
     assert.doesNotMatch(source('providers/auth-provider.tsx'), /commitDailyTimeDraft|DateTimePicker/);
     assert.doesNotMatch(source('lib/onboarding/resolve-app-gate.ts'), /commitDailyTimeDraft|DateTimePicker/);
   });

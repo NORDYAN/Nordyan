@@ -202,6 +202,34 @@ describe('i18n domain-value isolation', () => {
     assert.equal(t('profile.notifications.weekly.title', undefined, 'sv'), 'Veckokollen väntar');
     assert.equal(t('profile.notifications.weekly.title', undefined, 'nb'), 'Ukessjekken venter');
     assert.equal(
+      t('onboarding.notifications.title', undefined, 'sv'),
+      'Låt din coach hjälpa dig i vardagen',
+    );
+    assert.equal(
+      t('onboarding.notifications.title', undefined, 'nb'),
+      'La treneren din hjelpe deg i hverdagen',
+    );
+    assert.equal(t('onboarding.notifications.activate', undefined, 'sv'), 'Aktivera påminnelser');
+    assert.equal(t('onboarding.notifications.activate', undefined, 'nb'), 'Aktiver påminnelser');
+    assert.equal(t('onboarding.notifications.notNow', undefined, 'sv'), 'Inte nu');
+    assert.equal(t('onboarding.notifications.notNow', undefined, 'nb'), 'Ikke nå');
+    assert.equal(
+      t('onboarding.notifications.timePrompt', undefined, 'sv'),
+      'När vill du få Dagens fokus?',
+    );
+    assert.equal(
+      t('onboarding.notifications.timePrompt', undefined, 'nb'),
+      'Når vil du få Dagens fokus?',
+    );
+    assert.equal(
+      t('onboarding.notifications.weeklyHint', undefined, 'sv'),
+      'Veckokoll skickas på söndagar kl. 18:00.',
+    );
+    assert.equal(
+      t('onboarding.notifications.weeklyHint', undefined, 'nb'),
+      'Ukessjekken sendes på søndager kl. 18:00.',
+    );
+    assert.equal(
       t('profile.help.mailBody', undefined, 'sv'),
       'Hej NORDYAN,\n\nJag behöver hjälp med:',
     );

@@ -8,13 +8,14 @@ function source(relativePath: string): string {
 }
 
 describe('A3B visible onboarding Back', () => {
-  it('puts a shared router.back() control on exactly the six approved screens', () => {
+  it('puts a shared router.back() control on the approved onboarding screens', () => {
     const back = source('components/onboarding/OnboardingBackButton.tsx');
     const step2 = source('app/(onboarding)/step-2.tsx');
     const consentView = source('components/health-data-consent/HealthDataConsentView.tsx');
     const consentScreen = source('app/(onboarding)/health-data-consent.tsx');
     const lifestyle = source('components/initial-lifestyle/InitialLifestyleView.tsx');
     const profile = source('app/(onboarding)/step-4.tsx');
+    const notifications = source('app/(onboarding)/notification-setup.tsx');
     const choice = source('app/(onboarding)/measurement-choice.tsx');
     const body = source('app/(onboarding)/body-measurements.tsx');
 
@@ -30,6 +31,7 @@ describe('A3B visible onboarding Back', () => {
     assert.match(consentScreen, /progressStep="legal"/);
     assert.match(lifestyle, /isIntro \? \(\s*<OnboardingBackHeader step="lifestyle"/);
     assert.match(profile, /OnboardingBackHeader step="profile"/);
+    assert.match(notifications, /OnboardingBackHeader step="profile"/);
     assert.match(choice, /OnboardingBackHeader step="profile"/);
     assert.match(body, /OnboardingBackHeader step="profile"/);
   });

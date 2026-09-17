@@ -556,6 +556,15 @@ export const sv = {
   'onboarding.step2.title': 'Rätt fokus för dig',
   'onboarding.step2.body':
     'NORDYAN hjälper dig att förstå vad som är viktigast just nu – och vad du faktiskt kan göra åt det.',
+  'onboarding.notifications.title': 'Låt din coach hjälpa dig i vardagen',
+  'onboarding.notifications.body':
+    'Med påminnelser kan NORDYAN Coach hjälpa dig att hålla fokus, följa upp dina mål och komma ihåg din veckokoll. Du bestämmer själv vilka påminnelser du vill ha.',
+  'onboarding.notifications.activate': 'Aktivera påminnelser',
+  'onboarding.notifications.notNow': 'Inte nu',
+  'onboarding.notifications.timePrompt': 'När vill du få Dagens fokus?',
+  'onboarding.notifications.weeklyHint': 'Veckokoll skickas på söndagar kl. 18:00.',
+  'onboarding.notifications.laterHint':
+    'Du kan aktivera påminnelser senare under Profil → Aviseringar.',
   'onboarding.measureChoice.overline': 'Nästa steg',
   'onboarding.measureChoice.title': 'Vill du registrera kroppsmått?',
   'onboarding.measureChoice.body':

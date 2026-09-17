@@ -22,6 +22,7 @@ import {
 } from './pending-profile-storage';
 import { clearUnownedPendingAgeConfirmation } from './pending-age-confirmation-storage';
 import { clearUnownedPendingHealthDataConsent } from './pending-health-data-consent-storage';
+import { clearPendingNotificationChoice } from './pending-notification-choice-storage';
 import { clearPendingSignupVerification } from './pending-signup-verification-storage';
 import { beginNewAnonymousOnboardingAttempt } from './anonymous-onboarding-attempt';
 
@@ -66,6 +67,7 @@ export async function clearUnownedPendingOnboardingForExistingSignIn(): Promise<
   await clearUnownedPendingOnboarding(ownershipDeps);
   await clearUnownedPendingHealthDataConsent();
   await clearUnownedPendingAgeConfirmation();
+  await clearPendingNotificationChoice();
 }
 
 /**
@@ -76,6 +78,7 @@ export async function startNewAnonymousOnboarding(): Promise<void> {
   await clearUnownedPendingOnboarding(ownershipDeps);
   await clearUnownedPendingHealthDataConsent();
   await clearUnownedPendingAgeConfirmation();
+  await clearPendingNotificationChoice();
   beginNewAnonymousOnboardingAttempt();
 }
 

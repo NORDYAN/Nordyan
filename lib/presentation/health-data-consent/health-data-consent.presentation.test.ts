@@ -101,6 +101,7 @@ describe('health data consent presentation', () => {
   it('blocks health onboarding collection paths without a current-version grant', () => {
     assert.equal(isHealthOnboardingCollectionPath('/step-3'), true);
     assert.equal(isHealthOnboardingCollectionPath('/step-4'), true);
+    assert.equal(isHealthOnboardingCollectionPath('/notification-setup'), true);
     assert.equal(isHealthOnboardingCollectionPath('/measurement-choice'), true);
     assert.equal(isHealthOnboardingCollectionPath('/body-measurements'), true);
     assert.equal(isHealthOnboardingCollectionPath('/health-data-consent'), false);

@@ -8,6 +8,7 @@ import { logNordyanOnboardingRedirect } from '@/lib/onboarding/nordyan-nav-dev';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { persistPendingHealthDataConsentAfterAuth } from '@/lib/onboarding/persist-pending-health-data-consent.runtime';
+import { applyPendingNotificationChoiceForAuthenticatedUser } from '@/lib/onboarding/apply-pending-notification-choice.runtime';
 import {
   resolveAuthenticatedOnboardingGate,
   type AuthenticatedOnboardingGateDestination,
@@ -55,6 +56,7 @@ export default function TabsLayout() {
       }
 
       await persistPendingHealthDataConsentAfterAuth(session.user.id);
+      await applyPendingNotificationChoiceForAuthenticatedUser(session.user.id);
       const hasConsent = await healthDataConsentService.hasActiveCurrentConsent(session.user.id);
       if (!hasConsent) {
         if (!cancelled) {

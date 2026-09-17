@@ -8,6 +8,7 @@ export const routes = {
   onboardingStep3: '/(onboarding)/step-3',
   onboardingLifestyleIntro: '/(onboarding)/step-3',
   onboardingStep4: '/(onboarding)/step-4',
+  onboardingNotificationSetup: '/(onboarding)/notification-setup',
   onboardingMeasurementChoice: '/(onboarding)/measurement-choice',
   onboardingBodyMeasurements: '/(onboarding)/body-measurements',
   onboardingStep5: '/(onboarding)/step-5',

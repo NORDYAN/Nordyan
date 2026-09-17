@@ -167,7 +167,7 @@ export default function OnboardingProfileScreen() {
     }
 
     setIsSaving(false);
-    router.push(routes.onboardingMeasurementChoice);
+    router.push(routes.onboardingNotificationSetup);
   };
 
   return (
@@ -280,7 +280,7 @@ export default function OnboardingProfileScreen() {
                 </Text>
               ) : null}
               <Button
-                label={t('onboarding.calculateProfile')}
+                label={t('common.continue')}
                 variant="onboarding"
                 style={styles.button}
                 onPress={handleCalculateProfile}

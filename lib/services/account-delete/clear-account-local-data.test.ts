@@ -10,6 +10,7 @@ import { PENDING_INITIAL_LIFESTYLE_KEY } from '../../onboarding/pending-initial-
 import { PENDING_PROFILE_KEY } from '../../onboarding/pending-profile-store';
 import { coachHomeBodyFatDiscoveryKey } from '../../presentation/coach-home/coach-home-body-fat-discovery.store';
 import { notificationPreferencesStorageKey } from '../../presentation/notifications/notification-preferences';
+import { PENDING_NOTIFICATION_CHOICE_KEY } from '../../onboarding/pending-notification-choice';
 
 import { clearAccountLocalData } from './clear-account-local-data';
 
@@ -46,6 +47,7 @@ describe('clearAccountLocalData', () => {
       languageStorageUserKey('user-a'),
       coachHomeBodyFatDiscoveryKey('user-a'),
       notificationPreferencesStorageKey('user-a'),
+      PENDING_NOTIFICATION_CHOICE_KEY,
     ]);
     assert.equal(signupCleared, true);
     assert.equal(cacheCleared, true);

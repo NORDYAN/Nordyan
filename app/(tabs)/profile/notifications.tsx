@@ -1,14 +1,10 @@
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,31 +13,25 @@ import {
 } from 'react-native';
 
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { ProfileSettingsCard, ProfileSettingsDivider, ProfileSettingsRow } from '@/components/profile';
+import { DailyFocusReminderHourChoices } from '@/components/profile/DailyFocusReminderHourChoices';
+import { ProfileSettingsCard, ProfileSettingsDivider } from '@/components/profile';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import {
+  resolveOnboardingDailyReminderHour,
+  type OnboardingDailyReminderHour,
+} from '@/lib/onboarding/pending-notification-choice';
 import { planDailyFocusNotification } from '@/lib/presentation/notifications/daily-focus-schedule';
 import { getNotificationPermissionState, requestNotificationPermission } from '@/lib/presentation/notifications/notification-permission.runtime';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
-  formatNotificationTime,
   type NotificationPreferences,
 } from '@/lib/presentation/notifications/notification-preferences';
 import { notificationPreferencesStore } from '@/lib/presentation/notifications/notification-preferences.storage';
 import { applyDailyFocusNotificationPlan } from '@/lib/presentation/notifications/nordyan-notifications.runtime';
 import { isNativeNotificationsSupported } from '@/lib/presentation/notifications/notifications-platform';
 import { toggleEnabledAfterPermission } from '@/lib/presentation/notifications/notification-permission';
-import {
-  applyIosDailyTimePickerWheelEvent,
-  beginIosDailyTimePickerSession,
-  commitDailyTimeDraft,
-  decideDailyTimePickerEvent,
-  IOS_DAILY_TIME_PICKER_THEME,
-  resolveIosDailyTimePickerCommit,
-  shouldRefreshStoredPreferencesWhilePickerOpen,
-  type IosDailyTimePickerSession,
-} from '@/lib/presentation/notifications/notification-time-picker';
 import { syncWeeklyCheckInReminderForUser } from '@/lib/presentation/notifications/sync-nordyan-notifications.runtime';
 import { useAuth } from '@/providers/auth-provider';
 import {
@@ -51,13 +41,6 @@ import {
   profileTypography,
   typography,
 } from '@/theme';
-
-type DailyTimePickerProps = ComponentProps<typeof DateTimePicker> & {
-  themeVariant?: 'light' | 'dark';
-  textColor?: string;
-};
-
-const DailyTimePicker = DateTimePicker as ComponentType<DailyTimePickerProps>;
 
 function confirmPermissionExplanation(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -93,16 +76,12 @@ export default function ProfileNotificationsScreen() {
   const userId = session?.user.id ?? '';
   const native = isNativeNotificationsSupported();
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [timeDraft, setTimeDraft] = useState<Date | null>(null);
   const [busy, setBusy] = useState(false);
-  const pickerOpenRef = useRef(false);
-  const iosPickerSessionRef = useRef<IosDailyTimePickerSession | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void notificationPreferencesStore.get(userId).then((next) => {
-      if (!cancelled && shouldRefreshStoredPreferencesWhilePickerOpen(pickerOpenRef.current)) {
+      if (!cancelled) {
         setPrefs(next);
       }
     });
@@ -110,21 +89,6 @@ export default function ProfileNotificationsScreen() {
       cancelled = true;
     };
   }, [userId]);
-
-  const closeTimePicker = useCallback(() => {
-    pickerOpenRef.current = false;
-    iosPickerSessionRef.current = null;
-    setShowTimePicker(false);
-    setTimeDraft(null);
-  }, []);
-
-  const openTimePicker = useCallback(() => {
-    const session = beginIosDailyTimePickerSession(prefs.dailyHour, prefs.dailyMinute);
-    pickerOpenRef.current = true;
-    iosPickerSessionRef.current = session;
-    setTimeDraft(session.pickerValue);
-    setShowTimePicker(true);
-  }, [prefs.dailyHour, prefs.dailyMinute]);
 
   const persist = useCallback(
     async (next: NotificationPreferences) => {
@@ -177,7 +141,6 @@ export default function ProfileNotificationsScreen() {
       try {
         if (!enabled) {
           const next = { ...prefs, dailyEnabled: false };
-          closeTimePicker();
           await persist(next);
           await applyDailyFocusNotificationPlan(planDailyFocusNotification(next));
           return;
@@ -188,7 +151,12 @@ export default function ProfileNotificationsScreen() {
           return;
         }
 
-        const next = { ...prefs, dailyEnabled: true };
+        const next = {
+          ...prefs,
+          dailyEnabled: true,
+          dailyHour: resolveOnboardingDailyReminderHour(prefs.dailyHour),
+          dailyMinute: 0,
+        };
         await persist(next);
         await applyDailyFocusNotificationPlan(planDailyFocusNotification(next));
       } catch {
@@ -199,7 +167,7 @@ export default function ProfileNotificationsScreen() {
         setBusy(false);
       }
     },
-    [busy, closeTimePicker, ensurePermissionForEnable, native, persist, prefs],
+    [busy, ensurePermissionForEnable, native, persist, prefs],
   );
 
   const handleWeeklyToggle = useCallback(
@@ -235,61 +203,24 @@ export default function ProfileNotificationsScreen() {
     [busy, ensurePermissionForEnable, native, persist, prefs, userId],
   );
 
-  const handleTimeChange = useCallback((event: DateTimePickerEvent, selected?: Date) => {
-    const decision = decideDailyTimePickerEvent({
-      platform: Platform.OS === 'ios' ? 'ios' : 'android',
-      eventType: event.type,
-      selected,
-    });
-
-    if (decision.action === 'remember-selection') {
-      const session = iosPickerSessionRef.current;
-      if (session) {
-        iosPickerSessionRef.current = applyIosDailyTimePickerWheelEvent(
-          session,
-          decision.selection,
-        );
+  const handleSelectDailyHour = useCallback(
+    (hour: OnboardingDailyReminderHour) => {
+      if (busy) {
+        return;
       }
-      return;
-    }
-
-    if (decision.action === 'dismiss') {
-      closeTimePicker();
-      return;
-    }
-
-    if (decision.action === 'commit') {
       const next = {
         ...prefs,
-        dailyHour: decision.hour,
-        dailyMinute: decision.minute,
+        dailyHour: hour,
+        dailyMinute: 0,
       };
-      closeTimePicker();
       void saveDailyTime(next).catch(() => {
         Alert.alert(t('profile.notifications.scheduleFailed'));
       });
-    }
-  }, [closeTimePicker, prefs, saveDailyTime]);
-
-  const handleTimeConfirm = useCallback(() => {
-    const session = iosPickerSessionRef.current;
-    const selected = session ? resolveIosDailyTimePickerCommit(session) : timeDraft;
-    if (!selected) {
-      closeTimePicker();
-      return;
-    }
-
-    const next = commitDailyTimeDraft(prefs, selected);
-    closeTimePicker();
-    void saveDailyTime(next).catch(() => {
-      Alert.alert(t('profile.notifications.scheduleFailed'));
-    });
-  }, [closeTimePicker, prefs, saveDailyTime, timeDraft]);
-
-  const timeLabel = useMemo(
-    () => formatNotificationTime(prefs.dailyHour, prefs.dailyMinute),
-    [prefs.dailyHour, prefs.dailyMinute],
+    },
+    [busy, prefs, saveDailyTime],
   );
+
+  const selectedHour = resolveOnboardingDailyReminderHour(prefs.dailyHour);
 
   return (
     <ScreenContainer variant="profile">
@@ -337,67 +268,36 @@ export default function ProfileNotificationsScreen() {
             {prefs.dailyEnabled ? (
               <>
                 <ProfileSettingsDivider />
-                <ProfileSettingsRow
-                  icon="time-outline"
-                  title={t('profile.notifications.time')}
-                  subtitle={timeLabel}
-                  showChevron
-                  onPress={openTimePicker}
-                  accessibilityLabel={`${t('profile.notifications.time')}, ${timeLabel}`}
-                />
+                <View style={styles.hourBlock}>
+                  <Text style={styles.hourLabel}>{t('profile.notifications.time')}</Text>
+                  <DailyFocusReminderHourChoices
+                    selectedHour={selectedHour}
+                    disabled={busy}
+                    onSelect={handleSelectDailyHour}
+                  />
+                </View>
               </>
             ) : null}
-            {showTimePicker && prefs.dailyEnabled && timeDraft && Platform.OS !== 'ios' ? (
-              <DailyTimePicker
-                value={timeDraft}
-                mode="time"
-                display="default"
-                is24Hour
-                themeVariant={IOS_DAILY_TIME_PICKER_THEME.themeVariant}
-                textColor={colors.onboardingText}
-                onChange={handleTimeChange}
-              />
-            ) : null}
             <ProfileSettingsDivider />
-            <View style={styles.toggleRow}>
-              <Text style={styles.toggleTitle}>{t('profile.notifications.weeklyCheckIn')}</Text>
-              <Switch
-                value={prefs.weeklyEnabled}
-                onValueChange={(value) => {
-                  void handleWeeklyToggle(value);
-                }}
-                disabled={busy}
-                trackColor={{ false: colors.homeBorder, true: colors.onboardingAccent }}
-                thumbColor={colors.onboardingText}
-                accessibilityLabel={t('profile.notifications.weeklyCheckIn')}
-              />
+            <View style={styles.weeklyBlock}>
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleTitle}>{t('profile.notifications.weeklyCheckIn')}</Text>
+                <Switch
+                  value={prefs.weeklyEnabled}
+                  onValueChange={(value) => {
+                    void handleWeeklyToggle(value);
+                  }}
+                  disabled={busy}
+                  trackColor={{ false: colors.homeBorder, true: colors.onboardingAccent }}
+                  thumbColor={colors.onboardingText}
+                  accessibilityLabel={t('profile.notifications.weeklyCheckIn')}
+                />
+              </View>
+              <Text style={styles.weeklyHint}>{t('onboarding.notifications.weeklyHint')}</Text>
             </View>
           </ProfileSettingsCard>
         )}
       </ScrollView>
-      {showTimePicker && prefs.dailyEnabled && Platform.OS === 'ios' ? (
-        <View style={styles.iosTimePickerHost}>
-          {timeDraft ? (
-            <DailyTimePicker
-              value={timeDraft}
-              mode="time"
-              display="spinner"
-              is24Hour
-              themeVariant={IOS_DAILY_TIME_PICKER_THEME.themeVariant}
-              textColor={colors.onboardingText}
-              onChange={handleTimeChange}
-            />
-          ) : null}
-          <Pressable
-            onPress={handleTimeConfirm}
-            style={styles.doneButton}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.done')}
-          >
-            <Text style={styles.doneLabel}>{t('common.done')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </ScreenContainer>
   );
 }
@@ -420,9 +320,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  iosTimePickerHost: {
-    paddingHorizontal: profileLayout.horizontalPadding,
   },
   scrollContent: {
     gap: profileLayout.sectionGap,
@@ -456,14 +353,23 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
     flexShrink: 1,
   },
-  doneButton: {
-    alignSelf: 'flex-end',
+  hourBlock: {
+    gap: 12,
     paddingHorizontal: profileLayout.rowPaddingHorizontal,
     paddingBottom: profileLayout.rowPaddingVertical,
   },
-  doneLabel: {
-    color: colors.onboardingAccent,
+  hourLabel: {
+    color: colors.onboardingText,
     fontSize: profileTypography.rowTitleSize,
     fontWeight: typography.fontWeight.medium,
+  },
+  weeklyBlock: {
+    paddingBottom: profileLayout.rowPaddingVertical,
+  },
+  weeklyHint: {
+    color: colors.homeTextMuted,
+    fontSize: profileTypography.rowSubtitleSize,
+    fontWeight: typography.fontWeight.regular,
+    paddingHorizontal: profileLayout.rowPaddingHorizontal,
   },
 });

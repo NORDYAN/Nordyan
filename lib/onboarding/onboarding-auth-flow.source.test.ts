@@ -307,7 +307,7 @@ describe('onboarding-first auth flow source contracts', () => {
     assert.match(saveBlock, /return;/);
     assert.ok(
       saveBlock.indexOf("profileWriteResult !== 'written'") <
-        saveBlock.indexOf('router.push(routes.onboardingMeasurementChoice)'),
+        saveBlock.indexOf('router.push(routes.onboardingNotificationSetup)'),
     );
   });
 
