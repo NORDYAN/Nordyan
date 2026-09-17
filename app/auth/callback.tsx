@@ -15,6 +15,10 @@ import {
 } from '@/lib/presentation/auth-verification';
 import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
 import { toAuthCallbackFailureTraceDetails } from '@/lib/presentation/auth-verification/auth-callback-failure-diagnostic';
+import {
+  hasAuthCallbackFlowIdParam,
+  logPkceStoragePresence,
+} from '@/lib/presentation/auth-verification/pkce-storage-presence';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { authService } from '@/lib/services/auth/auth.service';
 
@@ -29,7 +33,11 @@ function hasNonEmptyParam(value: string | string[] | undefined): boolean {
 }
 
 export default function AuthCallbackScreen() {
-  const params = useLocalSearchParams<{ code?: string | string[]; error?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    code?: string | string[];
+    error?: string | string[];
+    sb_flow_id?: string | string[];
+  }>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [canRetry, setCanRetry] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -54,6 +62,10 @@ export default function AuthCallbackScreen() {
     logNordyanAuthTrace('callback.completion.start');
 
     try {
+      await logPkceStoragePresence({
+        stage: 'callback-start',
+        hasFlowId: hasAuthCallbackFlowIdParam(params.sb_flow_id),
+      });
       const existing = await authService.getSession();
       const existingSessionRecovery = existing.ok && existing.value !== null;
       logNordyanAuthTrace('callback.existing-session', {

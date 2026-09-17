@@ -41,6 +41,7 @@ export default function CheckEmailScreen() {
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [changeEmailError, setChangeEmailError] = useState<string | null>(null);
   const loggedAuthRedirectRef = useRef(false);
+  const resendInFlightRef = useRef(false);
 
   const canResend = Boolean(email) && !isResending && canResendVerification(lastSentAtMs, nowMs);
 
@@ -79,29 +80,38 @@ export default function CheckEmailScreen() {
   }, [lastSentAtMs]);
 
   const handleResend = useCallback(async () => {
-    const currentNow = Date.now();
-    setNowMs(currentNow);
-
-    if (!email || isResending || isChangingEmail || !canResendVerification(lastSentAtMs, currentNow)) {
+    if (resendInFlightRef.current) {
       return;
     }
 
-    setIsResending(true);
-    setResendError(null);
-    setResendSuccess(false);
+    resendInFlightRef.current = true;
+    try {
+      const currentNow = Date.now();
+      setNowMs(currentNow);
 
-    const result = await resendSignupVerification(email);
-    const finishedAt = Date.now();
-    setNowMs(finishedAt);
-    setIsResending(false);
+      if (!email || isResending || isChangingEmail || !canResendVerification(lastSentAtMs, currentNow)) {
+        return;
+      }
 
-    if (!result.ok) {
-      setResendError(result.error.message || authMessages.generic);
-      return;
+      setIsResending(true);
+      setResendError(null);
+      setResendSuccess(false);
+
+      const result = await resendSignupVerification(email);
+      const finishedAt = Date.now();
+      setNowMs(finishedAt);
+
+      if (!result.ok) {
+        setResendError(result.error.message || authMessages.generic);
+        return;
+      }
+
+      setLastSentAtMs(finishedAt);
+      setResendSuccess(true);
+    } finally {
+      resendInFlightRef.current = false;
+      setIsResending(false);
     }
-
-    setLastSentAtMs(finishedAt);
-    setResendSuccess(true);
   }, [email, isResending, isChangingEmail, lastSentAtMs, resendSignupVerification]);
 
   const handleUseAnotherEmail = useCallback(async () => {

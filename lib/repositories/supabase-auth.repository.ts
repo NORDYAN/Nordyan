@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import type { Result } from '@/lib/core';
 import type { AuthSession, AuthStatus, AuthUser, SignUpOutcome } from '@/lib/domain/auth';
+import { logPkceStoragePresence } from '@/lib/presentation/auth-verification/pkce-storage-presence';
 import type { AuthRepository } from '@/lib/repositories/auth.repository';
 import {
   authMessages,
@@ -12,6 +13,7 @@ import {
   getAuthEmailRedirectTo,
   getPasswordRecoveryRedirectTo,
 } from '@/lib/services/auth/auth-redirect';
+import { runPkceProviderOperation } from '@/lib/services/auth/pkce-provider-operation-lock';
 import { toSignUpOutcome } from '@/lib/services/auth/to-sign-up-outcome';
 import { logSignupForensics } from '@/lib/services/auth/signup-forensics';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -135,90 +137,100 @@ export class SupabaseAuthRepository implements AuthRepository {
     }
 
     const trimmedEmail = email.trim();
-    logSignupForensics({
-      stage: 'provider-request',
-      signupProviderResult: 'not_attempted',
-      outcome: 'not_determined',
-      pendingBindResult: 'not_attempted',
-      persistenceResult: 'not_attempted',
-      profileOwnerState: 'unknown',
-      lifestyleOwnerState: 'unknown',
-    });
-    const { data, error } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        emailRedirectTo: getAuthEmailRedirectTo(),
+    return runPkceProviderOperation(
+      'signup',
+      async () => {
+        logSignupForensics({
+          stage: 'provider-request',
+          signupProviderResult: 'not_attempted',
+          outcome: 'not_determined',
+          pendingBindResult: 'not_attempted',
+          persistenceResult: 'not_attempted',
+          profileOwnerState: 'unknown',
+          lifestyleOwnerState: 'unknown',
+        });
+        const { data, error } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password,
+          options: {
+            emailRedirectTo: getAuthEmailRedirectTo(),
+          },
+        });
+        await logPkceStoragePresence({ stage: 'after-signup' });
+
+        if (error) {
+          logSignupForensics({
+            stage: 'provider-result',
+            signupProviderResult: 'provider_error',
+            providerError: error,
+            outcome: 'failed',
+            pendingBindResult: 'not_attempted',
+            persistenceResult: 'not_attempted',
+            profileOwnerState: 'unknown',
+            lifestyleOwnerState: 'unknown',
+          });
+          return { ok: false as const, error: mapSupabaseAuthError(error) };
+        }
+
+        const providerResult = data.user
+          ? data.session
+            ? 'success_user_and_session'
+            : 'success_user_without_session'
+          : data.session
+            ? 'success_session_without_user'
+            : 'success_empty';
+        logSignupForensics({
+          stage: 'provider-result',
+          signupProviderResult: providerResult,
+          outcome: 'not_determined',
+          pendingBindResult: 'not_attempted',
+          persistenceResult: 'not_attempted',
+          profileOwnerState: 'unknown',
+          lifestyleOwnerState: 'unknown',
+        });
+
+        const ownerId = data.user?.id ?? data.session?.user.id;
+        if (!ownerId) {
+          logSignupForensics({
+            stage: 'outcome-mapped',
+            signupProviderResult: 'local_mapping_failed',
+            outcome: 'failed',
+            pendingBindResult: 'not_attempted',
+            persistenceResult: 'not_attempted',
+            profileOwnerState: 'unknown',
+            lifestyleOwnerState: 'unknown',
+          });
+          return {
+            ok: false as const,
+            error: { code: 'UNKNOWN' as const, message: authMessages.generic },
+          };
+        }
+
+        const outcome = toSignUpOutcome(
+          trimmedEmail,
+          data.session ? mapSession(data.session) : null,
+          ownerId,
+        );
+        logSignupForensics({
+          stage: 'outcome-mapped',
+          signupProviderResult: providerResult,
+          outcome: outcome.kind,
+          pendingBindResult: 'not_attempted',
+          persistenceResult: 'not_attempted',
+          profileOwnerState: 'unknown',
+          lifestyleOwnerState: 'unknown',
+        });
+
+        return {
+          ok: true as const,
+          value: outcome,
+        };
       },
-    });
-
-    if (error) {
-      logSignupForensics({
-        stage: 'provider-result',
-        signupProviderResult: 'provider_error',
-        providerError: error,
-        outcome: 'failed',
-        pendingBindResult: 'not_attempted',
-        persistenceResult: 'not_attempted',
-        profileOwnerState: 'unknown',
-        lifestyleOwnerState: 'unknown',
-      });
-      return { ok: false, error: mapSupabaseAuthError(error) };
-    }
-
-    const providerResult = data.user
-      ? data.session
-        ? 'success_user_and_session'
-        : 'success_user_without_session'
-      : data.session
-        ? 'success_session_without_user'
-        : 'success_empty';
-    logSignupForensics({
-      stage: 'provider-result',
-      signupProviderResult: providerResult,
-      outcome: 'not_determined',
-      pendingBindResult: 'not_attempted',
-      persistenceResult: 'not_attempted',
-      profileOwnerState: 'unknown',
-      lifestyleOwnerState: 'unknown',
-    });
-
-    const ownerId = data.user?.id ?? data.session?.user.id;
-    if (!ownerId) {
-      logSignupForensics({
-        stage: 'outcome-mapped',
-        signupProviderResult: 'local_mapping_failed',
-        outcome: 'failed',
-        pendingBindResult: 'not_attempted',
-        persistenceResult: 'not_attempted',
-        profileOwnerState: 'unknown',
-        lifestyleOwnerState: 'unknown',
-      });
-      return {
-        ok: false,
-        error: { code: 'UNKNOWN', message: authMessages.generic },
-      };
-    }
-
-    const outcome = toSignUpOutcome(
-      trimmedEmail,
-      data.session ? mapSession(data.session) : null,
-      ownerId,
+      () => ({
+        ok: false as const,
+        error: { code: 'UNKNOWN' as const, message: authMessages.generic },
+      }),
     );
-    logSignupForensics({
-      stage: 'outcome-mapped',
-      signupProviderResult: providerResult,
-      outcome: outcome.kind,
-      pendingBindResult: 'not_attempted',
-      persistenceResult: 'not_attempted',
-      profileOwnerState: 'unknown',
-      lifestyleOwnerState: 'unknown',
-    });
-
-    return {
-      ok: true,
-      value: outcome,
-    };
   }
 
   async resendSignupVerification(email: string): Promise<Result<void>> {
@@ -227,19 +239,28 @@ export class SupabaseAuthRepository implements AuthRepository {
       return missingConfigError();
     }
 
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: email.trim(),
-      options: {
-        emailRedirectTo: getAuthEmailRedirectTo(),
+    return runPkceProviderOperation(
+      'resend',
+      async () => {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email.trim(),
+          options: {
+            emailRedirectTo: getAuthEmailRedirectTo(),
+          },
+        });
+
+        if (error) {
+          return { ok: false as const, error: mapSupabaseAuthError(error) };
+        }
+
+        return { ok: true as const, value: undefined };
       },
-    });
-
-    if (error) {
-      return { ok: false, error: mapSupabaseAuthError(error) };
-    }
-
-    return { ok: true, value: undefined };
+      () => ({
+        ok: false as const,
+        error: { code: 'UNKNOWN' as const, message: authMessages.generic },
+      }),
+    );
   }
 
   async requestPasswordRecovery(email: string): Promise<Result<void>> {

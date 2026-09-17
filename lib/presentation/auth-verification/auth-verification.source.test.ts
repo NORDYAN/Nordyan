@@ -84,7 +84,7 @@ describe('auth verification source contracts', () => {
     assert.match(signUp, /pathname: routes\.authCheckEmail/);
     assert.match(signUp, /params: \{ email: result\.outcome\.email \}/);
     assert.match(signUp, /router\.replace\(routes\.root\)/);
-    assert.doesNotMatch(signUp, /emailRedirectTo|exchangeCodeForSession|completeAuthEmailCallback/);
+    assert.doesNotMatch(signUp, /emailRedirectTo|exchangeCodeForSession|completeAuthEmailCallback|logPkceStoragePresence/);
     assert.match(signUp, /hasRequiredAnonymousSignupBaseline/);
     assert.match(provider, /pending_verification/);
     assert.match(provider, /bindPendingOnboardingToUser\(result\.value\.ownerId\)/);

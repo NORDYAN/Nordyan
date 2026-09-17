@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -8,6 +8,7 @@ import { routes } from '@/constants/routes';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { hasRequiredAnonymousSignupBaseline } from '@/lib/onboarding/anonymous-signup-baseline';
+import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
 import { authMessages } from '@/lib/services/auth/auth-errors';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -18,42 +19,52 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const signupInFlightRef = useRef(false);
 
   const handleSubmit = async () => {
-    if (!isConfigured) {
-      setErrorMessage(authMessages.missingConfig);
+    if (signupInFlightRef.current) {
+      logNordyanAuthTrace('signup.provider.operation.blocked', { kind: 'submit' });
       return;
     }
 
-    setErrorMessage(null);
+    signupInFlightRef.current = true;
+    try {
+      if (!isConfigured) {
+        setErrorMessage(authMessages.missingConfig);
+        return;
+      }
 
-    const maySignUp = await hasRequiredAnonymousSignupBaseline();
-    if (!maySignUp) {
-      router.replace(routes.onboarding);
-      return;
+      setErrorMessage(null);
+
+      const maySignUp = await hasRequiredAnonymousSignupBaseline();
+      if (!maySignUp) {
+        router.replace(routes.onboarding);
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      const result = await signUpWithEmail(email, password);
+
+      if (!result.ok) {
+        setErrorMessage(result.error.message);
+        return;
+      }
+
+      if (result.outcome.kind === 'pending_verification') {
+        Keyboard.dismiss();
+        router.push({
+          pathname: routes.authCheckEmail,
+          params: { email: result.outcome.email },
+        });
+        return;
+      }
+
+      router.replace(routes.root);
+    } finally {
+      signupInFlightRef.current = false;
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(true);
-
-    const result = await signUpWithEmail(email, password);
-
-    setIsSubmitting(false);
-
-    if (!result.ok) {
-      setErrorMessage(result.error.message);
-      return;
-    }
-
-    if (result.outcome.kind === 'pending_verification') {
-      Keyboard.dismiss();
-      router.push({
-        pathname: routes.authCheckEmail,
-        params: { email: result.outcome.email },
-      });
-      return;
-    }
-
-    router.replace(routes.root);
   };
 
   return (
