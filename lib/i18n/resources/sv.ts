@@ -359,6 +359,8 @@ export const sv = {
 
   'development.home.empty':
     'Din utveckling kan inte visas ännu. Spara en hälsomätning för att komma igång.',
+  'development.home.insufficient':
+    'Din första hälsomätning är sparad. Spara en ny mätning för att kunna jämföra din utveckling över tid.',
   'development.home.error': 'Din utveckling kan inte visas just nu.',
   'development.trends.empty':
     'Ingen trendhistorik finns ännu. Spara fler hälsomätningar för att se din utveckling över tid.',

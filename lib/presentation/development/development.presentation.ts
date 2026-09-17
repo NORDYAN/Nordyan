@@ -57,6 +57,12 @@ export const DEVELOPMENT_FACTORS_CTA_LABEL = getDevelopmentFactorsCtaLabel;
 
 export const DEVELOPMENT_FACTORS_CTA_ROUTE = routes.healthScore;
 
+export function getDevelopmentHomeInsufficientMessage(): string {
+  return t('development.home.insufficient');
+}
+
+export const DEVELOPMENT_HOME_MEASUREMENT_CTA_ROUTE = routes.healthNewMeasurement;
+
 function getDevelopmentInsufficientHistoryText(): string {
   return t('development.insufficientHistory');
 }

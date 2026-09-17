@@ -254,6 +254,20 @@ describe('i18n domain-value isolation', () => {
       'Jeg har valgt ukens fokus og dagens oppgave ut fra de siste opplysningene dine.',
     );
     assert.equal(t('coach.bridge.cta', undefined, 'nb'), 'Se dagens fokus');
+    assert.equal(
+      t('development.home.empty', undefined, 'sv'),
+      'Din utveckling kan inte visas ännu. Spara en hälsomätning för att komma igång.',
+    );
+    assert.equal(
+      t('development.home.insufficient', undefined, 'sv'),
+      'Din första hälsomätning är sparad. Spara en ny mätning för att kunna jämföra din utveckling över tid.',
+    );
+    assert.equal(
+      t('development.home.insufficient', undefined, 'nb'),
+      'Den første helsemålingen din er lagret. Lagre en ny måling for å kunne sammenligne utviklingen din over tid.',
+    );
+    assert.equal(t('development.trends.title', undefined, 'sv'), 'Trender');
+    assert.equal(t('development.trends.title', undefined, 'nb'), 'Trender');
   });
 
   it('localizes user-visible profile validation copy in sv and nb', () => {

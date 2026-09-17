@@ -1,3 +1,4 @@
+export { splitCoachAskAnswerParagraphs } from './coach-ask-answer-paragraphs';
 export { COACH_HOME_FOCUS_REFRESH } from './coach-home-focus-refresh';
 export {
   buildCoachHomeViewModel,

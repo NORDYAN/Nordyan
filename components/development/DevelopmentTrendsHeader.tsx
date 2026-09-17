@@ -31,7 +31,7 @@ export function DevelopmentTrendsHeader({ onBackPress }: DevelopmentTrendsHeader
 
       <View style={styles.titleBlock}>
         <Text style={styles.title} maxFontSizeMultiplier={1.1}>
-          {t('development.home.title')}
+          {t('development.trends.title')}
         </Text>
         <Text style={styles.subtitle} maxFontSizeMultiplier={1.1}>
           {t('development.trends.headerSubtitle')}

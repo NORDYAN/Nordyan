@@ -49,6 +49,8 @@ export const coachTypography = {
   inputSize: 13,
   footnoteSize: 10,
   answerQuestionSize: 11,
-  answerBodySize: 12,
+  answerBodySize: 14,
+  answerBodyLineHeight: 21,
+  answerParagraphGap: 10,
   messageSize: 12,
 } as const;

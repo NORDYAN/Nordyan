@@ -12,6 +12,7 @@ import { Text } from '@/components/ui/Text';
 import type { CoachQuestionUiState } from '@/lib/hooks/coach';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { splitCoachAskAnswerParagraphs } from '@/lib/presentation/coach-home';
 import type { CoachHomeViewModel } from '@/lib/presentation/coach-home';
 import { COACH_ASK_QUESTION_MAX_LENGTH } from '@/shared/coach-language';
 import { colors, coachLayout, coachTypography, typography } from '@/theme';
@@ -98,9 +99,13 @@ export function CoachAskComposer({
             <Text style={styles.answerQuestion} maxFontSizeMultiplier={1.1}>
               {askState.question}
             </Text>
-            <Text style={styles.answerBody} maxFontSizeMultiplier={1.1}>
-              {askState.answer}
-            </Text>
+            <View style={styles.answerParagraphs}>
+              {splitCoachAskAnswerParagraphs(askState.answer).map((paragraph, index) => (
+                <Text key={index} style={styles.answerBody} maxFontSizeMultiplier={1.1}>
+                  {paragraph}
+                </Text>
+              ))}
+            </View>
           </View>
         ) : null}
 
@@ -202,11 +207,15 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
     includeFontPadding: false,
   },
+  answerParagraphs: {
+    width: '100%',
+    gap: coachTypography.answerParagraphGap,
+  },
   answerBody: {
     color: colors.developmentText,
     fontSize: coachTypography.answerBodySize,
     fontWeight: typography.fontWeight.regular,
-    lineHeight: coachTypography.answerBodySize * 1.35,
+    lineHeight: coachTypography.answerBodyLineHeight,
     includeFontPadding: false,
   },
   errorText: {

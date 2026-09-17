@@ -8,29 +8,32 @@ import { DevelopmentHomeHeader } from '@/components/development/DevelopmentHomeH
 import { DevelopmentScoreHero } from '@/components/development/DevelopmentScoreHero';
 import { DevelopmentTrendsCta } from '@/components/development/DevelopmentTrendsCta';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
+import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
-import type { DevelopmentHomeFetchState } from '@/lib/presentation/development';
+import { t } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/I18nProvider';
+import {
+  DEVELOPMENT_HOME_MEASUREMENT_CTA_ROUTE,
+  getDevelopmentHomeInsufficientMessage,
+  type DevelopmentHomeFetchState,
+} from '@/lib/presentation/development';
 import { colors, developmentLayout, developmentTypography, typography } from '@/theme';
 
 type DevelopmentHomeViewProps = {
   state: DevelopmentHomeFetchState;
 };
 
-function handleBackPress() {
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
-
-  router.replace(routes.home);
-}
-
 function handleTrendsPress() {
   router.push(routes.progressTrends);
 }
 
+function handleSaveMeasurementPress() {
+  router.push(DEVELOPMENT_HOME_MEASUREMENT_CTA_ROUTE);
+}
+
 export function DevelopmentHomeView({ state }: DevelopmentHomeViewProps) {
+  useI18n();
   const model =
     state.status === 'ready' || state.status === 'insufficient_history' ? state.model : null;
 
@@ -42,7 +45,7 @@ export function DevelopmentHomeView({ state }: DevelopmentHomeViewProps) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <DevelopmentHomeHeader onBackPress={handleBackPress} />
+        <DevelopmentHomeHeader />
 
         {state.status === 'loading' ? (
           <>
@@ -58,6 +61,14 @@ export function DevelopmentHomeView({ state }: DevelopmentHomeViewProps) {
             <DevelopmentScoreHero scoreDisplay="—" bandLabel="" scoreChange={null} />
             <View style={styles.messageState}>
               <Text style={styles.messageText}>{state.message}</Text>
+              {state.status === 'empty' ? (
+                <Button
+                  label={t('health.history.register')}
+                  variant="onboarding"
+                  style={styles.measurementCta}
+                  onPress={handleSaveMeasurementPress}
+                />
+              ) : null}
             </View>
             <DevelopmentCoachCard coach={null} />
             <DevelopmentTrendsCta onPress={handleTrendsPress} />
@@ -71,6 +82,17 @@ export function DevelopmentHomeView({ state }: DevelopmentHomeViewProps) {
               bandLabel={model.scoreBandLabel}
               scoreChange={model.scoreChange}
             />
+            {state.status === 'insufficient_history' ? (
+              <View style={styles.messageState}>
+                <Text style={styles.messageText}>{getDevelopmentHomeInsufficientMessage()}</Text>
+                <Button
+                  label={t('health.history.register')}
+                  variant="onboarding"
+                  style={styles.measurementCta}
+                  onPress={handleSaveMeasurementPress}
+                />
+              </View>
+            ) : null}
             <DevelopmentDriverCard drivers={model.drivers} />
             <DevelopmentCoachCard coach={model.coach} />
             <DevelopmentTrendsCta onPress={handleTrendsPress} />
@@ -98,6 +120,7 @@ const styles = StyleSheet.create({
   messageState: {
     paddingHorizontal: developmentLayout.horizontalPadding,
     paddingBottom: developmentLayout.sectionPaddingVertical,
+    gap: developmentLayout.sectionPaddingVertical,
   },
   messageText: {
     color: colors.developmentTextMuted,
@@ -105,5 +128,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.regular,
     lineHeight: developmentTypography.subtitleSize * 1.35,
     includeFontPadding: false,
+  },
+  measurementCta: {
+    width: '100%',
   },
 });

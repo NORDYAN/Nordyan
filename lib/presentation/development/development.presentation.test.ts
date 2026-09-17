@@ -10,6 +10,7 @@ import { t } from '../../i18n';
 import {
   DEVELOPMENT_FACTORS_CTA_LABEL,
   DEVELOPMENT_FACTORS_CTA_ROUTE,
+  DEVELOPMENT_HOME_MEASUREMENT_CTA_ROUTE,
   DEVELOPMENT_METRIC_OPTIONS,
   DEVELOPMENT_PERIOD_OPTIONS,
   buildDevelopmentHomeViewModel,
@@ -17,6 +18,7 @@ import {
   formatDevelopmentChartDateLabel,
   formatDevelopmentPeriodChange,
   formatDevelopmentScoreChange,
+  getDevelopmentHomeInsufficientMessage,
   mapDevelopmentHomeSummaryToFetchState,
   mapDevelopmentTrendsSummaryToFetchState,
 } from './development.presentation';
@@ -164,6 +166,14 @@ describe('buildDevelopmentHomeViewModel', () => {
   it('maps empty summary to empty fetch state', () => {
     const state = mapDevelopmentHomeSummaryToFetchState({ status: 'empty' });
     assert.equal(state.status, 'empty');
+  });
+
+  it('exposes Home-aligned insufficient-history copy and the existing measurement route', () => {
+    assert.equal(
+      getDevelopmentHomeInsufficientMessage(),
+      'Din första hälsomätning är sparad. Spara en ny mätning för att kunna jämföra din utveckling över tid.',
+    );
+    assert.equal(DEVELOPMENT_HOME_MEASUREMENT_CTA_ROUTE, '/(tabs)/health/new-measurement');
   });
 });
 

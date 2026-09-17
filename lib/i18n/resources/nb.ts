@@ -361,6 +361,8 @@ export const nb = {
 
   'development.home.empty':
     'Utviklingen din kan ikke vises ennå. Lagre en helsemåling for å komme i gang.',
+  'development.home.insufficient':
+    'Den første helsemålingen din er lagret. Lagre en ny måling for å kunne sammenligne utviklingen din over tid.',
   'development.home.error': 'Utviklingen din kan ikke vises akkurat nå.',
   'development.trends.empty':
     'Ingen trendhistorikk finnes ennå. Lagre flere helsemålinger for å se utviklingen over tid.',
