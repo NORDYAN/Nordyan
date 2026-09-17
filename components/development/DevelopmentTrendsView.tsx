@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
-import { DevelopmentCoachCard } from '@/components/development/DevelopmentCoachCard';
 import { DevelopmentFactorsCta } from '@/components/development/DevelopmentFactorsCta';
 import { DevelopmentMetricSelector } from '@/components/development/DevelopmentMetricSelector';
 import { DevelopmentPeriodSelector } from '@/components/development/DevelopmentPeriodSelector';
@@ -111,7 +110,6 @@ export function DevelopmentTrendsView({
             onSelect={onMetricChange}
           />
 
-          <DevelopmentCoachCard coach={model?.coach ?? null} embedded compact />
           <DevelopmentFactorsCta onPress={() => router.push(DEVELOPMENT_FACTORS_CTA_ROUTE)} />
         </View>
       </ScrollView>

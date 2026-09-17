@@ -60,6 +60,13 @@ const MEASUREMENT_HELP_TIPS_ITEM_KEYS = [
   'measureHelp.tip.4',
 ] as const satisfies readonly TranslationKey[];
 
+const MEASUREMENT_HELP_RELIABILITY_TIP_KEYS = [
+  'health.new.tip.morning',
+  'health.new.tip.toilet',
+  'health.new.tip.beforeTraining',
+  'health.new.tip.sameTime',
+] as const satisfies readonly TranslationKey[];
+
 type MeasurementHelpModalProps = {
   visible: boolean;
   title: string;
@@ -70,10 +77,11 @@ type MeasurementHelpModalProps = {
 type GuidelineCardProps = {
   icon: ReactNode;
   title: string;
+  intro?: string;
   itemKeys: readonly TranslationKey[];
 };
 
-function MeasurementHelpGuidelineCard({ icon, title, itemKeys }: GuidelineCardProps) {
+function MeasurementHelpGuidelineCard({ icon, title, intro, itemKeys }: GuidelineCardProps) {
   return (
     <Card
       padding={onboardingMeasurementHelpLayout.cardPadding}
@@ -85,6 +93,7 @@ function MeasurementHelpGuidelineCard({ icon, title, itemKeys }: GuidelineCardPr
           {icon}
           <Text style={styles.guidelineCardTitle}>{title}</Text>
         </View>
+        {intro ? <Text style={styles.guidelineIntro}>{intro}</Text> : null}
         <View style={styles.bulletList}>
           {itemKeys.map((key) => (
             <View key={key} style={styles.bulletRow}>
@@ -177,6 +186,18 @@ export function MeasurementHelpModal({
             title={t('measureHelp.tipsHeading')}
             itemKeys={MEASUREMENT_HELP_TIPS_ITEM_KEYS}
           />
+          <MeasurementHelpGuidelineCard
+            icon={
+              <Ionicons
+                name="time-outline"
+                size={onboardingMeasurementHelpLayout.cardIconSize}
+                color={colors.onboardingMeasurementHelpText}
+              />
+            }
+            title={t('health.new.tipsTitle')}
+            intro={t('health.new.tipsIntro')}
+            itemKeys={MEASUREMENT_HELP_RELIABILITY_TIP_KEYS}
+          />
         </View>
       </ScrollView>
     </OnboardingInfoModalShell>
@@ -233,6 +254,15 @@ const styles = StyleSheet.create({
     color: colors.onboardingMeasurementHelpText,
     fontSize: onboardingMeasurementHelpLayout.cardTitleFontSize,
     fontWeight: typography.fontWeight.semibold,
+    flex: 1,
+  },
+  guidelineIntro: {
+    color: colors.onboardingMeasurementHelpTextMuted,
+    fontSize: onboardingMeasurementHelpLayout.bulletTextFontSize,
+    fontWeight: typography.fontWeight.regular,
+    lineHeight:
+      onboardingMeasurementHelpLayout.bulletTextFontSize * typography.lineHeight.normal,
+    width: '100%',
   },
   bulletList: {
     gap: onboardingMeasurementHelpLayout.bulletGap,

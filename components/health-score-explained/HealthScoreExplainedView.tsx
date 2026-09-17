@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
-import { HealthScoreExplainedCoachCard } from '@/components/health-score-explained/HealthScoreExplainedCoachCard';
 import { HealthScoreExplainedFactorList } from '@/components/health-score-explained/HealthScoreExplainedFactorList';
 import { HealthScoreExplainedHeader } from '@/components/health-score-explained/HealthScoreExplainedHeader';
 import { HealthScoreExplainedSummaryCard } from '@/components/health-score-explained/HealthScoreExplainedSummaryCard';
@@ -80,12 +79,7 @@ export function HealthScoreExplainedView({
             </Text>
           ) : null}
 
-          {model ? (
-            <>
-              <HealthScoreExplainedFactorList factors={model.factors} />
-              <HealthScoreExplainedCoachCard coach={model.coach} />
-            </>
-          ) : null}
+          {model ? <HealthScoreExplainedFactorList factors={model.factors} /> : null}
         </View>
       </ScrollView>
     </ScreenContainer>

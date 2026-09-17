@@ -23,7 +23,6 @@ import {
   colors,
   healthNewMeasurementLayout,
   onboardingProfileLayout,
-  profileHealthDataSourcesLayout,
   typography,
 } from '@/theme';
 
@@ -41,13 +40,6 @@ type MeasurementFormProps = {
 };
 
 const SAVE_SUCCESS_MS = 2500;
-
-const TIPS_BULLET_KEYS = [
-  'health.new.tip.morning',
-  'health.new.tip.toilet',
-  'health.new.tip.beforeTraining',
-  'health.new.tip.sameTime',
-] as const;
 
 function fieldError(
   errors: Array<{ field: MeasurementField; message: string }>,
@@ -341,37 +333,6 @@ export function MeasurementForm({
   if (isNewMeasurement) {
     return (
       <>
-        <View style={styles.newMeasurementSection}>
-          <Text style={styles.sectionLabel}>{t('health.new.section')}</Text>
-          <Card
-            padding={onboardingProfileLayout.formCardPadding}
-            borderRadius={onboardingProfileLayout.formCardRadius}
-            style={styles.measurementCard}
-          >
-            {weightInput}
-            {waistInput}
-            {neckInput}
-            {hipInput}
-          </Card>
-        </View>
-
-        <View style={styles.tipsSection}>
-          <View style={styles.tipsCard}>
-            <View style={styles.tipsIconBox}>
-              <Text style={styles.tipsIconLabel}>i</Text>
-            </View>
-            <View style={styles.tipsTextBlock}>
-              <Text style={styles.tipsTitle}>{t('health.new.tipsTitle')}</Text>
-              <Text style={styles.tipsIntro}>{t('health.new.tipsIntro')}</Text>
-              {TIPS_BULLET_KEYS.map((key) => (
-                <Text key={key} style={styles.tipsBullet}>
-                  • {t(key)}
-                </Text>
-              ))}
-            </View>
-          </View>
-        </View>
-
         <Pressable
           style={({ pressed }) => [
             styles.measurementHelpLink,
@@ -397,6 +358,20 @@ export function MeasurementForm({
             color={colors.onboardingAccent}
           />
         </Pressable>
+
+        <View style={styles.newMeasurementSection}>
+          <Text style={styles.sectionLabel}>{t('health.new.section')}</Text>
+          <Card
+            padding={onboardingProfileLayout.formCardPadding}
+            borderRadius={onboardingProfileLayout.formCardRadius}
+            style={styles.measurementCard}
+          >
+            {weightInput}
+            {waistInput}
+            {neckInput}
+            {hipInput}
+          </Card>
+        </View>
 
         <View style={styles.newMeasurementSaveSection}>
           <View style={styles.newMeasurementSaveInner}>{saveSection}</View>
@@ -444,58 +419,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.onboardingProfileFormBackground,
     borderColor: colors.onboardingProfileFormBorder,
     gap: healthNewMeasurementLayout.measurementCardGap,
-  },
-  tipsSection: {
-    paddingHorizontal: healthNewMeasurementLayout.horizontalPadding,
-    paddingTop: healthNewMeasurementLayout.tipsPaddingTop,
-    width: '100%',
-  },
-  tipsCard: {
-    flexDirection: 'row',
-    gap: profileHealthDataSourcesLayout.privacyCardGap,
-    backgroundColor: colors.profileHealthDataSourceCardBackground,
-    borderWidth: 1,
-    borderColor: colors.profileHealthDataSourceCardBorder,
-    borderRadius: profileHealthDataSourcesLayout.privacyCardRadius,
-    padding: profileHealthDataSourcesLayout.privacyCardPadding,
-    width: '100%',
-  },
-  tipsIconBox: {
-    width: profileHealthDataSourcesLayout.privacyIconBoxSize,
-    height: profileHealthDataSourcesLayout.privacyIconBoxSize,
-    borderRadius: profileHealthDataSourcesLayout.privacyIconBoxRadius,
-    backgroundColor: colors.profileHealthDataSourceIconBox,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tipsIconLabel: {
-    color: colors.profileHealthDataSourceAccent,
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  tipsTextBlock: {
-    flex: 1,
-    gap: profileHealthDataSourcesLayout.sourceCardTextGap,
-    minWidth: 0,
-  },
-  tipsTitle: {
-    color: colors.onboardingText,
-    fontSize: profileHealthDataSourcesLayout.privacyTitleSize,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  tipsIntro: {
-    color: colors.profileHealthDataSourceTextMuted,
-    fontSize: profileHealthDataSourcesLayout.privacyBodySize,
-    fontWeight: typography.fontWeight.regular,
-    lineHeight:
-      profileHealthDataSourcesLayout.privacyBodySize * typography.lineHeight.relaxed,
-  },
-  tipsBullet: {
-    color: colors.profileHealthDataSourceTextMuted,
-    fontSize: profileHealthDataSourcesLayout.privacyBodySize,
-    fontWeight: typography.fontWeight.regular,
-    lineHeight:
-      profileHealthDataSourcesLayout.privacyBodySize * typography.lineHeight.relaxed,
   },
   measurementHelpLink: {
     alignSelf: 'stretch',

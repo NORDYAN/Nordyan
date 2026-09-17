@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
+import { t } from '../../i18n';
+
 function source(relativePath: string): string {
   return fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8');
 }
@@ -56,6 +58,31 @@ describe('onboarding help modal safe-area shell', () => {
     assert.match(measurement, /measureHelp\.hipHeading/);
     assert.match(measurement, /measureHelp\.tipsHeading/);
     assert.match(measurement, /measureHelp\.understood/);
+    assert.match(measurement, /health\.new\.tipsTitle/);
+    assert.match(measurement, /health\.new\.tipsIntro/);
+    assert.match(measurement, /health\.new\.tip\.morning/);
+    assert.match(measurement, /health\.new\.tip\.toilet/);
+    assert.match(measurement, /health\.new\.tip\.beforeTraining/);
+    assert.match(measurement, /health\.new\.tip\.sameTime/);
+
+    const waistIndex = measurement.indexOf("t('measureHelp.waistHeading')");
+    const neckIndex = measurement.indexOf("t('measureHelp.neckHeading')");
+    const hipIndex = measurement.indexOf("t('measureHelp.hipHeading')");
+    const techniqueTipsIndex = measurement.indexOf("t('measureHelp.tipsHeading')");
+    const reliabilityIndex = measurement.indexOf("t('health.new.tipsTitle')");
+    assert.ok(waistIndex !== -1 && neckIndex !== -1 && hipIndex !== -1);
+    assert.ok(techniqueTipsIndex !== -1 && reliabilityIndex !== -1);
+    assert.ok(waistIndex < neckIndex);
+    assert.ok(neckIndex < hipIndex);
+    assert.ok(hipIndex < techniqueTipsIndex);
+    assert.ok(techniqueTipsIndex < reliabilityIndex);
+    assert.equal(t('measureHelp.tipsHeading', undefined, 'sv'), 'Mätteknik');
+    assert.equal(t('measureHelp.tipsHeading', undefined, 'nb'), 'Måleteknikk');
+    assert.equal(
+      t('health.new.tipsTitle', undefined, 'sv'),
+      'Tips för tillförlitliga mätningar',
+    );
+    assert.equal(t('health.new.tipsTitle', undefined, 'nb'), 'Tips for pålitelige målinger');
   });
 });
 

@@ -612,7 +612,7 @@ export const nb = {
   'measureHelp.tip.2': 'Pust normalt.',
   'measureHelp.tip.3': 'Ikke trekk til målebåndet.',
   'measureHelp.tip.4': 'Bruk samme målebånd hver gang.',
-  'measureHelp.tipsHeading': 'Tips',
+  'measureHelp.tipsHeading': 'Måleteknikk',
   'measureHelp.waistHeading': 'Midje',
   'measureHelp.neckHeading': 'Hals',
   'measureHelp.hipHeading': 'Hofte',

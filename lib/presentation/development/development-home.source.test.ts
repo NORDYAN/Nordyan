@@ -61,4 +61,17 @@ describe('Development home presentation contracts', () => {
     assert.equal(t('development.trends.title', undefined, 'sv'), 'Trender');
     assert.equal(t('development.trends.title', undefined, 'nb'), 'Trender');
   });
+
+  it('keeps the snapshot Coach recommendation on Development root, not Trends or Health Score Explained', () => {
+    const home = source('components/development/DevelopmentHomeView.tsx');
+    const trends = source('components/development/DevelopmentTrendsView.tsx');
+    const explained = source('components/health-score-explained/HealthScoreExplainedView.tsx');
+
+    assert.match(home, /<DevelopmentCoachCard coach=\{model\.coach\} \/>/);
+    assert.doesNotMatch(trends, /DevelopmentCoachCard|HealthScoreExplainedCoachCard/);
+    assert.doesNotMatch(explained, /HealthScoreExplainedCoachCard|DevelopmentCoachCard/);
+    assert.match(trends, /DevelopmentTrendsHeader onBackPress=\{\(\) => router\.back\(\)\}/);
+    assert.match(trends, /DEVELOPMENT_FACTORS_CTA_ROUTE/);
+    assert.match(trends, /DevelopmentTrendChart/);
+  });
 });

@@ -610,7 +610,7 @@ export const sv = {
   'measureHelp.tip.2': 'Andas normalt.',
   'measureHelp.tip.3': 'Dra inte åt måttbandet.',
   'measureHelp.tip.4': 'Använd samma måttband varje gång.',
-  'measureHelp.tipsHeading': 'Tips',
+  'measureHelp.tipsHeading': 'Mätteknik',
   'measureHelp.waistHeading': 'Midja',
   'measureHelp.neckHeading': 'Hals',
   'measureHelp.hipHeading': 'Höft',
