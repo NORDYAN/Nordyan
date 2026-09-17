@@ -322,4 +322,26 @@ describe('onboarding-first auth flow source contracts', () => {
     assert.match(wait, /email/);
     assert.match(wait, /ownerId/);
   });
+
+  it('does not present language flags or a language selector on onboarding or signup', () => {
+    const authLayout = fs.readFileSync(
+      path.join(process.cwd(), 'components/auth/AuthLayout.tsx'),
+      'utf8',
+    );
+    const authIndex = fs.readFileSync(path.join(process.cwd(), 'components/auth/index.ts'), 'utf8');
+    const authTheme = fs.readFileSync(path.join(process.cwd(), 'theme/auth.ts'), 'utf8');
+    const intro = fs.readFileSync(path.join(process.cwd(), 'app/(onboarding)/index.tsx'), 'utf8');
+    const signUp = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/sign-up.tsx'), 'utf8');
+    const checkEmail = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/check-email.tsx'), 'utf8');
+    const resolveLocale = fs.readFileSync(path.join(process.cwd(), 'lib/i18n/resolve-locale.ts'), 'utf8');
+
+    assert.doesNotMatch(authLayout, /NordicIdentityFlags|NordicFlag/);
+    assert.doesNotMatch(authIndex, /NordicIdentityFlags/);
+    assert.doesNotMatch(authTheme, /flagsSize|flagsGap|flagsBorderWidth/);
+    assert.doesNotMatch(intro, /NordicIdentityFlags|setLocale|LanguagePicker/);
+    assert.doesNotMatch(signUp, /NordicIdentityFlags|setLocale|LanguagePicker/);
+    assert.doesNotMatch(checkEmail, /NordicIdentityFlags|setLocale|LanguagePicker/);
+    assert.match(resolveLocale, /Norwegian Bokmål, generic Norwegian, and Nynorsk all select `nb`/);
+    assert.equal(fs.existsSync(path.join(process.cwd(), 'components/auth/NordicIdentityFlags.tsx')), false);
+  });
 });

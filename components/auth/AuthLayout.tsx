@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { onboardingAssets } from '@/assets/images/onboarding';
-import { NordicIdentityFlags } from '@/components/auth/NordicIdentityFlags';
 import { NordyanMountainLogo } from '@/components/branding/NordyanMountainLogo';
 import { OnboardingMajorProgress, OnboardingMountainBackground } from '@/components/onboarding';
 import { Text } from '@/components/ui/Text';
@@ -54,7 +53,6 @@ export function AuthLayout({ children, progressStep }: AuthLayoutProps) {
               <Text style={styles.wordmark} maxFontSizeMultiplier={1.05}>
                 NORDYAN
               </Text>
-              <NordicIdentityFlags />
             </View>
             {children}
           </ScrollView>
