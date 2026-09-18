@@ -292,10 +292,10 @@ export const DAILY_FOCUS_ACTION_COPY = {
     },
   },
   sleep_morning_daylight: {
-    title: { sv: 'Ta dagsljus på morgonen', nb: 'Ta dagslys om morgenen' },
+    title: { sv: 'Få lite dagsljus', nb: 'Få litt dagslys' },
     body: {
-      sv: 'Gå ut eller stå vid ett fönster en stund efter uppvaknandet.',
-      nb: 'Gå ut eller stå ved et vindu en stund etter at du har våknet.',
+      sv: 'Gå ut eller stå vid ett fönster en stund och få lite dagsljus.',
+      nb: 'Gå ut eller stå ved et vindu en stund og få litt dagslys.',
     },
   },
   sleep_calm_evening: {
@@ -349,10 +349,10 @@ export const DAILY_FOCUS_ACTION_COPY = {
   },
 
   nutrition_sit_down_lunch: {
-    title: { sv: 'Sitt ner och ät lunch', nb: 'Sett deg ned og spis lunsj' },
+    title: { sv: 'Sitt ner när du äter', nb: 'Sett deg ned når du spiser' },
     body: {
-      sv: 'Ta en riktig lunchpaus i dag: sitt ner och ät, i stället för att äta i farten.',
-      nb: 'Ta en skikkelig lunsjpause i dag: sett deg ned og spis, i stedet for å spise i farten.',
+      sv: 'Sitt ner och ge nästa måltid en lugn stund utan att stressa.',
+      nb: 'Sett deg ned og gi neste måltid en rolig stund uten å stresse.',
     },
   },
   nutrition_protein_next_meal: {
@@ -447,10 +447,10 @@ export const DAILY_FOCUS_ACTION_COPY = {
     },
   },
   nutrition_protein_at_breakfast: {
-    title: { sv: 'Protein till frukost', nb: 'Protein til frokost' },
+    title: { sv: 'Lägg till protein', nb: 'Legg til protein' },
     body: {
-      sv: 'Lägg till en proteinkälla på frukosten, om du äter frukost.',
-      nb: 'Legg til en proteinkilde på frokosten, hvis du spiser frokost.',
+      sv: 'Lägg till en tydlig proteinkälla i nästa måltid.',
+      nb: 'Legg til en tydelig proteinkilde i neste måltid.',
     },
   },
   nutrition_keep_usual_dinner: {
@@ -554,10 +554,10 @@ export const DAILY_FOCUS_ACTION_COPY = {
   },
 
   recovery_phone_free_lunch: {
-    title: { sv: 'Lunch utan telefon', nb: 'Lunsj uten telefon' },
+    title: { sv: 'Ät utan telefon', nb: 'Spis uten telefon' },
     body: {
-      sv: 'Ät lunchen utan att scrolla. Låt pausen vara en paus.',
-      nb: 'Spis lunsjen uten å scrolle. La pausen være en pause.',
+      sv: 'Lägg undan telefonen under nästa måltid och ge dig själv en kort paus.',
+      nb: 'Legg unna telefonen under neste måltid og gi deg selv en kort pause.',
     },
   },
   recovery_ten_quiet_minutes: {
