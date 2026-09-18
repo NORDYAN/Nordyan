@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
 import {
@@ -17,19 +17,7 @@ type HealthScoreExplainedHeaderProps = {
 export function HealthScoreExplainedHeader({ onBackPress }: HealthScoreExplainedHeaderProps) {
   return (
     <View style={styles.header}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('common.back')}
-        onPress={onBackPress}
-        style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons
-          name="arrow-back"
-          size={healthScoreExplainedLayout.backIconSize}
-          color={colors.developmentText}
-        />
-      </Pressable>
+      <OnboardingBackButton onPress={onBackPress} />
 
       <View style={styles.titleBlock}>
         <Text style={styles.title} maxFontSizeMultiplier={1.1}>
@@ -49,19 +37,6 @@ const styles = StyleSheet.create({
     gap: healthScoreExplainedLayout.headerGap,
     paddingHorizontal: healthScoreExplainedLayout.horizontalPadding,
     paddingTop: healthScoreExplainedLayout.headerPaddingTop,
-  },
-  backButton: {
-    width: healthScoreExplainedLayout.backButtonSize,
-    height: healthScoreExplainedLayout.backButtonSize,
-    borderRadius: healthScoreExplainedLayout.backButtonRadius,
-    backgroundColor: colors.developmentSurface,
-    borderWidth: 1,
-    borderColor: colors.developmentBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.8,
   },
   titleBlock: {
     width: '100%',

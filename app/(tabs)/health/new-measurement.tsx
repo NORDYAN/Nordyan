@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { MeasurementForm } from '@/components/measurement';
+import { OnboardingBackButton } from '@/components/onboarding';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { MEASUREMENT_SAVE_SUCCESS_NAVIGATION } from '@/lib/presentation/measurement/measurement-save-navigation';
@@ -12,7 +12,6 @@ import { useAuth } from '@/providers/auth-provider';
 import {
   colors,
   healthNewMeasurementLayout,
-  profileHealthDataSourcesLayout,
   typography,
 } from '@/theme';
 
@@ -36,19 +35,7 @@ export default function NewMeasurementScreen() {
           automaticallyAdjustKeyboardInsets
         >
           <View style={styles.navRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
-              onPress={() => router.back()}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={profileHealthDataSourcesLayout.backIconSize}
-                color={colors.onboardingText}
-              />
-            </Pressable>
+            <OnboardingBackButton onPress={() => router.back()} />
           </View>
 
           <View style={styles.headerBlock}>
@@ -86,17 +73,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: healthNewMeasurementLayout.horizontalPadding,
     paddingTop: healthNewMeasurementLayout.headerPaddingTop,
     width: '100%',
-  },
-  backButton: {
-    width: profileHealthDataSourcesLayout.backTouchSize,
-    height: profileHealthDataSourcesLayout.backTouchSize,
-    borderRadius: profileHealthDataSourcesLayout.connectButtonRadius,
-    padding: profileHealthDataSourcesLayout.backTouchPadding,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.75,
   },
   headerBlock: {
     gap: healthNewMeasurementLayout.headerGap,

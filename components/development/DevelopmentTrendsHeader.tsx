@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/I18nProvider';
@@ -15,19 +15,7 @@ export function DevelopmentTrendsHeader({ onBackPress }: DevelopmentTrendsHeader
 
   return (
     <View style={styles.header}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('common.back')}
-        onPress={onBackPress}
-        style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons
-          name="arrow-back"
-          size={developmentLayout.trendsBackIconSize}
-          color={colors.developmentText}
-        />
-      </Pressable>
+      <OnboardingBackButton onPress={onBackPress} />
 
       <View style={styles.titleBlock}>
         <Text style={styles.title} maxFontSizeMultiplier={1.1}>
@@ -48,19 +36,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: developmentLayout.horizontalPadding,
     paddingTop: developmentLayout.trendsHeaderPaddingTop,
     paddingBottom: 0,
-  },
-  backButton: {
-    width: developmentLayout.trendsBackButtonSize,
-    height: developmentLayout.trendsBackButtonSize,
-    borderRadius: developmentLayout.trendsBackButtonRadius,
-    backgroundColor: colors.developmentSurface,
-    borderWidth: 1,
-    borderColor: colors.developmentBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.8,
   },
   titleBlock: {
     width: '100%',

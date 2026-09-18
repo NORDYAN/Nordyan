@@ -58,7 +58,7 @@ describe('Profile future features source contracts', () => {
 
     const chrome = source('components/profile/ProfileFutureFeatureScreen.tsx');
     assert.match(chrome, /router\.back\(\)/);
-    assert.match(chrome, /common\.back/);
+    assert.match(chrome, /<OnboardingBackButton onPress=\{\(\) => router\.back\(\)\} \/>/);
 
     assert.doesNotMatch(home, /Food Scanner|foodScanner|profileFoodScanner|matskanner/i);
     assert.doesNotMatch(home, /Blodprover|blood-tests|profileBloodTests|Blodprøver/);

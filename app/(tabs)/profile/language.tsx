@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { ProfileSettingsCard, ProfileSettingsDivider, ProfileSettingsRow } from '@/components/profile';
 import { Text } from '@/components/ui/Text';
@@ -28,19 +28,7 @@ export default function ProfileLanguageScreen() {
     <ScreenContainer variant="profile">
       <StatusBar style="light" />
       <View style={styles.navBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={profileHealthProfileLayout.backIconSize}
-            color={colors.onboardingText}
-          />
-        </Pressable>
+        <OnboardingBackButton onPress={() => router.back()} />
       </View>
       <ScrollView
         style={styles.scrollView}
@@ -76,15 +64,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: profileHealthProfileLayout.navBarPaddingHorizontal,
     paddingVertical: profileHealthProfileLayout.navBarPaddingVertical,
     justifyContent: 'center',
-  },
-  backButton: {
-    width: profileHealthProfileLayout.backIconSize,
-    height: profileHealthProfileLayout.backIconSize,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.75,
   },
   scrollView: {
     flex: 1,

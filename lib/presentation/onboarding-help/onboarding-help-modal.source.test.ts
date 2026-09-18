@@ -27,6 +27,9 @@ describe('onboarding help modal safe-area shell', () => {
     assert.match(shell, /<Modal visible=\{visible\} transparent animationType="none"/);
     assert.match(shell, /edges=\{\['top', 'bottom'\]\}/);
     assert.match(shell, /accessibilityLabel=\{t\('common.close'\)\}/);
+    assert.match(shell, /name="close"/);
+    assert.doesNotMatch(shell, /arrow-back|chevron-back/);
+    assert.match(shell, /onPress=\{handleClose\}/);
   });
 
   it('routes both help modals through the shared shell', () => {

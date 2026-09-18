@@ -1,17 +1,16 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 
 import { ProfileAccountField } from '@/components/profile/ProfileAccountField';
+import { OnboardingBackButton } from '@/components/onboarding';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -92,19 +91,7 @@ export default function AccountProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.navBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={profileHealthProfileLayout.backIconSize}
-              color={colors.onboardingText}
-            />
-          </Pressable>
+          <OnboardingBackButton onPress={() => router.back()} />
         </View>
 
         <ScrollView
@@ -181,15 +168,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: profileHealthProfileLayout.navBarPaddingHorizontal,
     paddingVertical: profileHealthProfileLayout.navBarPaddingVertical,
     justifyContent: 'center',
-  },
-  backButton: {
-    width: profileHealthProfileLayout.backIconSize,
-    height: profileHealthProfileLayout.backIconSize,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.75,
   },
   scrollView: {
     flex: 1,

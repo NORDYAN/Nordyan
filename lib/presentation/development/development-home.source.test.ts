@@ -26,10 +26,11 @@ describe('Development home presentation contracts', () => {
     assert.doesNotMatch(home, /onBackPress|router\.back|canGoBack|common\.back|arrow-back/);
     assert.doesNotMatch(header, /onBackPress|common\.back|arrow-back|Ionicons/);
     assert.match(trends, /onBackPress=\{\(\) => router\.back\(\)\}/);
-    assert.match(trendsHeader, /accessibilityLabel=\{t\('common\.back'\)\}/);
-    assert.match(trendsHeader, /name="arrow-back"/);
+    assert.match(trendsHeader, /<OnboardingBackButton onPress=\{onBackPress\} \/>/);
+    assert.doesNotMatch(trendsHeader, /arrow-back|OnboardingBackHeader|borderRadius/);
     assert.match(explained, /onBackPress=\{\(\) => router\.back\(\)\}/);
-    assert.match(explainedHeader, /accessibilityLabel=\{t\('common\.back'\)\}/);
+    assert.match(explainedHeader, /<OnboardingBackButton onPress=\{onBackPress\} \/>/);
+    assert.doesNotMatch(explainedHeader, /arrow-back|OnboardingBackHeader|borderRadius/);
   });
 
   it('adds a new-measurement CTA for empty and insufficient history', () => {

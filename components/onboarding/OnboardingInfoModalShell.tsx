@@ -9,6 +9,7 @@ import {
 
 import { t } from '@/lib/i18n';
 import { colors, onboardingMeasurementHelpLayout } from '@/theme';
+import { initialLifestyleLayout } from '@/theme/initial-lifestyle';
 
 const SHEET_SLIDE_OFFSET = 28;
 
@@ -82,15 +83,15 @@ export function OnboardingInfoModalShell({
           <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
             <View style={styles.navigation}>
               <Pressable
-                style={styles.backButton}
+                style={styles.closeButton}
                 onPress={handleClose}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.close')}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Ionicons
-                  name="arrow-back"
-                  size={onboardingMeasurementHelpLayout.backIconSize}
+                  name="close"
+                  size={initialLifestyleLayout.backIconSize}
                   color={colors.onboardingMeasurementHelpText}
                 />
               </Pressable>
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     paddingTop: onboardingMeasurementHelpLayout.navPaddingTop,
     paddingBottom: onboardingMeasurementHelpLayout.navPaddingBottom,
   },
-  backButton: {
+  closeButton: {
     width: onboardingMeasurementHelpLayout.backTouchSize,
     height: onboardingMeasurementHelpLayout.backTouchSize,
     alignItems: 'center',

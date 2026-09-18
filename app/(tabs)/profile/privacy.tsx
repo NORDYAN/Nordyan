@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
@@ -60,20 +61,10 @@ export default function ProfilePrivacyScreen() {
     <ScreenContainer variant="profile">
       <StatusBar style="light" />
       <View style={styles.navBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
+        <OnboardingBackButton
           onPress={() => router.back()}
           disabled={isDeleting}
-          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={profileHealthProfileLayout.backIconSize}
-            color={colors.onboardingText}
-          />
-        </Pressable>
+        />
       </View>
       <ScrollView
         style={styles.scrollView}
@@ -127,15 +118,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: profileHealthProfileLayout.navBarPaddingHorizontal,
     paddingVertical: profileHealthProfileLayout.navBarPaddingVertical,
     justifyContent: 'center',
-  },
-  backButton: {
-    width: profileHealthProfileLayout.backIconSize,
-    height: profileHealthProfileLayout.backIconSize,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.75,
   },
   scrollView: {
     flex: 1,

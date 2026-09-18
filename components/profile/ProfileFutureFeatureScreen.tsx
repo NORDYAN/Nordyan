@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { OnboardingBackButton } from '@/components/onboarding';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
@@ -34,19 +35,7 @@ export function ProfileFutureFeatureScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.navRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={profileHealthDataSourcesLayout.backIconSize}
-              color={colors.onboardingText}
-            />
-          </Pressable>
+          <OnboardingBackButton onPress={() => router.back()} />
         </View>
 
         <View style={styles.headerBlock}>
@@ -93,17 +82,6 @@ const styles = StyleSheet.create({
   },
   navRow: {
     width: '100%',
-  },
-  backButton: {
-    width: profileHealthDataSourcesLayout.backTouchSize,
-    height: profileHealthDataSourcesLayout.backTouchSize,
-    borderRadius: profileHealthDataSourcesLayout.connectButtonRadius,
-    padding: profileHealthDataSourcesLayout.backTouchPadding,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonPressed: {
-    opacity: 0.75,
   },
   headerBlock: {
     gap: profileHealthDataSourcesLayout.headerGap,

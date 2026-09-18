@@ -10,16 +10,19 @@ import { initialLifestyleLayout } from '@/theme/initial-lifestyle';
 
 type OnboardingBackButtonProps = {
   onPress?: () => void;
+  disabled?: boolean;
 };
 
-export function OnboardingBackButton({ onPress }: OnboardingBackButtonProps) {
+export function OnboardingBackButton({ onPress, disabled = false }: OnboardingBackButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('common.back')}
+      accessibilityState={disabled ? { disabled: true } : undefined}
       hitSlop={initialLifestyleLayout.backHitSlop}
+      disabled={disabled}
       onPress={onPress ?? (() => router.back())}
-      style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.back, pressed && !disabled && styles.pressed]}
     >
       <Ionicons
         name="chevron-back"

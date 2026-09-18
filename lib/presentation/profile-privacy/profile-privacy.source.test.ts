@@ -31,6 +31,11 @@ describe('profile privacy deletion UX source contracts', () => {
     assert.match(confirmButton, /void runDelete\(\)/);
     assert.doesNotMatch(handleDelete, /deleteAccount\(/);
     assert.match(runDelete, /await deleteAccount\(\)/);
+    assert.match(screen, /<OnboardingBackButton/);
+    assert.match(screen, /disabled=\{isDeleting\}/);
+    assert.match(screen, /onPress=\{\(\) => router\.back\(\)\}/);
+    assert.match(screen, /import \{ Ionicons \} from '@expo\/vector-icons'/);
+    assert.match(screen, /<Ionicons/);
     assert.doesNotMatch(screen, /from 'react-native-webview'/);
     assert.doesNotMatch(screen, /<Modal/);
   });
