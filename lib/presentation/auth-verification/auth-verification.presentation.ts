@@ -2,6 +2,7 @@ import { liveCopy, t } from '@/lib/i18n';
 
 export const AUTH_VERIFICATION_COPY = liveCopy({
   checkEmailHeading: () => t('auth.checkEmail.heading'),
+  checkEmailBody: () => t('auth.checkEmail.body'),
   checkEmailInstruction: () => t('auth.checkEmail.instruction'),
   resend: () => t('auth.checkEmail.resend'),
   resendSubmitting: () => t('auth.checkEmail.resendSubmitting'),
@@ -13,8 +14,8 @@ export const AUTH_VERIFICATION_COPY = liveCopy({
 
 export const AUTH_RESEND_COOLDOWN_MS = 60_000;
 
-export function buildCheckEmailBody(maskedEmail: string): string {
-  return t('auth.checkEmail.body', { email: maskedEmail });
+export function buildCheckEmailBody(): string {
+  return t('auth.checkEmail.body');
 }
 
 export function maskEmailAddress(email: string): string {

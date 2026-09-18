@@ -27,15 +27,13 @@ describe('check-email presentation', () => {
     assert.equal(maskEmailAddress('  a@b.se  '), 'a***@b.se');
   });
 
-  it('builds the approved body copy around the masked email', () => {
-    assert.equal(
-      buildCheckEmailBody('j***@nordyan.se'),
-      'Vi har skickat en länk till j***@nordyan.se.',
-    );
+  it('builds Check Email copy without embedding a masked address', () => {
+    assert.equal(buildCheckEmailBody(), 'Vi har skickat en verifieringslänk till:');
     assert.equal(AUTH_VERIFICATION_COPY.checkEmailHeading, 'Kolla din e-post');
+    assert.equal(AUTH_VERIFICATION_COPY.checkEmailBody, 'Vi har skickat en verifieringslänk till:');
     assert.equal(
       AUTH_VERIFICATION_COPY.checkEmailInstruction,
-      'Öppna mailet och tryck på länken för att bekräfta kontot.',
+      'Ser du inget mejl? Kontrollera även skräppostmappen.',
     );
     assert.equal(AUTH_VERIFICATION_COPY.resend, 'Skicka mailet igen');
     assert.equal(AUTH_VERIFICATION_COPY.resendSubmitting, 'Skickar…');
@@ -45,8 +43,14 @@ describe('check-email presentation', () => {
     assert.equal(AUTH_VERIFICATION_COPY.callbackLoading, 'Bekräftar kontot…');
   });
 
-  it('keeps the Norwegian use-another-email check-email action', () => {
+  it('keeps the Norwegian Check Email wording and use-another-email action', () => {
     setActiveLocale('nb');
+    assert.equal(AUTH_VERIFICATION_COPY.checkEmailHeading, 'Sjekk e-posten din');
+    assert.equal(AUTH_VERIFICATION_COPY.checkEmailBody, 'Vi har sendt en bekreftelseslenke til:');
+    assert.equal(
+      AUTH_VERIFICATION_COPY.checkEmailInstruction,
+      'Ser du ingen e-post? Sjekk også søppelpostmappen.',
+    );
     assert.equal(AUTH_VERIFICATION_COPY.useAnotherEmail, 'Bruk en annen e-postadresse');
     assert.equal(AUTH_VERIFICATION_COPY.resend, 'Send e-posten på nytt');
     assert.equal(AUTH_VERIFICATION_COPY.returnToSignIn, 'Tilbake til innlogging');

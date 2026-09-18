@@ -4,15 +4,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { routes } from '@/constants/routes';
-import {
-  AUTH_VERIFICATION_COPY,
-  buildCheckEmailBody,
-} from '@/lib/presentation/auth-verification';
+import { AUTH_VERIFICATION_COPY } from '@/lib/presentation/auth-verification';
 import { colors, typography } from '@/theme';
 import { authLayout } from '@/theme/auth';
 
 type CheckEmailViewProps = {
-  maskedEmail: string;
+  email: string;
   isResending: boolean;
   canResend: boolean;
   resendSuccess: boolean;
@@ -24,7 +21,7 @@ type CheckEmailViewProps = {
 };
 
 export function CheckEmailView({
-  maskedEmail,
+  email,
   isResending,
   canResend,
   resendSuccess,
@@ -40,9 +37,12 @@ export function CheckEmailView({
         <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={1.1}>
           {AUTH_VERIFICATION_COPY.checkEmailHeading}
         </Text>
-        {maskedEmail ? (
-          <Text style={styles.body} maxFontSizeMultiplier={1.15}>
-            {buildCheckEmailBody(maskedEmail)}
+        <Text style={styles.body} maxFontSizeMultiplier={1.15}>
+          {AUTH_VERIFICATION_COPY.checkEmailBody}
+        </Text>
+        {email ? (
+          <Text style={styles.email} maxFontSizeMultiplier={1.15} selectable>
+            {email}
           </Text>
         ) : null}
         <Text style={styles.body} maxFontSizeMultiplier={1.15}>
@@ -130,6 +130,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.82)',
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.regular,
+    lineHeight: typography.fontSize.md * typography.lineHeight.relaxed,
+  },
+  email: {
+    color: colors.onboardingText,
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.medium,
     lineHeight: typography.fontSize.md * typography.lineHeight.relaxed,
   },
   success: {

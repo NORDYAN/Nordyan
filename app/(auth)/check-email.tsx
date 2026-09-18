@@ -1,11 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { CheckEmailView } from '@/components/auth/CheckEmailView';
 import { routes } from '@/constants/routes';
-import { AUTH_RESEND_COOLDOWN_MS, canResendVerification, maskEmailAddress } from '@/lib/presentation/auth-verification';
+import { AUTH_RESEND_COOLDOWN_MS, canResendVerification } from '@/lib/presentation/auth-verification';
 import { logNordyanAuthTrace } from '@/lib/presentation/auth-verification/auth-callback-trace';
 import { shouldPreventCheckEmailNativeBack } from '@/lib/presentation/auth-verification/check-email-native-back';
 import { getPendingSignupVerification, clearPendingSignupVerification } from '@/lib/onboarding/pending-signup-verification-storage';
@@ -31,7 +31,6 @@ export default function CheckEmailScreen() {
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const paramEmail = readEmailParam(params.email);
   const [email, setEmail] = useState(paramEmail);
-  const maskedEmail = useMemo(() => maskEmailAddress(email), [email]);
 
   const [lastSentAtMs, setLastSentAtMs] = useState(() => Date.now());
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -150,7 +149,7 @@ export default function CheckEmailScreen() {
   return (
     <AuthLayout progressStep="account">
       <CheckEmailView
-        maskedEmail={maskedEmail}
+        email={email}
         isResending={isResending}
         canResend={canResend}
         resendSuccess={resendSuccess}

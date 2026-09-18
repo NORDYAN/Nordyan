@@ -108,6 +108,37 @@ describe('auth verification source contracts', () => {
     assert.match(checkEmail, /params\.email/);
   });
 
+  it('shows the complete signup email and spam reminder without masking', () => {
+    const checkEmail = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/check-email.tsx'), 'utf8');
+    const view = fs.readFileSync(path.join(process.cwd(), 'components/auth/CheckEmailView.tsx'), 'utf8');
+    const sv = fs.readFileSync(path.join(process.cwd(), 'lib/i18n/resources/sv.ts'), 'utf8');
+    const nb = fs.readFileSync(path.join(process.cwd(), 'lib/i18n/resources/nb.ts'), 'utf8');
+    const presentation = fs.readFileSync(
+      path.join(process.cwd(), 'lib/presentation/auth-verification/auth-verification.presentation.ts'),
+      'utf8',
+    );
+
+    assert.match(checkEmail, /email=\{email\}/);
+    assert.doesNotMatch(checkEmail, /maskEmailAddress|maskedEmail/);
+    assert.match(view, /\{email\}/);
+    assert.match(view, /AUTH_VERIFICATION_COPY\.checkEmailBody/);
+    assert.match(view, /AUTH_VERIFICATION_COPY\.checkEmailInstruction/);
+    assert.doesNotMatch(view, /maskEmailAddress|maskedEmail|buildCheckEmailBody/);
+    assert.match(sv, /'auth.checkEmail.body': 'Vi har skickat en verifieringslänk till:'/);
+    assert.match(sv, /'auth.checkEmail.instruction': 'Ser du inget mejl\? Kontrollera även skräppostmappen\.'/);
+    assert.doesNotMatch(sv, /Öppna mailet och tryck på länken/);
+    assert.match(nb, /'auth.checkEmail.body': 'Vi har sendt en bekreftelseslenke til:'/);
+    assert.match(nb, /'auth.checkEmail.instruction': 'Ser du ingen e-post\? Sjekk også søppelpostmappen\.'/);
+    assert.doesNotMatch(nb, /Åpne e-posten og trykk på lenken/);
+    assert.match(presentation, /export function maskEmailAddress/);
+    assert.match(checkEmail, /resendSignupVerification/);
+    assert.match(checkEmail, /AUTH_RESEND_COOLDOWN_MS/);
+    assert.match(checkEmail, /router\.replace\(routes\.authSignUp\)/);
+    assert.match(view, /AUTH_VERIFICATION_COPY\.useAnotherEmail/);
+    assert.match(view, /onPress=\{onResend\}/);
+    assert.match(view, /onPress=\{onUseAnotherEmail\}/);
+  });
+
   it('redirects an authenticated check-email viewer to root and keeps unauthenticated UX', () => {
     const layout = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/_layout.tsx'), 'utf8');
     const checkEmail = fs.readFileSync(path.join(process.cwd(), 'app/(auth)/check-email.tsx'), 'utf8');
