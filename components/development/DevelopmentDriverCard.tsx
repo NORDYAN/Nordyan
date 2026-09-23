@@ -10,12 +10,24 @@ type DevelopmentDriverCardProps = {
   drivers: DevelopmentDriverRow[];
 };
 
-function isAccentDriverValue(row: DevelopmentDriverRow): boolean {
-  if (row.state !== 'ready' || !row.changeText) {
-    return false;
+function driverValueColor(row: DevelopmentDriverRow): string {
+  if (row.tone === 'positive') {
+    return colors.developmentAccent;
   }
+  if (row.tone === 'negative') {
+    return colors.onboardingErrorText;
+  }
+  return colors.developmentTextMuted;
+}
 
-  return row.changeText.startsWith('+') || row.changeText.startsWith('−');
+function driverIconBoxStyle(row: DevelopmentDriverRow) {
+  if (row.tone === 'positive') {
+    return styles.iconBoxPositive;
+  }
+  if (row.tone === 'negative') {
+    return styles.iconBoxNegative;
+  }
+  return styles.iconBoxMuted;
 }
 
 function driverDisplayValue(row: DevelopmentDriverRow): string {
@@ -34,7 +46,7 @@ export function DevelopmentDriverCard({ drivers }: DevelopmentDriverCardProps) {
       </Text>
       <View style={styles.card}>
         {drivers.map((row, index) => {
-          const accent = isAccentDriverValue(row);
+          const valueColor = driverValueColor(row);
           const isLast = index === drivers.length - 1;
 
           return (
@@ -43,11 +55,11 @@ export function DevelopmentDriverCard({ drivers }: DevelopmentDriverCardProps) {
               style={[styles.row, !isLast && styles.rowBorder]}
             >
               <View style={styles.left}>
-                <View style={[styles.iconBox, accent ? styles.iconBoxAccent : styles.iconBoxMuted]}>
+                <View style={[styles.iconBox, driverIconBoxStyle(row)]}>
                   <Ionicons
                     name="checkmark"
                     size={developmentLayout.factorIconGlyphSize}
-                    color={accent ? colors.developmentAccent : colors.developmentTextMuted}
+                    color={valueColor}
                   />
                 </View>
                 <Text style={styles.label} maxFontSizeMultiplier={1.1}>
@@ -55,7 +67,7 @@ export function DevelopmentDriverCard({ drivers }: DevelopmentDriverCardProps) {
                 </Text>
               </View>
               <Text
-                style={[styles.value, accent ? styles.valueAccent : styles.valueMuted]}
+                style={[styles.value, { color: valueColor }]}
                 maxFontSizeMultiplier={1.1}
               >
                 {driverDisplayValue(row)}
@@ -115,8 +127,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBoxAccent: {
+  iconBoxPositive: {
     backgroundColor: colors.developmentAccentFill,
+  },
+  iconBoxNegative: {
+    backgroundColor: colors.developmentSurface,
+    borderWidth: 1,
+    borderColor: colors.onboardingErrorText,
   },
   iconBoxMuted: {
     backgroundColor: colors.developmentBorder,
@@ -134,11 +151,5 @@ const styles = StyleSheet.create({
     lineHeight: developmentTypography.factorValueSize * 1.2,
     marginLeft: 10,
     includeFontPadding: false,
-  },
-  valueAccent: {
-    color: colors.developmentAccent,
-  },
-  valueMuted: {
-    color: colors.developmentTextMuted,
   },
 });

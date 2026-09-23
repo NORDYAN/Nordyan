@@ -14,10 +14,12 @@ export type HealthScoreExplainedScoreChangeView =
   | {
       status: 'ready';
       direction: 'up' | 'down' | 'stable';
+      tone: 'positive' | 'negative' | 'neutral';
       text: string;
     }
   | {
       status: 'insufficient_history';
+      tone: 'neutral';
       text: string;
     };
 

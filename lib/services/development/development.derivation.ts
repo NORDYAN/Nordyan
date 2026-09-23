@@ -1,3 +1,5 @@
+import { ACTIVITY_SCORES } from '@/lib/domain/health-score/health-score.constants';
+import type { Measurement } from '@/lib/domain/measurement';
 import type { HealthSnapshot } from '@/lib/domain/snapshot';
 import type { ProgressTrend } from '@/lib/domain/progress';
 import { formatCoachMessage, getCoachPresentation } from '@/lib/services/coach';
@@ -88,6 +90,64 @@ function insufficientDelta(current: number | null): DevelopmentNumericDelta {
   return { status: 'insufficient_history', current };
 }
 
+function resolveFrozenActivityScore(score: number): number | null {
+  const rounded = Math.round(score);
+  for (const frozen of Object.values(ACTIVITY_SCORES)) {
+    if (frozen === rounded) {
+      return frozen;
+    }
+  }
+
+  return null;
+}
+
+/** Latest two real measurement events. Caller must pass newest-first (measured_at, created_at). */
+export function buildMeasurementDriverDelta(
+  measurementsNewestFirst: readonly Measurement[],
+  read: (measurement: Measurement) => number,
+): DevelopmentNumericDelta {
+  const latest = measurementsNewestFirst[0] ?? null;
+  const previous = measurementsNewestFirst[1] ?? null;
+  if (!latest || !previous) {
+    return insufficientDelta(latest ? read(latest) : null);
+  }
+
+  return buildDelta(read(latest), read(previous));
+}
+
+/**
+ * Latest meaningful distinct ACTIVITY_SCORES transition.
+ * Repeated identical scores (measurements / profile_update carry) are ignored.
+ */
+export function buildActivityLevelDelta(
+  snapshotsNewestFirst: readonly HealthSnapshot[],
+): DevelopmentNumericDelta {
+  const distinctAscending: number[] = [];
+
+  for (let index = snapshotsNewestFirst.length - 1; index >= 0; index -= 1) {
+    const mapped = resolveFrozenActivityScore(snapshotsNewestFirst[index]!.activityScore);
+    if (mapped == null) {
+      continue;
+    }
+
+    if (distinctAscending[distinctAscending.length - 1] !== mapped) {
+      distinctAscending.push(mapped);
+    }
+  }
+
+  if (distinctAscending.length === 0) {
+    const latestScore = snapshotsNewestFirst[0]?.activityScore ?? null;
+    return insufficientDelta(latestScore);
+  }
+
+  const current = distinctAscending[distinctAscending.length - 1]!;
+  if (distinctAscending.length === 1) {
+    return buildDelta(current, current);
+  }
+
+  return buildDelta(current, distinctAscending[distinctAscending.length - 2]!);
+}
+
 /** Circumference values on non-measurement snapshots may be imputed for scoring. */
 export function isObservedCircumferenceSnapshot(snapshot: HealthSnapshot): boolean {
   return snapshot.snapshotReason === 'measurement';
@@ -122,14 +182,21 @@ function deriveTrend(scoreChange: number): Exclude<ProgressTrend, 'insufficient_
 }
 
 /**
- * Builds Development Home summary from latest + optional previous snapshot.
+ * Builds Development Home summary.
+ * Overall score: newest two snapshots.
+ * Weight/waist: newest two real measurements (not snapshot carry-forward).
+ * Activity: latest distinct frozen activity_score transition.
  * Sleep is always the fixed limitation message (no sleep data in v1).
  */
 export function buildDevelopmentHomeSummary(input: {
   latest: HealthSnapshot | null;
   previous: HealthSnapshot | null;
+  measurementsNewestFirst?: readonly Measurement[];
+  activitySnapshotsNewestFirst?: readonly HealthSnapshot[];
 }): DevelopmentHomeSummary {
   const { latest, previous } = input;
+  const measurements = input.measurementsNewestFirst ?? [];
+  const activitySnapshots = input.activitySnapshotsNewestFirst ?? (latest ? [latest, previous].filter(Boolean) as HealthSnapshot[] : []);
 
   if (!latest) {
     return { status: 'empty' };
@@ -140,6 +207,10 @@ export function buildDevelopmentHomeSummary(input: {
     message: DEVELOPMENT_SLEEP_LIMITATION_MESSAGE,
   };
 
+  const weight = buildMeasurementDriverDelta(measurements, (item) => item.weightKg);
+  const waist = buildMeasurementDriverDelta(measurements, (item) => item.waistCm);
+  const activity = buildActivityLevelDelta(activitySnapshots);
+
   if (!previous) {
     return {
       status: 'ready',
@@ -148,9 +219,9 @@ export function buildDevelopmentHomeSummary(input: {
       currentScore: latest.overallScore,
       scoreChange: insufficientDelta(latest.overallScore),
       trend: 'insufficient_history',
-      weight: insufficientDelta(latest.weightKg),
-      waist: buildObservedCircumferenceDelta(latest, null, (snapshot) => snapshot.waistCm),
-      activity: insufficientDelta(latest.activityScore),
+      weight,
+      waist,
+      activity,
       sleep,
       coach: buildDevelopmentCoachPresentation(latest),
     };
@@ -165,9 +236,9 @@ export function buildDevelopmentHomeSummary(input: {
     currentScore: latest.overallScore,
     scoreChange: buildDelta(latest.overallScore, previous.overallScore),
     trend: deriveTrend(scoreDelta),
-    weight: buildDelta(latest.weightKg, previous.weightKg),
-    waist: buildObservedCircumferenceDelta(latest, previous, (snapshot) => snapshot.waistCm),
-    activity: buildDelta(latest.activityScore, previous.activityScore),
+    weight,
+    waist,
+    activity,
     sleep,
     coach: buildDevelopmentCoachPresentation(latest),
   };

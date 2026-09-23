@@ -7,10 +7,18 @@ export function dailyFocusReminderCopy(): { title: string; body: string } {
   };
 }
 
-export function weeklyCheckInReminderCopy(): { title: string; body: string } {
+export function weeklyCheckInReminderCopy(input?: {
+  measurementDue?: boolean;
+}): { title: string; body: string } {
+  const title = t('profile.notifications.weekly.title');
+  const body = t('profile.notifications.weekly.body');
+  if (!input?.measurementDue) {
+    return { title, body };
+  }
+
   return {
-    title: t('profile.notifications.weekly.title'),
-    body: t('profile.notifications.weekly.body'),
+    title,
+    body: `${body} ${t('profile.notifications.weekly.bodyMeasurementDue')}`,
   };
 }
 

@@ -1,5 +1,6 @@
 import type { Result } from '@/lib/core';
-import { snapshotService } from '@/lib/services/snapshots';
+import { measurementService } from '@/lib/services/measurement/measurement.service';
+import { DEFAULT_SNAPSHOT_HISTORY_LIMIT, snapshotService } from '@/lib/services/snapshots';
 
 import {
   buildDevelopmentHomeSummary,
@@ -12,7 +13,7 @@ import type {
   DevelopmentTrendsSummary,
 } from './development.types';
 
-const SNAPSHOTS_FOR_LATEST_VS_PREVIOUS = 2;
+const MEASUREMENTS_FOR_DRIVER_PAIR = 2;
 
 export interface DevelopmentService {
   getHomeSummary(userId: string): Promise<Result<DevelopmentHomeSummary>>;
@@ -29,13 +30,17 @@ class DefaultDevelopmentService implements DevelopmentService {
       return { ok: false, error: { code: 'VALIDATION', message: 'userId krävs.' } };
     }
 
-    const historyResult = await snapshotService.getSnapshotHistory(
-      userId,
-      SNAPSHOTS_FOR_LATEST_VS_PREVIOUS,
-    );
+    const [historyResult, measurementResult] = await Promise.all([
+      snapshotService.getSnapshotHistory(userId, DEFAULT_SNAPSHOT_HISTORY_LIMIT),
+      measurementService.getMeasurementHistory(userId, MEASUREMENTS_FOR_DRIVER_PAIR),
+    ]);
 
     if (!historyResult.ok) {
       return historyResult;
+    }
+
+    if (!measurementResult.ok) {
+      return measurementResult;
     }
 
     const latest = historyResult.value[0] ?? null;
@@ -43,7 +48,12 @@ class DefaultDevelopmentService implements DevelopmentService {
 
     return {
       ok: true,
-      value: buildDevelopmentHomeSummary({ latest, previous }),
+      value: buildDevelopmentHomeSummary({
+        latest,
+        previous,
+        measurementsNewestFirst: measurementResult.value,
+        activitySnapshotsNewestFirst: historyResult.value,
+      }),
     };
   }
 

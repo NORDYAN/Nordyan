@@ -91,7 +91,7 @@ export const onboardingMeasurementHelpLayout = {
 /** Figma: nordyan-onboarding-5-result (design frozen) */
 export const onboardingResultLayout = {
   mountainOverlay: 'rgba(18, 20, 22, 0.84)',
-  areaPaddingTop: spacing.md,
+  areaPaddingTop: 11,
   areaGap: spacing.xl,
   headerGap: spacing.sm,
   cardsGap: spacing.md,
@@ -106,9 +106,10 @@ export const onboardingResultLayout = {
   coachCardPadding: spacing.lg,
   coachCardGap: spacing.md,
   coachHeaderGap: spacing.sm,
+  coachLabelToHeadlineGap: spacing.sm,
   coachHeaderFontSize: 10,
   coachHeaderLetterSpacing: 1.5,
-  coachHeadlineFontSize: 20,
+  coachHeadlineFontSize: typography.fontSize.lg,
   coachBodyFontSize: 15,
   footerGap: spacing.lg,
   scrollBottomPadding: spacing.md,

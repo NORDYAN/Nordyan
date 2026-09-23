@@ -91,6 +91,7 @@ describe('buildHealthScoreExplainedViewModel', () => {
     assert.deepEqual(model.scoreChange, {
       status: 'ready',
       direction: 'up',
+      tone: 'positive',
       text: '↑ +2 sedan senaste uppdateringen',
     });
 
@@ -115,6 +116,39 @@ describe('buildHealthScoreExplainedViewModel', () => {
     assert.equal(model.coach.available, true);
     if (model.coach.available) {
       assert.equal(model.coach.title, 'Promenad efter middagen');
+    }
+  });
+
+  it('maps Health Score summary change tone independently of factor tones', () => {
+    const down = buildHealthScoreExplainedViewModel({
+      ...comparableHome,
+      scoreChange: { status: 'ready', current: 76, previous: 80, change: -4 },
+    });
+    assert.equal(down.scoreChange.status, 'ready');
+    if (down.scoreChange.status === 'ready') {
+      assert.equal(down.scoreChange.direction, 'down');
+      assert.equal(down.scoreChange.tone, 'negative');
+      assert.equal(down.scoreChange.text, '↓ -4 sedan senaste uppdateringen');
+    }
+
+    const up = buildHealthScoreExplainedViewModel({
+      ...comparableHome,
+      scoreChange: { status: 'ready', current: 80, previous: 76, change: 4 },
+    });
+    assert.equal(up.scoreChange.status, 'ready');
+    if (up.scoreChange.status === 'ready') {
+      assert.equal(up.scoreChange.direction, 'up');
+      assert.equal(up.scoreChange.tone, 'positive');
+    }
+
+    const stable = buildHealthScoreExplainedViewModel({
+      ...comparableHome,
+      scoreChange: { status: 'ready', current: 76, previous: 76, change: 0 },
+    });
+    assert.equal(stable.scoreChange.status, 'ready');
+    if (stable.scoreChange.status === 'ready') {
+      assert.equal(stable.scoreChange.direction, 'stable');
+      assert.equal(stable.scoreChange.tone, 'neutral');
     }
   });
 
@@ -160,11 +194,31 @@ describe('buildHealthScoreExplainedViewModel', () => {
 
     assert.equal(model.historyStatus, 'insufficient_history');
     assert.equal(model.scoreChange.status, 'insufficient_history');
+    assert.equal(model.scoreChange.tone, 'neutral');
     assert.equal(model.factors[0]?.statusLabel, 'För lite historik');
     assert.equal(model.factors[1]?.statusLabel, 'För lite historik');
     assert.equal(model.factors[2]?.statusLabel, t('explained.sleep.status'));
     assert.equal(model.factors[3]?.statusLabel, 'För lite historik');
     assert.equal(model.coach.available, false);
+  });
+
+  it('maps a distinct-but-unchanged activity level to Oförändrad, not a self-transition', () => {
+    const model = buildHealthScoreExplainedViewModel({
+      ...comparableHome,
+      activity: { status: 'ready', current: 82, previous: 82, change: 0 },
+      weight: { status: 'ready', current: 74, previous: 76, change: -2 },
+      waist: { status: 'ready', current: 87, previous: 88, change: -1 },
+    });
+
+    const activity = model.factors.find((factor) => factor.id === 'activity');
+    const weight = model.factors.find((factor) => factor.id === 'weight');
+    const waist = model.factors.find((factor) => factor.id === 'waist');
+
+    assert.equal(activity?.statusLabel, 'Oförändrad');
+    assert.equal(weight?.statusLabel, 'Positiv utveckling');
+    assert.equal(weight?.body, 'Din vikt har minskat sedan senaste mätningen.');
+    assert.equal(waist?.statusLabel, 'Positiv utveckling');
+    assert.equal(waist?.body, 'Din midja har minskat sedan senaste mätningen.');
   });
 
   it('describes activity as Health Score activity level, not steps/device data', () => {

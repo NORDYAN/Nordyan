@@ -197,10 +197,10 @@ describe('i18n domain-value isolation', () => {
     assert.equal(t('profile.help.mailSubject', undefined, 'nb'), 'Hjelp og support – NORDYAN');
     assert.equal(t('profile.notifications', undefined, 'sv'), 'Aviseringar');
     assert.equal(t('profile.notifications', undefined, 'nb'), 'Varsler');
-    assert.equal(t('profile.notifications.daily.title', undefined, 'sv'), 'Dagens fokus väntar');
-    assert.equal(t('profile.notifications.daily.title', undefined, 'nb'), 'Dagens fokus venter');
-    assert.equal(t('profile.notifications.weekly.title', undefined, 'sv'), 'Veckokollen väntar');
-    assert.equal(t('profile.notifications.weekly.title', undefined, 'nb'), 'Ukessjekken venter');
+    assert.equal(t('profile.notifications.daily.title', undefined, 'sv'), 'NORDYAN Coach');
+    assert.equal(t('profile.notifications.daily.title', undefined, 'nb'), 'NORDYAN Coach');
+    assert.equal(t('profile.notifications.weekly.title', undefined, 'sv'), 'NORDYAN Coach');
+    assert.equal(t('profile.notifications.weekly.title', undefined, 'nb'), 'NORDYAN Coach');
     assert.equal(
       t('onboarding.notifications.title', undefined, 'sv'),
       'Låt din coach hjälpa dig i vardagen',

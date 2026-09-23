@@ -35,6 +35,12 @@ import {
 } from './notification-response-navigation';
 import { decideNotificationScheduleSync } from './notification-schedule-sync';
 import { createNotificationPreferencesStore } from './notification-preferences.store';
+import { weeklyCheckInReminderCopy } from './notification-copy';
+import {
+  calendarDaysSinceMeasuredAt,
+  isWeeklyMeasurementDue,
+  weeklyMeasurementDueFromHistoryResult,
+} from './notification-measurement-due';
 import {
   getWeeklyCheckInReminderDate,
   planWeeklyCheckInNotification,
@@ -47,6 +53,12 @@ afterEach(() => {
 
 const HEALTH_OR_PII =
   /userId|user_id|email|Health Score|healthScore|measurement|midjemått|kroppsfett|Coach|device|diagnostics|actionId|weeklyFocus|dailyFocusId/i;
+const APPROVED_NOTIFICATION_TITLE = 'NORDYAN Coach';
+
+function assertApprovedNotificationCopy(title: string, body: string): void {
+  assert.equal(title, APPROVED_NOTIFICATION_TITLE);
+  assert.doesNotMatch(body, HEALTH_OR_PII);
+}
 
 describe('notification preferences', () => {
   it('defaults both reminders off at 08:00 and uses a per-user storage key', () => {
@@ -348,10 +360,10 @@ describe('Daily Focus notification plan', () => {
       assert.equal(plan.triggerType, 'daily');
       assert.equal(plan.hour, 9);
       assert.equal(plan.minute, 30);
-      assert.equal(plan.title, 'Dagens fokus väntar');
-      assert.equal(plan.body, 'Öppna NORDYAN och se ditt fokus för idag.');
+      assert.equal(plan.title, 'NORDYAN Coach');
+      assert.equal(plan.body, 'Kom ihåg att checka dagens fokus.');
       assert.deepEqual(plan.data, { type: 'daily-focus' });
-      assert.doesNotMatch(`${plan.title} ${plan.body}`, HEALTH_OR_PII);
+      assertApprovedNotificationCopy(plan.title, plan.body);
     }
   });
 
@@ -368,8 +380,9 @@ describe('Daily Focus notification plan', () => {
     });
     assert.equal(plan.action, 'schedule');
     if (plan.action === 'schedule') {
-      assert.equal(plan.title, 'Dagens fokus venter');
-      assert.equal(plan.body, 'Åpne NORDYAN og se fokuset ditt for i dag.');
+      assert.equal(plan.title, 'NORDYAN Coach');
+      assert.equal(plan.body, 'Husk å sjekke dagens fokus.');
+      assertApprovedNotificationCopy(plan.title, plan.body);
     }
   });
 });
@@ -385,10 +398,11 @@ describe('Weekly Check-in notification plan', () => {
     if (plan.action === 'schedule') {
       assert.equal(plan.triggerType, 'date');
       assert.equal(plan.date.getTime(), new Date(2026, 7, 30, 18, 0, 0).getTime());
-      assert.equal(plan.title, 'Veckokollen väntar');
-      assert.equal(plan.body, 'Öppna NORDYAN och gör din veckokoll.');
+      assert.equal(plan.title, 'NORDYAN Coach');
+      assert.equal(plan.body, 'Hur har din vecka varit? Dags för en snabb veckokoll.');
       assert.deepEqual(plan.data, { type: 'weekly-check-in' });
       assert.notEqual(plan.triggerType, 'weekly');
+      assertApprovedNotificationCopy(plan.title, plan.body);
     }
   });
 
@@ -446,9 +460,134 @@ describe('Weekly Check-in notification plan', () => {
     });
     assert.equal(plan.action, 'schedule');
     if (plan.action === 'schedule') {
-      assert.equal(plan.title, 'Ukessjekken venter');
-      assert.equal(plan.body, 'Åpne NORDYAN og gjør ukessjekken.');
+      assert.equal(plan.title, 'NORDYAN Coach');
+      assert.equal(plan.body, 'Hvordan har uken din vært? På tide med en rask ukessjekk.');
+      assertApprovedNotificationCopy(plan.title, plan.body);
     }
+  });
+
+  it('appends the measurement-due sentence without changing type or eligibility', () => {
+    setActiveLocale('sv');
+    const now = new Date(2026, 7, 26, 10, 0, 0);
+    const plan = planWeeklyCheckInNotification({
+      enabled: true,
+      status: available,
+      now,
+      measurementDue: true,
+    });
+    assert.equal(plan.action, 'schedule');
+    if (plan.action === 'schedule') {
+      assert.equal(plan.title, 'NORDYAN Coach');
+      assert.equal(
+        plan.body,
+        'Hur har din vecka varit? Dags för en snabb veckokoll. Det kan också vara dags för en ny mätning.',
+      );
+      assert.deepEqual(plan.data, { type: 'weekly-check-in' });
+      assertApprovedNotificationCopy(plan.title, plan.body);
+    }
+
+    setActiveLocale('nb');
+    const nbPlan = planWeeklyCheckInNotification({
+      enabled: true,
+      status: available,
+      now,
+      measurementDue: true,
+    });
+    assert.equal(nbPlan.action, 'schedule');
+    if (nbPlan.action === 'schedule') {
+      assert.equal(nbPlan.title, 'NORDYAN Coach');
+      assert.equal(
+        nbPlan.body,
+        'Hvordan har uken din vært? På tide med en rask ukessjekk. Det kan också være på tide med en ny måling.',
+      );
+      assert.deepEqual(nbPlan.data, { type: 'weekly-check-in' });
+      assertApprovedNotificationCopy(nbPlan.title, nbPlan.body);
+    }
+  });
+
+  it('does not schedule when measurement is due but Weekly status is not available', () => {
+    const now = new Date(2026, 7, 26, 10, 0, 0);
+    assert.equal(
+      planWeeklyCheckInNotification({
+        enabled: true,
+        status: { status: 'completed', weekStartDate: '2026-08-24' },
+        now,
+        measurementDue: true,
+      }).action,
+      'cancel',
+    );
+    assert.equal(
+      planWeeklyCheckInNotification({
+        enabled: true,
+        status: { status: 'suppressed', weekStartDate: '2026-08-24' },
+        now,
+        measurementDue: true,
+      }).action,
+      'cancel',
+    );
+    assert.equal(
+      planWeeklyCheckInNotification({
+        enabled: true,
+        status: { status: 'unavailable' },
+        now,
+        measurementDue: true,
+      }).action,
+      'cancel',
+    );
+  });
+});
+
+describe('Weekly measurement-due copy helper', () => {
+  it('treats missing history, fetch failure, 13 days, and future dates as not due', () => {
+    assert.equal(isWeeklyMeasurementDue(undefined, '2026-09-23'), false);
+    assert.equal(isWeeklyMeasurementDue(null, '2026-09-23'), false);
+    assert.equal(weeklyMeasurementDueFromHistoryResult({ ok: true, value: [] }), false);
+    assert.equal(weeklyMeasurementDueFromHistoryResult({ ok: false }), false);
+    assert.equal(calendarDaysSinceMeasuredAt('2026-09-10', '2026-09-23'), 13);
+    assert.equal(isWeeklyMeasurementDue('2026-09-10', '2026-09-23'), false);
+    assert.equal(isWeeklyMeasurementDue('2026-09-24', '2026-09-23'), false);
+    assert.equal(calendarDaysSinceMeasuredAt('2026-09-24', '2026-09-23'), -1);
+  });
+
+  it('marks 14 and 15+ local calendar days as due', () => {
+    assert.equal(calendarDaysSinceMeasuredAt('2026-09-09', '2026-09-23'), 14);
+    assert.equal(isWeeklyMeasurementDue('2026-09-09', '2026-09-23'), true);
+    assert.equal(calendarDaysSinceMeasuredAt('2026-09-08', '2026-09-23'), 15);
+    assert.equal(isWeeklyMeasurementDue('2026-09-08', '2026-09-23'), true);
+    assert.equal(
+      weeklyMeasurementDueFromHistoryResult({
+        ok: true,
+        value: [{ measuredAt: '2026-09-09' }],
+      }),
+      true,
+    );
+  });
+
+  it('still schedules normal Weekly copy when measurement history cannot be loaded', () => {
+    setActiveLocale('sv');
+    const measurementDue = weeklyMeasurementDueFromHistoryResult({ ok: false });
+    const plan = planWeeklyCheckInNotification({
+      enabled: true,
+      status: { status: 'available', weekStartDate: '2026-08-24' },
+      now: new Date(2026, 7, 26, 10, 0, 0),
+      measurementDue,
+    });
+    assert.equal(measurementDue, false);
+    assert.equal(plan.action, 'schedule');
+    if (plan.action === 'schedule') {
+      assert.equal(plan.body, 'Hur har din vecka varit? Dags för en snabb veckokoll.');
+      assert.deepEqual(plan.data, { type: 'weekly-check-in' });
+    }
+  });
+
+  it('allows only the approved NORDYAN Coach title, not arbitrary Coach copy', () => {
+    setActiveLocale('sv');
+    const copy = weeklyCheckInReminderCopy();
+    assert.equal(copy.title, APPROVED_NOTIFICATION_TITLE);
+    assert.doesNotMatch(copy.body, HEALTH_OR_PII);
+    assert.match('Ask Coach about your Health Score', HEALTH_OR_PII);
+    assert.match('weeklyFocus leaked', HEALTH_OR_PII);
+    assert.match('user_id=abc', HEALTH_OR_PII);
   });
 });
 

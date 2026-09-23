@@ -8,6 +8,14 @@ import {
   liveArray,
   t,
 } from '@/lib/i18n';
+import {
+  ACTIVITY_TREND_LEVEL_DOMAIN,
+  formatDevelopmentActivityLevelLabel,
+  formatDevelopmentActivityTrendLabel,
+  resolveActivityLevelFromStoredScore,
+  resolveActivityTrendPlotLevel,
+} from './development-activity-level';
+import type { DevelopmentTrendChartValueDomain } from './development-trend-chart.layout';
 import { formatCoachMessage } from '@/lib/services/coach/coach.presentation';
 import type {
   DevelopmentCoachPresentation,
@@ -29,6 +37,7 @@ import type {
   DevelopmentPeriodChangeView,
   DevelopmentPeriodOption,
   DevelopmentScoreChangeView,
+  DevelopmentSemanticTone,
   DevelopmentTrendsFetchState,
   DevelopmentTrendsViewModel,
 } from './development.types';
@@ -106,8 +115,30 @@ function formatCircumferenceCm(valueCm: number): string {
   return t('common.cm', { value: String(Math.round(valueCm)) });
 }
 
-function formatActivityScore(score: number): string {
-  return String(Math.round(score));
+function formatActivityTransition(delta: Extract<DevelopmentNumericDelta, { status: 'ready' }>): string {
+  const fromLevel = resolveActivityLevelFromStoredScore(delta.previous);
+  const toLevel = resolveActivityLevelFromStoredScore(delta.current);
+  if (!fromLevel || !toLevel) {
+    return getDevelopmentInsufficientHistoryText();
+  }
+
+  if (fromLevel === toLevel) {
+    return t('development.driver.activity.unchanged');
+  }
+
+  return t('development.driver.activity.transition', {
+    from: formatDevelopmentActivityLevelLabel(fromLevel),
+    to: formatDevelopmentActivityLevelLabel(toLevel),
+  });
+}
+
+function formatWeightChange(change: number): string {
+  const rounded = Math.round(change * 10) / 10;
+  if (rounded === 0) {
+    return t('development.driver.weight.unchanged');
+  }
+
+  return `${formatSignedNumber(change, 1)} kg`;
 }
 
 function formatSignedNumber(change: number, digits = 0): string {
@@ -129,11 +160,32 @@ function formatSignedNumber(change: number, digits = 0): string {
   return absolute;
 }
 
+function compositionDriverTone(change: number): Exclude<DevelopmentSemanticTone, 'limitation'> {
+  if (change < 0) {
+    return 'positive';
+  }
+  if (change > 0) {
+    return 'negative';
+  }
+  return 'neutral';
+}
+
+function activityDriverTone(change: number): Exclude<DevelopmentSemanticTone, 'limitation'> {
+  if (change > 0) {
+    return 'positive';
+  }
+  if (change < 0) {
+    return 'negative';
+  }
+  return 'neutral';
+}
+
 function formatScoreChangeText(change: number): DevelopmentScoreChangeView {
   if (change > 0) {
     return {
       status: 'ready',
       direction: 'up',
+      tone: 'positive',
       text: t('development.score.up', { change }),
     };
   }
@@ -142,6 +194,7 @@ function formatScoreChangeText(change: number): DevelopmentScoreChangeView {
     return {
       status: 'ready',
       direction: 'down',
+      tone: 'negative',
       text: t('development.score.down', { change }),
     };
   }
@@ -149,6 +202,7 @@ function formatScoreChangeText(change: number): DevelopmentScoreChangeView {
   return {
     status: 'ready',
     direction: 'stable',
+    tone: 'neutral',
     text: t('development.score.stable'),
   };
 }
@@ -159,6 +213,7 @@ export function formatDevelopmentScoreChange(
   if (delta.status === 'insufficient_history') {
     return {
       status: 'insufficient_history',
+      tone: 'neutral',
       text: getDevelopmentInsufficientHistoryText(),
     };
   }
@@ -171,6 +226,7 @@ function formatPeriodChangeText(change: number): DevelopmentPeriodChangeView {
     return {
       status: 'ready',
       direction: 'up',
+      tone: 'positive',
       text: t('development.periodChange.up', { change }),
     };
   }
@@ -179,6 +235,7 @@ function formatPeriodChangeText(change: number): DevelopmentPeriodChangeView {
     return {
       status: 'ready',
       direction: 'down',
+      tone: 'negative',
       text: t('development.periodChange.down', { change }),
     };
   }
@@ -186,6 +243,7 @@ function formatPeriodChangeText(change: number): DevelopmentPeriodChangeView {
   return {
     status: 'ready',
     direction: 'stable',
+    tone: 'neutral',
     text: t('development.periodChange.stable'),
   };
 }
@@ -197,6 +255,7 @@ export function formatDevelopmentPeriodChange(
   if (!hasSufficientHistory || periodChange == null) {
     return {
       status: 'insufficient_history',
+      tone: 'neutral',
       text: getDevelopmentInsufficientHistoryText(),
     };
   }
@@ -254,6 +313,7 @@ function mapNumericDriver(input: {
       valueText: delta.current == null ? '—' : formatValue(delta.current),
       changeText: getDevelopmentInsufficientHistoryText(),
       state: 'insufficient_history',
+      tone: 'neutral',
     };
   }
 
@@ -263,6 +323,45 @@ function mapNumericDriver(input: {
     valueText: formatValue(delta.current),
     changeText: formatChange(delta.change),
     state: 'ready',
+    tone: compositionDriverTone(delta.change),
+  };
+}
+
+function mapActivityDriver(delta: DevelopmentNumericDelta): DevelopmentDriverRow {
+  const label = t('development.driver.activity');
+
+  if (delta.status === 'insufficient_history') {
+    const mapped = delta.current == null ? null : resolveActivityLevelFromStoredScore(delta.current);
+    return {
+      id: 'activity',
+      label,
+      valueText: mapped ? formatDevelopmentActivityLevelLabel(mapped) : '—',
+      changeText: getDevelopmentInsufficientHistoryText(),
+      state: 'insufficient_history',
+      tone: 'neutral',
+    };
+  }
+
+  const fromLevel = resolveActivityLevelFromStoredScore(delta.previous);
+  const toLevel = resolveActivityLevelFromStoredScore(delta.current);
+  if (!fromLevel || !toLevel) {
+    return {
+      id: 'activity',
+      label,
+      valueText: toLevel ? formatDevelopmentActivityLevelLabel(toLevel) : '—',
+      changeText: getDevelopmentInsufficientHistoryText(),
+      state: 'insufficient_history',
+      tone: 'neutral',
+    };
+  }
+
+  return {
+    id: 'activity',
+    label,
+    valueText: formatDevelopmentActivityLevelLabel(toLevel),
+    changeText: formatActivityTransition(delta),
+    state: 'ready',
+    tone: activityDriverTone(delta.change),
   };
 }
 
@@ -282,21 +381,16 @@ export function buildDevelopmentDriverRows(
       label: t('development.driver.weight'),
       delta: summary.weight,
       formatValue: formatWeightKg,
-      formatChange: (change) => `${formatSignedNumber(change, 1)} kg`,
+      formatChange: formatWeightChange,
     }),
-    mapNumericDriver({
-      id: 'activity',
-      label: t('development.driver.activity'),
-      delta: summary.activity,
-      formatValue: formatActivityScore,
-      formatChange: (change) => formatSignedNumber(change),
-    }),
+    mapActivityDriver(summary.activity),
     {
       id: 'sleep',
       label: t('development.driver.sleep'),
       valueText: t('explained.sleep.status'),
       changeText: null,
       state: 'limitation',
+      tone: 'limitation',
     },
   ];
 }
@@ -362,7 +456,7 @@ function formatMetricValueLabel(
     case 'neck':
       return formatCircumferenceCm(value);
     case 'activity':
-      return formatActivityScore(value);
+      return formatDevelopmentActivityTrendLabel(value);
     case 'health_score':
     default:
       return String(Math.round(value));
@@ -388,13 +482,26 @@ function seriesForMetric(
   }
 }
 
+export function resolveDevelopmentTrendChartDomain(
+  metric: DevelopmentTrendMetric,
+): DevelopmentTrendChartValueDomain | null {
+  if (metric === 'activity') {
+    return { ...ACTIVITY_TREND_LEVEL_DOMAIN };
+  }
+
+  return null;
+}
+
 export function buildDevelopmentChartPoints(
   summary: DevelopmentTrendsSummary,
   metric: DevelopmentTrendMetric,
 ): DevelopmentChartPointView[] {
   return seriesForMetric(summary, metric).map((point) => ({
     capturedAt: point.capturedAt,
-    value: point.value,
+    value:
+      metric === 'activity'
+        ? (resolveActivityTrendPlotLevel(point.value) ?? Number.NaN)
+        : point.value,
     valueLabel: formatMetricValueLabel(metric, point.value),
     dateLabel: formatDevelopmentChartDateLabel(point.capturedAt),
   }));
@@ -423,6 +530,7 @@ export function buildDevelopmentTrendsViewModel(
     metricOptions: DEVELOPMENT_METRIC_OPTIONS,
     hasSufficientHistory,
     chartPoints: buildDevelopmentChartPoints(summary, selectedMetric),
+    chartValueDomain: resolveDevelopmentTrendChartDomain(selectedMetric),
     chartEmptyMessage: hasSufficientHistory
       ? null
       : getDevelopmentChartInsufficientMessage(),

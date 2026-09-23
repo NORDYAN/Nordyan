@@ -175,9 +175,8 @@ export default function OnboardingResultScreen() {
                 valueSuffix="/100"
                 valueVariant="healthScore"
               />
+              <OnboardingCoachCard headline={coachHeadline} message={coachMessage} />
             </View>
-
-            <OnboardingCoachCard headline={coachHeadline} message={coachMessage} />
           </ScrollView>
 
           <View style={styles.footer}>

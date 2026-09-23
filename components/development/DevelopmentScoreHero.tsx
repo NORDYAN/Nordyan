@@ -16,11 +16,11 @@ export function DevelopmentScoreHero({
   scoreChange,
 }: DevelopmentScoreHeroProps) {
   const pillTone =
-    scoreChange?.status === 'ready' && scoreChange.direction === 'up'
-      ? 'accent'
-      : scoreChange?.status === 'ready' && scoreChange.direction === 'down'
-        ? 'accent'
-        : 'muted';
+    scoreChange?.status === 'ready' && scoreChange.tone === 'positive'
+      ? 'positive'
+      : scoreChange?.status === 'ready' && scoreChange.tone === 'negative'
+        ? 'negative'
+        : 'neutral';
 
   return (
     <View style={styles.hero}>
@@ -36,11 +36,24 @@ export function DevelopmentScoreHero({
       </View>
 
       {scoreChange ? (
-        <View style={[styles.pill, pillTone === 'accent' ? styles.pillAccent : styles.pillMuted]}>
+        <View
+          style={[
+            styles.pill,
+            pillTone === 'positive'
+              ? styles.pillPositive
+              : pillTone === 'negative'
+                ? styles.pillNegative
+                : styles.pillMuted,
+          ]}
+        >
           <Text
             style={[
               styles.pillText,
-              pillTone === 'accent' ? styles.pillTextAccent : styles.pillTextMuted,
+              pillTone === 'positive'
+                ? styles.pillTextPositive
+                : pillTone === 'negative'
+                  ? styles.pillTextNegative
+                  : styles.pillTextMuted,
             ]}
             maxFontSizeMultiplier={1.1}
           >
@@ -95,8 +108,13 @@ const styles = StyleSheet.create({
     paddingVertical: developmentLayout.changePillPaddingVertical,
     maxWidth: '100%',
   },
-  pillAccent: {
+  pillPositive: {
     backgroundColor: colors.developmentAccentFill,
+  },
+  pillNegative: {
+    backgroundColor: colors.developmentSurface,
+    borderWidth: 1,
+    borderColor: colors.onboardingErrorText,
   },
   pillMuted: {
     backgroundColor: colors.developmentSurface,
@@ -109,8 +127,11 @@ const styles = StyleSheet.create({
     lineHeight: developmentTypography.changePillSize * 1.2,
     includeFontPadding: false,
   },
-  pillTextAccent: {
+  pillTextPositive: {
     color: colors.developmentAccent,
+  },
+  pillTextNegative: {
+    color: colors.onboardingErrorText,
   },
   pillTextMuted: {
     color: colors.developmentTextMuted,

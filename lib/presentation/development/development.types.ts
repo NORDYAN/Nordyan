@@ -10,22 +10,27 @@ export type DevelopmentDriverRowState =
   | 'insufficient_history'
   | 'limitation';
 
+export type DevelopmentSemanticTone = 'positive' | 'negative' | 'neutral' | 'limitation';
+
 export type DevelopmentDriverRow = {
   id: DevelopmentDriverId;
   label: string;
   valueText: string;
   changeText: string | null;
   state: DevelopmentDriverRowState;
+  tone: DevelopmentSemanticTone;
 };
 
 export type DevelopmentScoreChangeView =
   | {
       status: 'ready';
       direction: 'up' | 'down' | 'stable';
+      tone: Exclude<DevelopmentSemanticTone, 'limitation'>;
       text: string;
     }
   | {
       status: 'insufficient_history';
+      tone: 'neutral';
       text: string;
     };
 
@@ -71,10 +76,12 @@ export type DevelopmentPeriodChangeView =
   | {
       status: 'ready';
       direction: 'up' | 'down' | 'stable';
+      tone: Exclude<DevelopmentSemanticTone, 'limitation'>;
       text: string;
     }
   | {
       status: 'insufficient_history';
+      tone: 'neutral';
       text: string;
     };
 
@@ -96,6 +103,7 @@ export type DevelopmentTrendsViewModel = {
   metricOptions: readonly DevelopmentMetricOption[];
   hasSufficientHistory: boolean;
   chartPoints: DevelopmentChartPointView[];
+  chartValueDomain: { min: number; max: number } | null;
   chartEmptyMessage: string | null;
   coach: DevelopmentCoachView;
 };

@@ -17,8 +17,10 @@ export function OnboardingCoachCard({ headline, message }: OnboardingCoachCardPr
         <Ionicons name="sparkles" size={16} color={colors.onboardingAccent} />
         <Text style={styles.headerLabel}>{t('onboarding.coach.label')}</Text>
       </View>
-      <Text style={styles.headline}>{headline}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <View style={styles.recommendation}>
+        <Text style={styles.headline}>{headline}</Text>
+        <Text style={styles.message}>{message}</Text>
+      </View>
     </View>
   );
 }
@@ -30,7 +32,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.onboardingCoachCardBorder,
     padding: onboardingResultLayout.coachCardPadding,
-    gap: onboardingResultLayout.coachCardGap,
+    gap: onboardingResultLayout.coachLabelToHeadlineGap,
     width: '100%',
   },
   header: {
@@ -44,6 +46,9 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     letterSpacing: onboardingResultLayout.coachHeaderLetterSpacing,
     textTransform: 'uppercase',
+  },
+  recommendation: {
+    gap: onboardingResultLayout.coachCardGap,
   },
   headline: {
     color: colors.onboardingText,

@@ -32,7 +32,15 @@ export function OnboardingResultMetricCard({
   return (
     <View style={[styles.card, style]}>
       <View style={styles.copy}>
-        <Text style={styles.label}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            valueVariant === 'healthScore' ? styles.healthScoreLabel : null,
+          ]}
+          numberOfLines={valueVariant === 'healthScore' ? 1 : undefined}
+        >
+          {label}
+        </Text>
         <Text style={styles.caption}>{caption}</Text>
       </View>
       <View style={[styles.valueRow, valueRowStyle]}>
@@ -71,9 +79,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   label: {
-    color: colors.onboardingProfileLabel,
+    color: colors.onboardingText,
     fontSize: onboardingResultLayout.metricLabelFontSize,
     fontWeight: typography.fontWeight.semibold,
+  },
+  healthScoreLabel: {
+    flexShrink: 0,
   },
   caption: {
     color: colors.onboardingProfileLabel,

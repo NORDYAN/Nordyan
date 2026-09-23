@@ -4,7 +4,7 @@ import { resolveOptionalHipCm } from '@/lib/domain/measurement/hip-cm';
 import type { UserProfile } from '@/lib/domain/profile';
 
 import {
-  mapProfileActivityLevel,
+  getLocalCalendarDate,
   mapProfileToHealthScoreInput,
 } from './health-score.mapper';
 
@@ -20,8 +20,9 @@ type MeasurementBodyFields = Pick<
 export function mapProfileAndMeasurementToHealthScoreInput(
   profile: UserProfile,
   measurement: MeasurementBodyFields,
+  asOfDate: string = measurement.measuredAt,
 ): HealthScoreInput | null {
-  const profileInput = mapProfileToHealthScoreInput(profile, measurement.measuredAt);
+  const profileInput = mapProfileToHealthScoreInput(profile, asOfDate);
   if (!profileInput) {
     return null;
   }
@@ -33,7 +34,24 @@ export function mapProfileAndMeasurementToHealthScoreInput(
     weightKg: measurement.weightKg,
     waistCm: measurement.waistCm,
     neckCm: measurement.neckCm,
-    asOfDate: measurement.measuredAt,
+    asOfDate,
     ...(hipCm !== undefined ? { hipCm } : {}),
   };
+}
+
+/**
+ * Profile-update scoring: current profile fields (sex, DOB/age, height, activity)
+ * with the latest real measurement's body composition when one exists.
+ * Weight follows the existing measurement-merge mapper, not a new policy.
+ */
+export function mapProfileUpdateToHealthScoreInput(
+  profile: UserProfile,
+  latestMeasurement: MeasurementBodyFields | null,
+  asOfDate: string = getLocalCalendarDate(),
+): HealthScoreInput | null {
+  if (!latestMeasurement) {
+    return mapProfileToHealthScoreInput(profile, asOfDate);
+  }
+
+  return mapProfileAndMeasurementToHealthScoreInput(profile, latestMeasurement, asOfDate);
 }

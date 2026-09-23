@@ -9,6 +9,7 @@ export {
   buildDevelopmentDriverRows,
   buildDevelopmentHomeViewModel,
   buildDevelopmentTrendsViewModel,
+  resolveDevelopmentTrendChartDomain,
   formatDevelopmentChartDateLabel,
   formatDevelopmentPeriodChange,
   formatDevelopmentScoreChange,
@@ -22,6 +23,9 @@ export {
   mapDevelopmentHomeSummaryToFetchState,
   mapDevelopmentTrendsSummaryToFetchState,
 } from './development.presentation';
+export { ACTIVITY_TREND_LEVEL_DOMAIN } from './development-activity-level';
+export { buildDevelopmentTrendChartCoords } from './development-trend-chart.layout';
+export type { DevelopmentTrendChartValueDomain } from './development-trend-chart.layout';
 export type {
   DevelopmentChartPointView,
   DevelopmentCoachView,
@@ -34,6 +38,7 @@ export type {
   DevelopmentPeriodChangeView,
   DevelopmentPeriodOption,
   DevelopmentScoreChangeView,
+  DevelopmentSemanticTone,
   DevelopmentTrendsFetchState,
   DevelopmentTrendsViewModel,
 } from './development.types';

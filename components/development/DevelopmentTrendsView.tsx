@@ -95,6 +95,7 @@ export function DevelopmentTrendsView({
           ) : (
             <DevelopmentTrendChart
               points={model?.chartPoints ?? []}
+              valueDomain={model?.chartValueDomain ?? null}
               hasSufficientHistory={model?.hasSufficientHistory ?? false}
               emptyMessage={
                 model?.chartEmptyMessage ??

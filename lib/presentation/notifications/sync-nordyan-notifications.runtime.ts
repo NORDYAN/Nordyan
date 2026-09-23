@@ -1,8 +1,10 @@
 import { resolveHomeWeeklyCheckInStatus } from '@/lib/presentation/home';
 import { initialLifestyleService } from '@/lib/services/initial-lifestyle';
+import { measurementService } from '@/lib/services/measurement';
 import { weeklyCheckInService } from '@/lib/services/weekly-check-in';
 
 import { planDailyFocusNotification } from './daily-focus-schedule';
+import { weeklyMeasurementDueFromHistoryResult } from './notification-measurement-due';
 import {
   applyDailyFocusNotificationPlan,
   applyWeeklyCheckInNotificationPlan,
@@ -13,6 +15,15 @@ import {
 import { notificationPreferencesStore } from './notification-preferences.storage';
 import { isNativeNotificationsSupported } from './notifications-platform';
 import { planWeeklyCheckInNotification } from './weekly-check-in-schedule';
+
+async function resolveWeeklyCheckInMeasurementDue(userId: string): Promise<boolean> {
+  try {
+    const result = await measurementService.getMeasurementHistory(userId, 1);
+    return weeklyMeasurementDueFromHistoryResult(result);
+  } catch {
+    return false;
+  }
+}
 
 export async function restoreNordyanNotificationSchedules(userId: string): Promise<void> {
   if (!isNativeNotificationsSupported() || !userId.trim()) {
@@ -53,11 +64,15 @@ export async function syncWeeklyCheckInReminderForUser(
     userId,
   });
 
+  const measurementDue =
+    status.status === 'available' ? await resolveWeeklyCheckInMeasurementDue(userId) : false;
+
   await applyWeeklyCheckInNotificationPlan(
     planWeeklyCheckInNotification({
       enabled: true,
       status,
       now: new Date(),
+      measurementDue,
     }),
   );
 }

@@ -1,7 +1,9 @@
 export {
   buildDevelopmentCoachPresentation,
+  buildActivityLevelDelta,
   buildDevelopmentHomeSummary,
   buildDevelopmentMetricSeries,
+  buildMeasurementDriverDelta,
   buildObservedCircumferenceDelta,
   buildDevelopmentTrendsSummary,
   isObservedCircumferenceSnapshot,

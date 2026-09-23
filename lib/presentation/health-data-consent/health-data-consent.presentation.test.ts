@@ -36,7 +36,7 @@ describe('health data consent presentation', () => {
 
   it('renders the approved Swedish copy', () => {
     setActiveLocale('sv');
-    assert.equal(HEALTH_DATA_CONSENT_COPY.title, 'Dina hälsouppgifter');
+    assert.equal(HEALTH_DATA_CONSENT_COPY.title, 'Hälsouppgifter');
     assert.equal(
       HEALTH_DATA_CONSENT_COPY.body,
       'För att NORDYAN ska kunna ge dig personliga insikter behöver vi behandla de hälso- och livsstilsuppgifter du väljer att dela.',
@@ -68,7 +68,7 @@ describe('health data consent presentation', () => {
 
   it('renders the approved Norwegian Bokmål copy', () => {
     setActiveLocale('nb');
-    assert.equal(t('onboarding.healthDataConsent.title'), 'Dine helseopplysninger');
+    assert.equal(t('onboarding.healthDataConsent.title'), 'Helseopplysninger');
     assert.equal(
       t('onboarding.healthDataConsent.body'),
       'For at NORDYAN skal kunne gi deg personlige innsikter, må vi behandle helse- og livsstilsopplysningene du velger å dele.',

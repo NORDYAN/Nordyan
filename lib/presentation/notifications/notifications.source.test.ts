@@ -83,7 +83,12 @@ describe('Push Notifications v1 source contracts', () => {
     assert.match(source('lib/presentation/notifications/notification-preferences.ts'), /nordyan-reminders/);
 
     assert.match(sync, /resolveHomeWeeklyCheckInStatus/);
+    assert.match(sync, /resolveWeeklyCheckInMeasurementDue/);
     assert.doesNotMatch(sync, /getExpoPushTokenAsync|supabase\.from\('notifications'\)/);
+    assert.doesNotMatch(
+      source('lib/services/measurement/measurement.service.ts'),
+      /syncWeeklyCheckInReminderForUser|restoreNordyanNotificationSchedules/,
+    );
 
     assert.match(auth, /cancelNordyanScheduledNotifications/);
     assert.match(deleteRuntime, /cancelNordyanScheduledNotifications/);

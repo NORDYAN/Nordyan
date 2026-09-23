@@ -16,10 +16,11 @@ export function DevelopmentTrendsScoreCard({
   periodChange,
 }: DevelopmentTrendsScoreCardProps) {
   const pillTone =
-    periodChange?.status === 'ready' &&
-    (periodChange.direction === 'up' || periodChange.direction === 'down')
-      ? 'accent'
-      : 'muted';
+    periodChange?.status === 'ready' && periodChange.tone === 'positive'
+      ? 'positive'
+      : periodChange?.status === 'ready' && periodChange.tone === 'negative'
+        ? 'negative'
+        : 'neutral';
 
   return (
     <View style={styles.card}>
@@ -40,11 +41,24 @@ export function DevelopmentTrendsScoreCard({
       </View>
 
       {periodChange ? (
-        <View style={[styles.pill, pillTone === 'accent' ? styles.pillAccent : styles.pillMuted]}>
+        <View
+          style={[
+            styles.pill,
+            pillTone === 'positive'
+              ? styles.pillPositive
+              : pillTone === 'negative'
+                ? styles.pillNegative
+                : styles.pillMuted,
+          ]}
+        >
           <Text
             style={[
               styles.pillText,
-              pillTone === 'accent' ? styles.pillTextAccent : styles.pillTextMuted,
+              pillTone === 'positive'
+                ? styles.pillTextPositive
+                : pillTone === 'negative'
+                  ? styles.pillTextNegative
+                  : styles.pillTextMuted,
             ]}
             maxFontSizeMultiplier={1.1}
           >
@@ -104,8 +118,13 @@ const styles = StyleSheet.create({
     paddingVertical: developmentLayout.trendsChangePillPaddingVertical,
     maxWidth: '52%',
   },
-  pillAccent: {
+  pillPositive: {
     backgroundColor: colors.developmentAccentFill,
+  },
+  pillNegative: {
+    backgroundColor: colors.developmentSurface,
+    borderWidth: 1,
+    borderColor: colors.onboardingErrorText,
   },
   pillMuted: {
     backgroundColor: colors.developmentBackground,
@@ -118,8 +137,11 @@ const styles = StyleSheet.create({
     lineHeight: developmentTypography.trendsChangePillSize * 1.2,
     includeFontPadding: false,
   },
-  pillTextAccent: {
+  pillTextPositive: {
     color: colors.developmentAccent,
+  },
+  pillTextNegative: {
+    color: colors.onboardingErrorText,
   },
   pillTextMuted: {
     color: colors.developmentTextMuted,

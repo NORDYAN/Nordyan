@@ -62,12 +62,13 @@ export function planWeeklyCheckInNotification(input: {
   enabled: boolean;
   status: HomeWeeklyCheckInResolvedStatus;
   now: Date;
+  measurementDue?: boolean;
 }): WeeklyCheckInNotificationPlan {
   if (!input.enabled || input.status.status !== 'available') {
     return { action: 'cancel', identifier: WEEKLY_CHECK_IN_NOTIFICATION_ID };
   }
 
-  const copy = weeklyCheckInReminderCopy();
+  const copy = weeklyCheckInReminderCopy({ measurementDue: input.measurementDue === true });
   return {
     action: 'schedule',
     identifier: WEEKLY_CHECK_IN_NOTIFICATION_ID,

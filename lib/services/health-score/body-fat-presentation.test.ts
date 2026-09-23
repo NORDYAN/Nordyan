@@ -120,6 +120,38 @@ describe('canPresentBodyFatEstimate', () => {
     );
   });
 
+  it('allows female US Navy presentation from a profile_update snapshot that reused a real hip', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: null, neckCm: null, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: 98,
+          snapshotReason: 'profile_update',
+          bodyFatPct: 28.4,
+        },
+      ),
+      true,
+    );
+  });
+
+  it('does not treat an imputed hip-less profile_update as a real female measurement', () => {
+    assert.equal(
+      canPresentBodyFatEstimate(
+        { gender: 'female', waistCm: null, neckCm: null, heightCm: 168 },
+        {
+          waistCm: 80,
+          neckCm: 33,
+          hipCm: null,
+          snapshotReason: 'profile_update',
+          bodyFatPct: 29.1,
+        },
+      ),
+      false,
+    );
+  });
+
   it('does not let hip change male presentation rules', () => {
     assert.equal(
       canPresentBodyFatEstimate(

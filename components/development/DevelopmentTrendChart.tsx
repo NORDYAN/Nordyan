@@ -5,57 +5,40 @@ import Svg, { Circle, Line, Polyline } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/lib/i18n';
 import type { DevelopmentChartPointView } from '@/lib/presentation/development';
+import {
+  buildDevelopmentTrendChartCoords,
+  type DevelopmentTrendChartValueDomain,
+} from '@/lib/presentation/development/development-trend-chart.layout';
 import { colors, developmentLayout, developmentTypography, typography } from '@/theme';
 
 type DevelopmentTrendChartProps = {
   points: DevelopmentChartPointView[];
   hasSufficientHistory: boolean;
   emptyMessage: string | null;
+  valueDomain?: DevelopmentTrendChartValueDomain | null;
 };
-
-type ChartCoords = {
-  x: number;
-  y: number;
-  point: DevelopmentChartPointView;
-};
-
-function buildCoords(
-  points: DevelopmentChartPointView[],
-  width: number,
-  height: number,
-): ChartCoords[] {
-  if (points.length === 0 || width <= 0 || height <= 0) {
-    return [];
-  }
-
-  const values = points.map((point) => point.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const valueSpan = maxValue - minValue;
-  const padY = 8;
-  const usableHeight = Math.max(height - padY * 2, 1);
-  const lastIndex = Math.max(points.length - 1, 1);
-
-  return points.map((point, index) => {
-    const x = points.length === 1 ? width / 2 : (width * index) / lastIndex;
-    const normalized = valueSpan === 0 ? 0.5 : (point.value - minValue) / valueSpan;
-    const y = padY + usableHeight * (1 - normalized);
-    return { x, y, point };
-  });
-}
 
 export function DevelopmentTrendChart({
   points,
   hasSufficientHistory,
   emptyMessage,
+  valueDomain = null,
 }: DevelopmentTrendChartProps) {
   const [width, setWidth] = useState(0);
   const height = developmentLayout.trendsChartHeight;
 
-  const coords = useMemo(
-    () => buildCoords(points, width, height),
-    [height, points, width],
-  );
+  const coords = useMemo(() => {
+    const layout = buildDevelopmentTrendChartCoords(
+      points.map((point) => point.value),
+      width,
+      height,
+      valueDomain,
+    );
+    return layout.map((coord) => ({
+      ...coord,
+      point: points[coord.index]!,
+    }));
+  }, [height, points, valueDomain, width]);
 
   const polylinePoints = coords.map((coord) => `${coord.x},${coord.y}`).join(' ');
   const last = coords[coords.length - 1];

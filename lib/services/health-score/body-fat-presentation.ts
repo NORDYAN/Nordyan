@@ -48,6 +48,13 @@ function hasFemaleNavyProvenance(evidence: BodyFatPresentationEvidence): boolean
     return true;
   }
 
+  if (
+    evidence.snapshotReason === 'profile_update' &&
+    isSupportedHipCm(evidence.hipCm ?? Number.NaN)
+  ) {
+    return true;
+  }
+
   return (
     evidence.snapshotReason === 'onboarding' &&
     isSupportedHipCm(evidence.hipCm ?? Number.NaN)
@@ -74,9 +81,10 @@ function hasValidFemaleNavyEvidence(
  * formula can use a complete set of user-supplied measurements.
  *
  * Male: US Navy from waist + neck + height. Hip is ignored.
- * Female: US Navy from a measurement snapshot, or an onboarding snapshot that
- * includes a real hip reading, plus waist + neck + profile height and a finite
- * bodyFatPct. Deurenberg stays internal. Hip is never imputed.
+ * Female: US Navy from a measurement snapshot, a profile_update snapshot that
+ * reused a real hip reading, or an onboarding snapshot that includes a real
+ * hip reading, plus waist + neck + profile height and a finite bodyFatPct.
+ * Deurenberg stays internal. Hip is never imputed.
  */
 export function canPresentBodyFatEstimate(
   profile: BodyFatPresentationProfile | null,
