@@ -1,0 +1,50 @@
+html[data-i18n-pending] body {
+  visibility: hidden;
+}
+
+.s6-lang {
+  max-width: 1440px;
+  margin: 28px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.s6-lang-btn {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.s6-lang-btn:hover,
+.s6-lang-btn:focus-visible {
+  color: var(--gold);
+}
+
+.s6-lang-btn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.s6-lang-btn.is-active {
+  color: var(--gold);
+}
+
+.s6-lang-sep {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  .s6-lang {
+    margin-top: 8px;
+  }
+}
