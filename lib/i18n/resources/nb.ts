@@ -287,7 +287,7 @@ export const nb = {
   'coach.frequency.many': '{count} ganger denne uken',
   'coach.quick.healthScoreMainDriver': 'Hva påvirker Health Score-en min mest?',
   'coach.quick.healthScoreChange': 'Hvorfor har Health Score-en min endret seg?',
-  'coach.quick.healthOverall': 'Hvordan ser helsen min ut akkurat nå?',
+  'coach.quick.healthOverall': 'Hva bør jeg fokusere på for helsen min akkurat nå?',
   'coach.quick.developmentRecent': 'Hva sier den siste utviklingen min?',
   'coach.quick.waistDevelopment': 'Hvordan har midjemålet mitt utviklet seg?',
   'coach.quick.weightDevelopment': 'Hvordan har vekten min utviklet seg?',
@@ -680,7 +680,7 @@ export const nb = {
     'Registrer midje- og halsmål når du har mulighet for en enda mer treffsikker NORDYAN Health Score.',
   'home.progress.insufficient1': 'Den første helsemålingen din er lagret.',
   'home.progress.insufficient2':
-    'Oppdater profilen din igjen for å begynne å følge utviklingen.',
+    'Når du legger til nye målinger kan du begynne å følge hvordan helsen din utvikler seg over tid.',
   'home.progress.unavailable': 'Utviklingen din kan ikke vises akkurat nå.',
 
   'development.home.subtitle': 'Følg hvordan helsen din utvikler seg over tid.',
@@ -825,6 +825,66 @@ export const nb = {
   'plan.fallback_gentle_walk_v1.title': 'En rolig gåtur',
   'plan.fallback_gentle_walk_v1.body':
     'Gå {minutes} minutter i rolig tempo {frequency}.',
+  'plan.default.general.title': 'En bærekraftig vane',
+  'plan.default.general.body':
+    'Fokuser på en enkel, gjentakende vane denne uken. Det holder å starte i det små.',
+  'plan.waist_walk_after_dinner_v1.general.title': 'Gåtur etter maten',
+  'plan.waist_walk_after_dinner_v1.general.body':
+    'Prøv å ta en gåtur etter et av dagens måltider. Det er en rolig måte å få inn mer bevegelse.',
+  'plan.waist_increase_walking_volume_v1.general.title': 'Øk ukens gåturer',
+  'plan.waist_increase_walking_volume_v1.general.body':
+    'Legg til noen ekstra gåturer denne uken for å støtte fokuset ditt.',
+  'plan.waist_active_walk_progression_v1.general.title': 'Bygg ut gåturene dine',
+  'plan.waist_active_walk_progression_v1.general.body':
+    'Hold gåvanen i gang gjennom uken, i et omfang som føles rimelig.',
+  'plan.waist_measurement_follow_up_v1.general.title': 'Følg opp målene dine',
+  'plan.waist_measurement_follow_up_v1.general.body':
+    'Mål midjen igjen om omtrent fire uker for å se hvordan vanene dine utvikler seg.',
+  'plan.activity_sedentary_walk_start_v1.general.title': 'Begynn med mer hverdagsbevegelse',
+  'plan.activity_sedentary_walk_start_v1.general.body':
+    'Korte, jevnlige gåturer er en trygg måte å komme i gang på.',
+  'plan.activity_light_walk_build_v1.general.title': 'Bygg en jevn gåvane',
+  'plan.activity_light_walk_build_v1.general.body':
+    'Prøv å få inn jevnlige gåturer i rolig tempo i løpet av uken.',
+  'plan.activity_moderate_brisk_walk_v1.general.title': 'Jevnlig bevegelse',
+  'plan.activity_moderate_brisk_walk_v1.general.body':
+    'Prøv å holde i gang raskere gåturer eller liknende bevegelse flere ganger i uken.',
+  'plan.activity_active_structured_movement_v1.general.title': 'Strukturert bevegelse',
+  'plan.activity_active_structured_movement_v1.general.body':
+    'Planlegg noen anledninger med bevisst bevegelse i løpet av uken.',
+  'plan.activity_very_active_strength_v1.general.title': 'Enkel styrketrening',
+  'plan.activity_very_active_strength_v1.general.body':
+    'Legg til noen rolige styrkeøkter når det passer, uten å presse kroppen.',
+  'plan.body_comp_daily_walk_v1.general.title': 'Daglig bevegelse',
+  'plan.body_comp_daily_walk_v1.general.body':
+    'Prøv å få inn jevnlig hverdagsbevegelse. Det støtter både kondisjon og restitusjon.',
+  'plan.body_comp_walk_strength_combo_v1.general.title': 'Gåtur og styrke',
+  'plan.body_comp_walk_strength_combo_v1.general.body':
+    'Kombiner hverdagsbevegelse med enkel styrketrening når du har tid og energi.',
+  'plan.body_comp_strength_foundation_v1.general.title': 'Styrke som grunnlag',
+  'plan.body_comp_strength_foundation_v1.general.body':
+    'Legg til grunnleggende styrketrening i et omfang som føles bærekraftig.',
+  'plan.weight_balance_gentle_nutrition_v1.general.title': 'Lag balanserte måltider',
+  'plan.weight_balance_gentle_nutrition_v1.general.body':
+    'Prioriter jevnlige, næringsrike måltider denne uken uten å stresse kroppen.',
+  'plan.weight_balance_walking_v1.general.title': 'Mer bevegelse i hverdagen',
+  'plan.weight_balance_walking_v1.general.body':
+    'Prøv å få inn jevnlig hverdagsbevegelse i løpet av uken. Små, gjentatte aktiviteter kan være en god måte å komme i gang på.',
+  'plan.weight_balance_active_movement_v1.general.title': 'Aktiv bevegelse',
+  'plan.weight_balance_active_movement_v1.general.body':
+    'Prøv å få inn bevisst bevegelse i løpet av uken, i et tempo som føles bærekraftig.',
+  'plan.weight_balance_measurement_check_v1.general.title': 'Følg opp kroppssammensetningen',
+  'plan.weight_balance_measurement_check_v1.general.body':
+    'Oppdater målene dine denne uken slik at anbefalingene speiler den faktiske profilen din.',
+  'plan.maintain_weekly_check_in_v1.general.title': 'Ukens avsjekk',
+  'plan.maintain_weekly_check_in_v1.general.body':
+    'Ta et kort øyeblikk til å se hvordan vanene dine ser ut, og hva som fungerer godt akkurat nå.',
+  'plan.maintain_routine_consistency_v1.general.title': 'Behold den gode rutinen din',
+  'plan.maintain_routine_consistency_v1.general.body':
+    'Fortsett med vanene som fungerer, og hold et jevnt nivå denne uken.',
+  'plan.fallback_gentle_walk_v1.general.title': 'En rolig gåtur',
+  'plan.fallback_gentle_walk_v1.general.body':
+    'Ta en gåtur i rolig tempo når det passer. Det er en trygg måte å holde i gang på.',
 
   ...DAILY_FOCUS_I18N_NB,
 } as const satisfies Record<TranslationKey, string>;

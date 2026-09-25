@@ -9,6 +9,7 @@ import {
 import { PENDING_INITIAL_LIFESTYLE_KEY } from '../../onboarding/pending-initial-lifestyle-store';
 import { PENDING_PROFILE_KEY } from '../../onboarding/pending-profile-store';
 import { coachHomeBodyFatDiscoveryKey } from '../../presentation/coach-home/coach-home-body-fat-discovery.store';
+import { coachQuickQuestionRotationKey } from '../../presentation/coach-quick-questions/coach-quick-question-rotation.store';
 import { notificationPreferencesStorageKey } from '../../presentation/notifications/notification-preferences';
 import { PENDING_NOTIFICATION_CHOICE_KEY } from '../../onboarding/pending-notification-choice';
 
@@ -46,6 +47,7 @@ describe('clearAccountLocalData', () => {
       LEGACY_GLOBAL_ONBOARDING_COMPLETE_KEY,
       languageStorageUserKey('user-a'),
       coachHomeBodyFatDiscoveryKey('user-a'),
+      coachQuickQuestionRotationKey('user-a'),
       notificationPreferencesStorageKey('user-a'),
       PENDING_NOTIFICATION_CHOICE_KEY,
     ]);

@@ -63,6 +63,8 @@ const readyHome: Extract<DevelopmentHomeSummary, { status: 'ready' }> = {
     title: 'Promenad efter middagen',
     message: 'Promenera 30 minuter efter middagen fyra dagar den här veckan.',
     recommendationId: 'waist_walk_after_dinner_v1',
+    durationMinutes: 30,
+    frequencyPerWeek: 4,
   },
 };
 
@@ -133,6 +135,10 @@ describe('buildDevelopmentHomeViewModel', () => {
     assert.equal(model.scoreBandLabel, 'Bra hälsonivå');
     assert.equal(model.historyStatus, 'comparable');
     assert.equal(model.coach.available, true);
+    if (model.coach.available) {
+      assert.equal(model.coach.title, 'Promenad efter maten');
+      assert.equal(String(model.coach.body).includes('30 minuter'), false);
+    }
 
     assert.deepEqual(
       model.drivers.map((row) => row.label),

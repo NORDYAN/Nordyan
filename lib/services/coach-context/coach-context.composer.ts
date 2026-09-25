@@ -16,6 +16,10 @@ import type {
 } from '@/lib/services/development';
 import type { WeeklyCheckInCurrentWeek } from '@/lib/services/weekly-check-in';
 import {
+  resolveCoachRecommendationPresentationTier,
+  type CoachRecommendationPresentationSignals,
+} from '@/lib/presentation/coach-recommendation';
+import {
   COACH_ASK_PAYLOAD_VERSION,
   mapAppLocaleToCoachAskLocale,
   type CoachAskAgeBand,
@@ -24,12 +28,15 @@ import {
   type CoachAskChangeDirection,
   type CoachAskDevelopmentState,
   type CoachAskFocusType,
-  type CoachAskHealthScoreActivity,
-  type CoachAskHealthStateV14,
+  COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
+  COACH_ASK_HEALTH_SCORE_OVERALL_KIND,
+  mapHealthScoreActivityComponentToLevel,
+  type CoachAskHealthScoreActivityV17,
+  type CoachAskHealthStateV17,
+  type CoachAskRequestV17,
+  type CoachAskScoreChangeV17,
   type CoachAskHistoryStatus,
   type CoachAskInitialLifestyle,
-  type CoachAskRequestV16,
-  type CoachAskScoreChange,
   type CoachAskSex,
   type CoachAskWaistState,
   type CoachAskWeeklyCheckIn,
@@ -58,12 +65,13 @@ export function toCoachAskChangeDirection(change: number): CoachAskChangeDirecti
   return 'stable';
 }
 
-function mapScoreChange(delta: DevelopmentNumericDelta): CoachAskScoreChange {
+function mapScoreChange(delta: DevelopmentNumericDelta): CoachAskScoreChangeV17 {
   if (delta.status === 'insufficient_history') {
-    return { status: 'insufficient_history' };
+    return { status: 'insufficient_history', kind: COACH_ASK_HEALTH_SCORE_OVERALL_KIND };
   }
   return {
     status: 'ready',
+    kind: COACH_ASK_HEALTH_SCORE_OVERALL_KIND,
     change: delta.change,
     direction: toCoachAskChangeDirection(delta.change),
   };
@@ -93,15 +101,23 @@ function mapWaist(delta: DevelopmentNumericDelta): CoachAskWaistState {
   };
 }
 
-function mapHealthScoreActivity(delta: DevelopmentNumericDelta): CoachAskHealthScoreActivity {
+function mapHealthScoreActivity(delta: DevelopmentNumericDelta): CoachAskHealthScoreActivityV17 {
   if (delta.status === 'insufficient_history') {
-    return { status: 'insufficient_history', current: delta.current };
+    return {
+      status: 'insufficient_history',
+      kind: COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
+      current: delta.current,
+      currentActivityLevel: mapHealthScoreActivityComponentToLevel(delta.current),
+    };
   }
   return {
     status: 'ready',
+    kind: COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
     current: delta.current,
     change: delta.change,
     direction: toCoachAskChangeDirection(delta.change),
+    currentActivityLevel: mapHealthScoreActivityComponentToLevel(delta.current),
+    previousActivityLevel: mapHealthScoreActivityComponentToLevel(delta.previous),
   };
 }
 
@@ -109,7 +125,7 @@ function mapHealthState(
   summary: Extract<DevelopmentHomeSummary, { status: 'ready' }>,
   bodyComposition: CoachAskBodyComposition,
   locale: AppLocale,
-): CoachAskHealthStateV14 {
+): CoachAskHealthStateV17 {
   return {
     overallScore: summary.currentScore,
     scoreBandLabel: getHealthScoreBandDisplayLabel(summary.currentScore, locale),
@@ -162,11 +178,10 @@ const UNAVAILABLE_BODY_COMPOSITION: CoachAskBodyComposition = {
 };
 
 /**
- * Pure composition of Coach Ask v1.6 context from existing frozen summaries.
- * Locale is the only product-purpose change from frozen v1.5.
- * Does not call engines, invent deltas, or pass raw Weekly Check-in / Initial Lifestyle records.
- * DOB is consumed only to derive ageBand and must never enter the serialized payload.
- * ACSM comparison is computed locally; the raw table is never attached.
+ * Pure composition of Coach Ask v1.7 context from existing frozen summaries.
+ * Plan numeric dose follows Step 4 presentation tier: GENERAL omits a
+ * personalized prescription; SPECIFIC may include engine minutes/frequency.
+ * Engine values stay on Coach Home / snapshots. Does not call engines.
  */
 export function buildCoachAskRequestFromSummaries(input: {
   coachHome: CoachHomeSummary;
@@ -179,6 +194,7 @@ export function buildCoachAskRequestFromSummaries(input: {
   bodyComposition?: CoachAskBodyComposition;
   ageBand?: CoachAskAgeBand | null;
   sex?: CoachAskSex | null;
+  presentationSignals?: CoachRecommendationPresentationSignals;
 }): CoachAskComposeResult {
   const { coachHome, development, question } = input;
 
@@ -210,9 +226,15 @@ export function buildCoachAskRequestFromSummaries(input: {
     coachHome.plan.durationMinutes,
     coachHome.plan.frequencyPerWeek,
     appLocale,
+    input.presentationSignals,
   );
+  const exposeNumericDose =
+    resolveCoachRecommendationPresentationTier(
+      coachHome.plan.recommendationId,
+      input.presentationSignals,
+    ) === 'specific';
 
-  const context: CoachAskRequestV16['context'] = {
+  const context: CoachAskRequestV17['context'] = {
     focus: {
       type: focusType,
       title: focusPresentation.title,
@@ -222,8 +244,8 @@ export function buildCoachAskRequestFromSummaries(input: {
       recommendationId: coachHome.plan.recommendationId,
       title: planPresentation.title,
       description: planPresentation.description,
-      durationMinutes: coachHome.plan.durationMinutes,
-      frequencyPerWeek: coachHome.plan.frequencyPerWeek,
+      durationMinutes: exposeNumericDose ? coachHome.plan.durationMinutes : null,
+      frequencyPerWeek: exposeNumericDose ? coachHome.plan.frequencyPerWeek : null,
     },
     availability,
     weeklyCheckIn: input.weeklyCheckIn ?? null,
@@ -363,6 +385,7 @@ export async function composeCoachAskRequest(
   question: string,
   deps: ComposeCoachAskRequestDeps,
   locale?: AppLocale,
+  presentationSignals?: CoachRecommendationPresentationSignals,
 ): Promise<Result<CoachAskComposeResult>> {
   const trimmedQuestion = question.trim();
   if (!userId.trim() || !trimmedQuestion) {
@@ -400,6 +423,7 @@ export async function composeCoachAskRequest(
       bodyComposition: bodyFatContext.bodyComposition,
       ageBand: bodyFatContext.ageSex.ageBand,
       sex: bodyFatContext.ageSex.sex,
+      presentationSignals,
     }),
   };
 }

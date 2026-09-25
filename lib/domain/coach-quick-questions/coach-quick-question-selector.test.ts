@@ -16,6 +16,7 @@ import {
   poorSleepSignals,
   sparseNewUserSignals,
 } from './coach-quick-question.fixtures';
+import { recordCoachQuickQuestionTrioShown } from './coach-quick-question-rotation';
 import {
   isCoachQuickQuestionEligible,
   selectCoachQuickQuestions,
@@ -23,6 +24,7 @@ import {
 import {
   COACH_QUICK_QUESTION_IDS,
   type CoachQuickQuestionId,
+  type CoachQuickQuestionRotationState,
   type CoachQuickQuestionSignals,
 } from './coach-quick-question.types';
 
@@ -71,6 +73,18 @@ describe('Coach quick-question bank', () => {
       assert.equal(typeof nb[entry.copyKey], 'string');
       assert.ok(nb[entry.copyKey].length > 0);
       assert.notEqual(sv[entry.copyKey], nb[entry.copyKey]);
+    }
+  });
+
+  it('exposes SV and NB presentation for every selected id', () => {
+    const signals = [sparseNewUserSignals(), noSleepEvidenceSignals(), healthyMaintainSignals()];
+    for (const profile of signals) {
+      for (const id of selectCoachQuickQuestions(profile).ids) {
+        const definition = COACH_QUICK_QUESTION_BANK.find((entry) => entry.id === id);
+        assert.ok(definition);
+        assert.ok(sv[definition.copyKey].length > 0);
+        assert.ok(nb[definition.copyKey].length > 0);
+      }
     }
   });
 
@@ -130,68 +144,89 @@ describe('Coach quick-question selection', () => {
     assert.deepEqual(selectCoachQuickQuestions(signals).ids, selectCoachQuickQuestions(signals).ids);
   });
 
-  it('returns sparse health/general fallbacks for a new user', () => {
+  it('gives a sparse new user three useful mixed-intent questions without history', () => {
     const ids = selectCoachQuickQuestions(sparseNewUserSignals()).ids;
     assert.deepEqual([...ids], [
       'health_score_main_driver',
-      'health_overall',
-      'understand_my_data',
-    ]);
-  });
-
-  it('surfaces body composition plus development plus Health Score/general', () => {
-    assert.deepEqual([...selectCoachQuickQuestions(bodyCompositionConcernSignals()).ids], [
-      'body_fat_compare',
-      'development_recent',
-      'health_score_main_driver',
-    ]);
-  });
-
-  it('ranks poor self-reported sleep high', () => {
-    assert.deepEqual([...selectCoachQuickQuestions(poorSleepSignals()).ids], [
       'sleep_improve',
-      'recovery_understand',
+      'health_overall',
+    ]);
+    assert.deepEqual(topicFamilies(ids, sparseNewUserSignals()), [
+      'health_score',
+      'sleep',
+      'general',
+    ]);
+  });
+
+  it('selects three different topic families when the eligible pool allows it', () => {
+    const profiles: CoachQuickQuestionSignals[] = [
+      sparseNewUserSignals(),
+      bodyCompositionConcernSignals(),
+      poorSleepSignals(),
+      highStressLowEnergySignals(),
+      lowEverydayActivitySignals(),
+      littleTrainingSignals(),
+      elevatedAlcoholSignals(),
+      healthyMaintainSignals(),
+    ];
+    for (const signals of profiles) {
+      const families = topicFamilies(selectCoachQuickQuestions(signals).ids, signals);
+      assert.equal(new Set(families).size, 3, families.join(','));
+    }
+  });
+
+  it('surfaces body fat as the specific question when it is eligible', () => {
+    const ids = [...selectCoachQuickQuestions(bodyCompositionConcernSignals()).ids];
+    assert.equal(ids[0], 'body_fat_compare');
+    assert.equal(ids.includes('health_overall'), true);
+    assert.equal(ids.includes('body_fat_compare'), true);
+  });
+
+  it('ranks poor self-reported sleep as the behavior question', () => {
+    assert.deepEqual([...selectCoachQuickQuestions(poorSleepSignals()).ids], [
       'health_score_main_driver',
+      'sleep_improve',
+      'health_overall',
     ]);
   });
 
   it('prefers stress_energy over generic recovery when both signals are relevant', () => {
     assert.deepEqual([...selectCoachQuickQuestions(highStressLowEnergySignals()).ids], [
+      'health_score_main_driver',
       'stress_energy',
-      'recovery_understand',
-      'health_score_main_driver',
+      'health_overall',
     ]);
   });
 
-  it('ranks low everyday activity high and fills the rest with grounded generics', () => {
+  it('ranks low everyday activity as the behavior question', () => {
     assert.deepEqual([...selectCoachQuickQuestions(lowEverydayActivitySignals()).ids], [
-      'movement_enough',
       'health_score_main_driver',
-      'understand_my_data',
+      'movement_enough',
+      'health_overall',
     ]);
   });
 
-  it('ranks little training high and fills the rest with grounded generics', () => {
+  it('ranks little training as the behavior question', () => {
     assert.deepEqual([...selectCoachQuickQuestions(littleTrainingSignals()).ids], [
-      'training_enough',
       'health_score_main_driver',
-      'understand_my_data',
+      'training_enough',
+      'health_overall',
     ]);
   });
 
   it('ranks elevated alcohol with the neutral alcohol-health question', () => {
     assert.deepEqual([...selectCoachQuickQuestions(elevatedAlcoholSignals()).ids], [
-      'alcohol_health',
       'health_score_main_driver',
-      'understand_my_data',
+      'alcohol_health',
+      'health_overall',
     ]);
   });
 
-  it('keeps healthy/maintain users on broad Health Score, development, and understanding', () => {
+  it('keeps healthy/maintain users on a data, behavior, and prioritization mix', () => {
     assert.deepEqual([...selectCoachQuickQuestions(healthyMaintainSignals()).ids], [
       'health_score_main_driver',
-      'development_recent',
-      'understand_my_data',
+      'body_fat_reduce',
+      'health_overall',
     ]);
   });
 
@@ -203,14 +238,13 @@ describe('Coach quick-question selection', () => {
       focusType: 'maintain_current_path',
     };
     const ids = [...selectCoachQuickQuestions(healthyWci).ids];
-    assert.equal(ids.includes('sleep_improve'), false);
     assert.equal(ids.includes('movement_enough'), false);
     assert.equal(ids.includes('training_enough'), false);
     assert.equal(ids.includes('alcohol_health'), false);
     assert.deepEqual(ids, [
       'health_score_main_driver',
+      'sleep_improve',
       'health_overall',
-      'understand_my_data',
     ]);
 
     assert.equal(
@@ -228,10 +262,11 @@ describe('Coach quick-question selection', () => {
   });
 
   it('does not use an unsupported specific topic just to reach three chips', () => {
-    const ids = [...selectCoachQuickQuestions(sparseNewUserSignals()).ids];
+    const ids = [...selectCoachQuickQuestions(noSleepEvidenceSignals()).ids];
     assert.equal(ids.includes('sleep_improve'), false);
     assert.equal(ids.includes('movement_enough'), false);
     assert.equal(ids.includes('training_enough'), false);
+    assert.equal(ids.includes('body_fat_compare'), false);
     assert.equal(ids.length, 3);
   });
 
@@ -267,6 +302,13 @@ describe('Coach quick-question selection', () => {
       ...sparseNewUserSignals(),
       hasHealthContext: false,
     }).ids, []);
+    assert.equal(
+      selectCoachQuickQuestions({
+        ...sparseNewUserSignals(),
+        hasHealthContext: false,
+      }).recordShown,
+      false,
+    );
   });
 
   it('does not surface unsupported sleep, and returns fewer than 3 when evidence is thin', () => {
@@ -282,5 +324,101 @@ describe('Coach quick-question selection', () => {
   it('returns exactly 3 when sufficient evidence exists', () => {
     assert.equal(selectCoachQuickQuestions(healthyMaintainSignals()).ids.length, 3);
     assert.equal(selectCoachQuickQuestions(poorSleepSignals()).ids.length, 3);
+  });
+
+  it('does not select body-fat questions without body-fat eligibility', () => {
+    const ids = [...selectCoachQuickQuestions(sparseNewUserSignals()).ids];
+    assert.equal(ids.includes('body_fat_compare'), false);
+    assert.equal(ids.includes('body_fat_reduce'), false);
+  });
+
+  it('does not select a sleep-specific question without sleep context', () => {
+    const ids = [...selectCoachQuickQuestions(noSleepEvidenceSignals()).ids];
+    assert.equal(ids.includes('sleep_improve'), false);
+    assert.deepEqual(ids, [
+      'health_score_main_driver',
+      'health_overall',
+      'understand_my_data',
+    ]);
+  });
+});
+
+function daysAgo(days: number, now = new Date('2026-09-25T10:00:00.000Z')): Date {
+  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+function rotationAfterShowing(
+  ids: readonly CoachQuickQuestionId[],
+  shownAt: Date,
+): CoachQuickQuestionRotationState {
+  return recordCoachQuickQuestionTrioShown(null, ids, shownAt);
+}
+
+describe('Coach quick-question rotation', () => {
+  const now = new Date('2026-09-25T10:00:00.000Z');
+
+  it('avoids recently shown questions during the 7-day cooldown when alternatives exist', () => {
+    const signals = healthyMaintainSignals();
+    const first = selectCoachQuickQuestions(signals, { now: daysAgo(1, now) });
+    const second = selectCoachQuickQuestions(signals, {
+      now,
+      rotation: rotationAfterShowing(first.ids, daysAgo(1, now)),
+    });
+    assert.deepEqual([...second.ids], [...first.ids]);
+    assert.equal(second.recordShown, false);
+
+    const afterSticky = selectCoachQuickQuestions(signals, {
+      now,
+      rotation: rotationAfterShowing(first.ids, daysAgo(7, now)),
+    });
+    assert.equal(afterSticky.ids.length, 3);
+    assert.equal(afterSticky.ids.some((id) => first.ids.includes(id)), false);
+    assert.equal(afterSticky.recordShown, true);
+  });
+
+  it('relaxes cooldown when necessary to still return 3 eligible questions', () => {
+    const signals = noSleepEvidenceSignals();
+    const first = selectCoachQuickQuestions(signals, { now: daysAgo(1, now) });
+    assert.deepEqual([...first.ids], [
+      'health_score_main_driver',
+      'health_overall',
+      'understand_my_data',
+    ]);
+    const second = selectCoachQuickQuestions(signals, {
+      now,
+      rotation: rotationAfterShowing(first.ids, daysAgo(1, now)),
+    });
+    assert.deepEqual([...second.ids], [...first.ids]);
+  });
+
+  it('is stable and deterministic for the same signals and rotation state', () => {
+    const signals = poorSleepSignals();
+    const rotation = rotationAfterShowing(
+      ['health_score_main_driver', 'sleep_improve', 'health_overall'],
+      daysAgo(2, now),
+    );
+    assert.deepEqual(
+      [...selectCoachQuickQuestions(signals, { now, rotation }).ids],
+      [...selectCoachQuickQuestions(signals, { now, rotation }).ids],
+    );
+  });
+
+  it('makes previously shown questions eligible again after cooldown expires', () => {
+    const signals = healthyMaintainSignals();
+    const first = selectCoachQuickQuestions(signals, { now: daysAgo(14, now) });
+    const rotated = selectCoachQuickQuestions(signals, {
+      now: daysAgo(7, now),
+      rotation: rotationAfterShowing(first.ids, daysAgo(14, now)),
+    });
+    assert.notDeepEqual([...rotated.ids], [...first.ids]);
+    const returned = selectCoachQuickQuestions(signals, {
+      now,
+      rotation: recordCoachQuickQuestionTrioShown(
+        rotationAfterShowing(first.ids, daysAgo(14, now)),
+        rotated.ids,
+        daysAgo(7, now),
+      ),
+    });
+    assert.deepEqual([...returned.ids], [...first.ids]);
   });
 });

@@ -16,6 +16,8 @@ import type { WeeklyCheckInCurrentWeek } from '../weekly-check-in';
 
 import { mapInitialLifestyleForCoachAsk } from './coach-ask-initial-lifestyle.mapper';
 import { mapWeeklyCheckInForCoachAsk } from './coach-ask-weekly-check-in.mapper';
+import { mapHealthScoreActivityComponentToLevel } from '../../../shared/coach-language';
+
 import {
   buildCoachAskRequestFromSummaries,
   composeCoachAskRequest,
@@ -59,6 +61,15 @@ const comparableDevelopment: Extract<DevelopmentHomeSummary, { status: 'ready' }
   },
 };
 
+describe('mapHealthScoreActivityComponentToLevel', () => {
+  it('maps frozen activity_score bands only', () => {
+    assert.equal(mapHealthScoreActivityComponentToLevel(50), 'light');
+    assert.equal(mapHealthScoreActivityComponentToLevel(68), 'moderate');
+    assert.equal(mapHealthScoreActivityComponentToLevel(58), null);
+    assert.equal(mapHealthScoreActivityComponentToLevel(null), null);
+  });
+});
+
 describe('toCoachAskChangeDirection', () => {
   afterEach(() => {
     setActiveLocale('sv');
@@ -76,7 +87,7 @@ describe('buildCoachAskRequestFromSummaries', () => {
     setActiveLocale('sv');
   });
 
-  it('composes v1.6 context from Development + Coach Home without forbidden fields', () => {
+  it('composes v1.7 context from Development + Coach Home without forbidden fields', () => {
     const result = buildCoachAskRequestFromSummaries({
       coachHome: readyCoachHome,
       development: comparableDevelopment,
@@ -90,10 +101,15 @@ describe('buildCoachAskRequestFromSummaries', () => {
     }
 
     const { request } = result;
-    assert.equal(request.version, 'coach-ask-v1.6');
+    assert.equal(request.version, 'coach-ask-v1.7');
     assert.equal(request.locale, 'sv-SE');
     assert.equal(request.context.focus.type, 'reduce_waist');
     assert.equal(request.context.plan.recommendationId, 'waist_walk_after_dinner_v1');
+    assert.equal(request.context.plan.title, 'Promenad efter maten');
+    assert.equal(request.context.plan.durationMinutes, null);
+    assert.equal(request.context.plan.frequencyPerWeek, null);
+    assert.equal(request.context.plan.description.includes('30 minuter'), false);
+    assert.equal(request.context.plan.description.includes('fyra dagar'), false);
     assert.equal(request.context.weeklyCheckIn, null);
     assert.equal(request.context.initialLifestyle, null);
     assert.equal(request.context.ageBand, null);
@@ -104,6 +120,7 @@ describe('buildCoachAskRequestFromSummaries', () => {
     assert.equal(request.context.healthState.scoreBandLabel, 'Bra hälsonivå');
     assert.deepEqual(request.context.healthState.scoreChange, {
       status: 'ready',
+      kind: 'health_score_overall',
       change: 6,
       direction: 'up',
     });
@@ -121,9 +138,12 @@ describe('buildCoachAskRequestFromSummaries', () => {
     });
     assert.deepEqual(request.context.healthState.healthScoreActivity, {
       status: 'ready',
+      kind: 'health_score_activity_component',
       current: 58,
       change: 8,
       direction: 'up',
+      currentActivityLevel: null,
+      previousActivityLevel: 'light',
     });
     assert.deepEqual(request.context.healthState.bodyComposition, {
       status: 'unavailable',
@@ -180,7 +200,7 @@ describe('buildCoachAskRequestFromSummaries', () => {
     });
     assert.equal(swedish.status, 'ready');
     if (swedish.status === 'ready') {
-      assert.equal(swedish.request.version, 'coach-ask-v1.6');
+      assert.equal(swedish.request.version, 'coach-ask-v1.7');
       assert.equal(swedish.request.locale, 'sv-SE');
       assert.equal(swedish.request.context.healthState?.scoreBandLabel, 'Bra hälsonivå');
     }
@@ -194,7 +214,7 @@ describe('buildCoachAskRequestFromSummaries', () => {
     });
     assert.equal(norwegian.status, 'ready');
     if (norwegian.status === 'ready') {
-      assert.equal(norwegian.request.version, 'coach-ask-v1.6');
+      assert.equal(norwegian.request.version, 'coach-ask-v1.7');
       assert.equal(norwegian.request.locale, 'nb-NO');
       assert.equal(norwegian.request.context.focus.type, 'reduce_waist');
       assert.equal(
@@ -314,7 +334,18 @@ describe('buildCoachAskRequestFromSummaries', () => {
 
     assert.deepEqual(result.request.context.healthState?.scoreChange, {
       status: 'insufficient_history',
+      kind: 'health_score_overall',
     });
+    assert.deepEqual(result.request.context.healthState?.healthScoreActivity, {
+      status: 'insufficient_history',
+      kind: 'health_score_activity_component',
+      current: 58,
+      currentActivityLevel: null,
+    });
+    assert.equal(
+      'change' in (result.request.context.healthState?.healthScoreActivity ?? {}),
+      false,
+    );
     assert.deepEqual(result.request.context.healthState?.weight, {
       status: 'insufficient_history',
       currentKg: 80,
@@ -324,6 +355,124 @@ describe('buildCoachAskRequestFromSummaries', () => {
       historyStatus: 'insufficient_history',
     });
     assert.equal(result.request.context.availability.measurementHistoryComparable, false);
+  });
+
+  it('labels 50 → 68 / +18 as a Health Score activity component, not +18 activity', () => {
+    const development: Extract<DevelopmentHomeSummary, { status: 'ready' }> = {
+      ...comparableDevelopment,
+      activity: { status: 'ready', current: 68, previous: 50, change: 18 },
+    };
+
+    const result = buildCoachAskRequestFromSummaries({
+      coachHome: readyCoachHome,
+      development,
+      question: 'Har min aktivitet ökat?',
+      generatedAt: '2026-08-12T12:00:00.000Z',
+    });
+
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') {
+      return;
+    }
+
+    assert.deepEqual(result.request.context.healthState?.healthScoreActivity, {
+      status: 'ready',
+      kind: 'health_score_activity_component',
+      current: 68,
+      change: 18,
+      direction: 'up',
+      currentActivityLevel: 'moderate',
+      previousActivityLevel: 'light',
+    });
+    assert.deepEqual(result.request.context.healthState?.weight, {
+      status: 'ready',
+      currentKg: 80,
+      changeKg: -2,
+      direction: 'down',
+    });
+    assert.deepEqual(result.request.context.healthState?.waist, {
+      status: 'ready',
+      currentCm: 90,
+      changeCm: -2,
+      direction: 'down',
+    });
+    const serialized = JSON.stringify(result.request.context.healthState?.healthScoreActivity);
+    assert.equal(serialized.includes('"steps"'), false);
+    assert.equal(serialized.includes('kind":"health_score_activity_component"'), true);
+  });
+
+  it('does not expose a numeric personalized dose for a GENERAL recommendation', () => {
+    const result = buildCoachAskRequestFromSummaries({
+      coachHome: readyCoachHome,
+      development: comparableDevelopment,
+      question: 'Vad ska jag göra den här veckan?',
+    });
+
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') {
+      return;
+    }
+
+    assert.equal(readyCoachHome.plan.durationMinutes, 30);
+    assert.equal(readyCoachHome.plan.frequencyPerWeek, 4);
+    assert.equal(result.request.context.plan.durationMinutes, null);
+    assert.equal(result.request.context.plan.frequencyPerWeek, null);
+    assert.equal(result.request.context.plan.description.includes('30'), false);
+    assert.doesNotMatch(JSON.stringify(result.request.context.plan), /"durationMinutes":30/);
+  });
+
+  it('exposes engine dose only when SPECIFIC presentation is unlocked', () => {
+    const result = buildCoachAskRequestFromSummaries({
+      coachHome: readyCoachHome,
+      development: comparableDevelopment,
+      question: 'Vad ska jag göra den här veckan?',
+      presentationSignals: { activityVolumeMeasured: true },
+    });
+
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') {
+      return;
+    }
+
+    assert.equal(result.request.context.plan.durationMinutes, 30);
+    assert.equal(result.request.context.plan.frequencyPerWeek, 4);
+    assert.match(result.request.context.plan.description, /30 minuter/);
+  });
+
+  it('does not unlock Ask dose from BMI or self-reported activity, or from always-GENERAL families', () => {
+    const falseSignal = buildCoachAskRequestFromSummaries({
+      coachHome: readyCoachHome,
+      development: comparableDevelopment,
+      question: 'Vad ska jag göra?',
+      presentationSignals: { activityVolumeMeasured: false },
+    });
+    assert.equal(falseSignal.status, 'ready');
+    if (falseSignal.status === 'ready') {
+      assert.equal(falseSignal.request.context.plan.durationMinutes, null);
+      assert.equal(falseSignal.request.context.plan.frequencyPerWeek, null);
+    }
+
+    const alwaysGeneral: Extract<CoachHomeSummary, { status: 'ready' }> = {
+      ...readyCoachHome,
+      plan: {
+        ...readyCoachHome.plan,
+        recommendationId: 'weight_balance_gentle_nutrition_v1',
+        durationMinutes: 20,
+        frequencyPerWeek: 3,
+      },
+    };
+    const result = buildCoachAskRequestFromSummaries({
+      coachHome: alwaysGeneral,
+      development: comparableDevelopment,
+      question: 'Vad ska jag äta?',
+      presentationSignals: { activityVolumeMeasured: true },
+    });
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') {
+      return;
+    }
+    assert.equal(result.request.context.plan.durationMinutes, null);
+    assert.equal(result.request.context.plan.frequencyPerWeek, null);
   });
 
   it('omits healthState when development is empty but plan exists', () => {
@@ -415,6 +564,19 @@ function composeDeps(
   };
 }
 
+describe('composeCoachAskRequest current GENERAL path', () => {
+  it('does not send engine minutes or frequency without presentation signals', async () => {
+    const result = await composeCoachAskRequest('user-1', 'Vad ska jag göra?', composeDeps());
+    assert.equal(result.ok, true);
+    if (!result.ok || result.value.status !== 'ready') {
+      return;
+    }
+    assert.equal(result.value.request.version, 'coach-ask-v1.7');
+    assert.equal(result.value.request.context.plan.durationMinutes, null);
+    assert.equal(result.value.request.context.plan.frequencyPerWeek, null);
+  });
+});
+
 describe('composeCoachAskRequest v1.3 weekly check-in', () => {
   it('maps a ready current-week check-in including stress polarity', async () => {
     const result = await composeCoachAskRequest(
@@ -436,7 +598,7 @@ describe('composeCoachAskRequest v1.3 weekly check-in', () => {
       return;
     }
 
-    assert.equal(result.value.request.version, 'coach-ask-v1.6');
+    assert.equal(result.value.request.version, 'coach-ask-v1.7');
     assert.equal(result.value.request.locale, 'nb-NO');
     assert.equal(result.value.request.context.initialLifestyle, null);
     assert.deepEqual(result.value.request.context.weeklyCheckIn, {
@@ -552,7 +714,7 @@ describe('composeCoachAskRequest v1.3 initial lifestyle', () => {
       return;
     }
 
-    assert.equal(result.value.request.version, 'coach-ask-v1.6');
+    assert.equal(result.value.request.version, 'coach-ask-v1.7');
     assert.equal(result.value.request.context.weeklyCheckIn, null);
     assert.deepEqual(
       result.value.request.context.initialLifestyle,
@@ -790,7 +952,7 @@ describe('composeCoachAskRequest v1.5 body fat reference', () => {
     }
 
     const { request } = result.value;
-    assert.equal(request.version, 'coach-ask-v1.6');
+    assert.equal(request.version, 'coach-ask-v1.7');
     assert.equal(request.question, 'Vad är min fettprocent?');
     assert.deepEqual(request.context.healthState?.bodyComposition, {
       status: 'ready',
@@ -976,6 +1138,7 @@ describe('Coach Context engine isolation', () => {
     assert.equal(source.includes('health-score-engine'), false);
     assert.equal(source.includes('focus-engine'), false);
     assert.equal(source.includes('coach-engine'), false);
+    assert.equal(composerSource.includes('resolveCoachRecommendationPresentationTier'), true);
     assert.equal(composerSource.includes('snapshot.service'), false);
     assert.equal(source.includes('createSnapshot'), false);
     assert.equal(source.includes('BODY_FAT_REFERENCE_MIDPOINTS'), false);

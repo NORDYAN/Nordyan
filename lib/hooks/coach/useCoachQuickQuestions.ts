@@ -6,8 +6,16 @@ import type { WeeklyFocusArea } from '@/lib/domain/weekly-focus';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useCurrentProfile } from '@/lib/hooks/profile';
 import type { CoachHomeQuickQuestionSlot } from '@/lib/presentation/coach-home/coach-home.types';
-import { buildCoachQuickQuestionSlots } from '@/lib/presentation/coach-quick-questions/coach-quick-questions.presentation';
+import {
+  recordCoachQuickQuestionTrioShown,
+  selectCoachQuickQuestions,
+} from '@/lib/domain/coach-quick-questions';
+import { localizeCoachQuickQuestion } from '@/lib/presentation/coach-quick-questions/coach-quick-questions.presentation';
 import { loadCoachQuickQuestionSignals } from '@/lib/presentation/coach-quick-questions/coach-quick-questions.load';
+import {
+  readCoachQuickQuestionRotation,
+  writeCoachQuickQuestionRotation,
+} from '@/lib/presentation/coach-quick-questions/coach-quick-question-rotation.storage';
 import { supabaseProfileRepository } from '@/lib/repositories/supabase-profile.repository';
 import { developmentService } from '@/lib/services/development';
 import { initialLifestyleService } from '@/lib/services/initial-lifestyle';
@@ -83,7 +91,27 @@ export function useCoachQuickQuestions(
     if (requestId !== requestIdRef.current) {
       return;
     }
-    setSlots(buildCoachQuickQuestionSlots(signals, locale));
+
+    const now = new Date();
+    const rotation = await readCoachQuickQuestionRotation(userId);
+    if (requestId !== requestIdRef.current) {
+      return;
+    }
+
+    const selected = selectCoachQuickQuestions(signals, { now, rotation });
+    setSlots(
+      selected.ids.map((id) => ({
+        id,
+        kind: 'contextual',
+        question: localizeCoachQuickQuestion(id, locale),
+      })),
+    );
+    if (selected.recordShown && selected.ids.length > 0) {
+      await writeCoachQuickQuestionRotation(
+        userId,
+        recordCoachQuickQuestionTrioShown(rotation, selected.ids, now),
+      );
+    }
   }, [
     focusType,
     input.hasHealthContext,

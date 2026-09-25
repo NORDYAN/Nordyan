@@ -8,8 +8,9 @@ export const COACH_ASK_PAYLOAD_VERSION_V13 = 'coach-ask-v1.3' as const;
 export const COACH_ASK_PAYLOAD_VERSION_V14 = 'coach-ask-v1.4' as const;
 export const COACH_ASK_PAYLOAD_VERSION_V15 = 'coach-ask-v1.5' as const;
 export const COACH_ASK_PAYLOAD_VERSION_V16 = 'coach-ask-v1.6' as const;
-/** Current client composer version. Server accepts v1.1–v1.6. v1.5 remains frozen. */
-export const COACH_ASK_PAYLOAD_VERSION = COACH_ASK_PAYLOAD_VERSION_V16;
+export const COACH_ASK_PAYLOAD_VERSION_V17 = 'coach-ask-v1.7' as const;
+/** Current client composer version. Server accepts v1.1–v1.7. v1.6 remains frozen. */
+export const COACH_ASK_PAYLOAD_VERSION = COACH_ASK_PAYLOAD_VERSION_V17;
 
 export const NORDYAN_COACH_ASK_PROMPT_VERSION_V11 = 'nordyan-coach-ask-v1.1' as const;
 export const NORDYAN_COACH_ASK_PROMPT_VERSION_V12 = 'nordyan-coach-ask-v1.2' as const;
@@ -17,8 +18,9 @@ export const NORDYAN_COACH_ASK_PROMPT_VERSION_V13 = 'nordyan-coach-ask-v1.3' as 
 export const NORDYAN_COACH_ASK_PROMPT_VERSION_V14 = 'nordyan-coach-ask-v1.4' as const;
 export const NORDYAN_COACH_ASK_PROMPT_VERSION_V15 = 'nordyan-coach-ask-v1.5' as const;
 export const NORDYAN_COACH_ASK_PROMPT_VERSION_V16 = 'nordyan-coach-ask-v1.6' as const;
+export const NORDYAN_COACH_ASK_PROMPT_VERSION_V17 = 'nordyan-coach-ask-v1.7' as const;
 /** Current client prompt. Server selects prompt by payload version. */
-export const NORDYAN_COACH_ASK_PROMPT_VERSION = NORDYAN_COACH_ASK_PROMPT_VERSION_V16;
+export const NORDYAN_COACH_ASK_PROMPT_VERSION = NORDYAN_COACH_ASK_PROMPT_VERSION_V17;
 
 export const COACH_ASK_PRESENTATION_LOCALES = ['sv-SE', 'nb-NO'] as const;
 export type CoachAskPresentationLocale = (typeof COACH_ASK_PRESENTATION_LOCALES)[number];
@@ -29,7 +31,8 @@ export type CoachAskPayloadVersion =
   | typeof COACH_ASK_PAYLOAD_VERSION_V13
   | typeof COACH_ASK_PAYLOAD_VERSION_V14
   | typeof COACH_ASK_PAYLOAD_VERSION_V15
-  | typeof COACH_ASK_PAYLOAD_VERSION_V16;
+  | typeof COACH_ASK_PAYLOAD_VERSION_V16
+  | typeof COACH_ASK_PAYLOAD_VERSION_V17;
 
 export const COACH_ASK_QUESTION_MAX_LENGTH = 280;
 export const COACH_ASK_TITLE_MAX_LENGTH = 80;
@@ -89,6 +92,7 @@ export type CoachAskHistoryStatus = (typeof COACH_ASK_HISTORY_STATUSES)[number];
 /**
  * NORDYAN Health Score activity driver (`activity_score`).
  * NOT steps, Apple Health, Health Connect, or wearable device activity.
+ * v1.1–v1.6 shape. v1.7 uses CoachAskHealthScoreActivityV17.
  */
 export type CoachAskHealthScoreActivity =
   | {
@@ -102,6 +106,69 @@ export type CoachAskHealthScoreActivity =
       current: number | null;
     };
 
+export const COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND =
+  'health_score_activity_component' as const;
+export const COACH_ASK_HEALTH_SCORE_OVERALL_KIND = 'health_score_overall' as const;
+
+/** Frozen Health Score activity_score bands. Do not invent other levels. */
+export const COACH_ASK_ACTIVITY_COMPONENT_SCORES = {
+  sedentary: 35,
+  light: 50,
+  moderate: 68,
+  active: 82,
+  very_active: 92,
+} as const;
+
+export const COACH_ASK_ACTIVITY_LEVELS = [
+  'sedentary',
+  'light',
+  'moderate',
+  'active',
+  'very_active',
+] as const;
+export type CoachAskActivityLevel = (typeof COACH_ASK_ACTIVITY_LEVELS)[number];
+
+export function mapHealthScoreActivityComponentToLevel(
+  score: number | null | undefined,
+): CoachAskActivityLevel | null {
+  if (score == null || !Number.isFinite(score)) {
+    return null;
+  }
+  const rounded = Math.round(score);
+  for (const level of COACH_ASK_ACTIVITY_LEVELS) {
+    if (COACH_ASK_ACTIVITY_COMPONENT_SCORES[level] === rounded) {
+      return level;
+    }
+  }
+  return null;
+}
+
+export function isCoachAskActivityLevel(value: string): value is CoachAskActivityLevel {
+  return (COACH_ASK_ACTIVITY_LEVELS as readonly string[]).includes(value);
+}
+
+/**
+ * v1.7 activity component. `current` / `change` are Health Score points, never
+ * real-world activity units. Levels are present only when the score matches a
+ * frozen band exactly.
+ */
+export type CoachAskHealthScoreActivityV17 =
+  | {
+      status: 'ready';
+      kind: typeof COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND;
+      current: number;
+      change: number;
+      direction: CoachAskChangeDirection;
+      currentActivityLevel: CoachAskActivityLevel | null;
+      previousActivityLevel: CoachAskActivityLevel | null;
+    }
+  | {
+      status: 'insufficient_history';
+      kind: typeof COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND;
+      current: number | null;
+      currentActivityLevel: CoachAskActivityLevel | null;
+    };
+
 export type CoachAskScoreChange =
   | {
       status: 'ready';
@@ -110,6 +177,19 @@ export type CoachAskScoreChange =
     }
   | {
       status: 'insufficient_history';
+    };
+
+/** v1.7 overall Health Score delta. `change` is score points, not kg/cm/steps. */
+export type CoachAskScoreChangeV17 =
+  | {
+      status: 'ready';
+      kind: typeof COACH_ASK_HEALTH_SCORE_OVERALL_KIND;
+      change: number;
+      direction: CoachAskChangeDirection;
+    }
+  | {
+      status: 'insufficient_history';
+      kind: typeof COACH_ASK_HEALTH_SCORE_OVERALL_KIND;
     };
 
 export type CoachAskWeightState =
@@ -167,6 +247,14 @@ export type CoachAskBodyComposition =
 
 export type CoachAskHealthStateV14 = CoachAskHealthState & {
   bodyComposition: CoachAskBodyComposition;
+};
+
+export type CoachAskHealthStateV17 = Omit<
+  CoachAskHealthStateV14,
+  'scoreChange' | 'healthScoreActivity'
+> & {
+  scoreChange: CoachAskScoreChangeV17;
+  healthScoreActivity: CoachAskHealthScoreActivityV17;
 };
 
 export const COACH_ASK_BODY_FAT_REFERENCE_SOURCE =
@@ -351,13 +439,25 @@ export type CoachAskRequestV16 = {
   question: string;
 };
 
+/** v1.7 labels Health Score component deltas. Weight/waist stay measurement units. */
+export type CoachAskRequestV17 = {
+  version: typeof COACH_ASK_PAYLOAD_VERSION_V17;
+  locale: CoachAskPresentationLocale;
+  generatedAt: string;
+  context: Omit<CoachAskRequestV16['context'], 'healthState'> & {
+    healthState?: CoachAskHealthStateV17;
+  };
+  question: string;
+};
+
 export type CoachAskRequest =
   | CoachAskRequestV11
   | CoachAskRequestV12
   | CoachAskRequestV13
   | CoachAskRequestV14
   | CoachAskRequestV15
-  | CoachAskRequestV16;
+  | CoachAskRequestV16
+  | CoachAskRequestV17;
 
 export type CoachAskResponseSource = 'ai' | 'unavailable';
 
@@ -450,7 +550,8 @@ export function isCoachAskPayloadVersion(value: unknown): value is CoachAskPaylo
     value === COACH_ASK_PAYLOAD_VERSION_V13 ||
     value === COACH_ASK_PAYLOAD_VERSION_V14 ||
     value === COACH_ASK_PAYLOAD_VERSION_V15 ||
-    value === COACH_ASK_PAYLOAD_VERSION_V16
+    value === COACH_ASK_PAYLOAD_VERSION_V16 ||
+    value === COACH_ASK_PAYLOAD_VERSION_V17
   );
 }
 
@@ -484,6 +585,10 @@ export function isCoachAskRequestV15(request: CoachAskRequest): request is Coach
 
 export function isCoachAskRequestV16(request: CoachAskRequest): request is CoachAskRequestV16 {
   return request.version === COACH_ASK_PAYLOAD_VERSION_V16;
+}
+
+export function isCoachAskRequestV17(request: CoachAskRequest): request is CoachAskRequestV17 {
+  return request.version === COACH_ASK_PAYLOAD_VERSION_V17;
 }
 
 export function isCoachAskAgeBand(value: string): value is CoachAskAgeBand {
@@ -532,7 +637,11 @@ export function getCoachAskPromptVersion(
   | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V13
   | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V14
   | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V15
-  | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V16 {
+  | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V16
+  | typeof NORDYAN_COACH_ASK_PROMPT_VERSION_V17 {
+  if (version === COACH_ASK_PAYLOAD_VERSION_V17) {
+    return NORDYAN_COACH_ASK_PROMPT_VERSION_V17;
+  }
   if (version === COACH_ASK_PAYLOAD_VERSION_V16) {
     return NORDYAN_COACH_ASK_PROMPT_VERSION_V16;
   }

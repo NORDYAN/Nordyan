@@ -4,6 +4,7 @@ import {
   onboardingCompleteKeyForUser,
 } from '@/lib/onboarding/onboarding-complete-keys';
 import { coachHomeBodyFatDiscoveryKey } from '@/lib/presentation/coach-home/coach-home-body-fat-discovery.store';
+import { coachQuickQuestionRotationKey } from '@/lib/presentation/coach-quick-questions/coach-quick-question-rotation.store';
 import { PENDING_NOTIFICATION_CHOICE_KEY } from '@/lib/onboarding/pending-notification-choice';
 import { notificationPreferencesStorageKey } from '@/lib/presentation/notifications/notification-preferences';
 
@@ -35,6 +36,7 @@ export async function clearAccountLocalData(
   await deps.removeItem(LEGACY_GLOBAL_ONBOARDING_COMPLETE_KEY);
   await deps.removeItem(languageStorageUserKey(trimmed));
   await deps.removeItem(coachHomeBodyFatDiscoveryKey(trimmed));
+  await deps.removeItem(coachQuickQuestionRotationKey(trimmed));
   await deps.removeItem(notificationPreferencesStorageKey(trimmed));
   await deps.removeItem(PENDING_NOTIFICATION_CHOICE_KEY);
 

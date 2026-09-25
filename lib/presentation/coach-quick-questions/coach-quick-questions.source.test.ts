@@ -17,6 +17,10 @@ describe('Coach Quick Questions v1 source contracts', () => {
     const hook = source('lib/hooks/coach/useCoachQuestion.ts');
     const client = source('lib/services/coach-ask/client.ts');
 
+    const hookQuick = source('lib/hooks/coach/useCoachQuickQuestions.ts');
+    assert.match(hookQuick, /readCoachQuickQuestionRotation/);
+    assert.match(hookQuick, /recordCoachQuickQuestionTrioShown/);
+    assert.doesNotMatch(hookQuick, /from\('user_/);
     assert.match(suggestions, /onSubmit\(trimmed\)/);
     assert.match(suggestions, /slot\.question/);
     assert.doesNotMatch(suggestions, /quickQuestionId|questionId/);

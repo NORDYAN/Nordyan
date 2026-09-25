@@ -1,4 +1,8 @@
 import type { FocusType } from '@/lib/domain/focus-engine';
+import {
+  resolveCoachRecommendationPresentationTier,
+  type CoachRecommendationPresentationSignals,
+} from '@/lib/presentation/coach-recommendation';
 
 import { APP_LOCALES, type AppLocale } from './locales';
 import { hasTranslationKey, t, type TranslationKey } from './translate';
@@ -56,8 +60,28 @@ export function getLocalizedCoachPresentation(
   durationMinutes: number,
   frequencyPerWeek: number,
   locale?: AppLocale,
+  signals?: CoachRecommendationPresentationSignals,
 ): { title: string; description: string } {
   const frequency = planFrequencyText(frequencyPerWeek, locale);
+  const tier = resolveCoachRecommendationPresentationTier(recommendationId, signals);
+
+  if (tier === 'general') {
+    const generalTitleKey = `plan.${recommendationId}.general.title`;
+    const generalBodyKey = `plan.${recommendationId}.general.body`;
+    if (hasTranslationKey(generalTitleKey) && hasTranslationKey(generalBodyKey)) {
+      return {
+        title: t(generalTitleKey, undefined, locale),
+        description: t(generalBodyKey, undefined, locale),
+      };
+    }
+    if (hasTranslationKey('plan.default.general.title') && hasTranslationKey('plan.default.general.body')) {
+      return {
+        title: t('plan.default.general.title', undefined, locale),
+        description: t('plan.default.general.body', undefined, locale),
+      };
+    }
+  }
+
   const titleKey = `plan.${recommendationId}.title`;
   const bodyKey = `plan.${recommendationId}.body`;
 

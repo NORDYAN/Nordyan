@@ -44,10 +44,10 @@ describe('buildCoachHomeSummary', () => {
     assert.equal(summary.focus.title, 'Minska midjemåttet');
     assert.equal(summary.plan.available, true);
     if (summary.plan.available) {
-      assert.equal(summary.plan.title, 'Promenad efter middagen');
+      assert.equal(summary.plan.title, 'Promenad efter maten');
       assert.equal(summary.plan.durationMinutes, 30);
       assert.equal(summary.plan.frequencyPerWeek, 4);
-      assert.match(summary.plan.description, /30 minuter/);
+      assert.equal(summary.plan.description.includes('30 minuter'), false);
     }
   });
 

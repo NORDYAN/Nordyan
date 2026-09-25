@@ -1264,3 +1264,198 @@ describe('validateCoachAskRequest v1.6', () => {
   });
 });
 
+const validV17ActivityReady = {
+  status: 'ready' as const,
+  kind: 'health_score_activity_component' as const,
+  current: 68,
+  change: 18,
+  direction: 'up' as const,
+  currentActivityLevel: 'moderate' as const,
+  previousActivityLevel: 'light' as const,
+};
+
+const validV17Body = {
+  ...validV16Body,
+  version: 'coach-ask-v1.7',
+  context: {
+    ...validV16Body.context,
+    healthState: {
+      ...validV16Body.context.healthState,
+      scoreChange: {
+        status: 'ready' as const,
+        kind: 'health_score_overall' as const,
+        change: 6,
+        direction: 'up' as const,
+      },
+      healthScoreActivity: validV17ActivityReady,
+    },
+  },
+};
+
+describe('validateCoachAskRequest v1.7', () => {
+  it('accepts labelled Health Score activity component 50 → 68 / +18', () => {
+    const request = validateCoachAskRequest(validV17Body);
+    assert.equal(request.version, 'coach-ask-v1.7');
+    if (request.version !== 'coach-ask-v1.7') {
+      return;
+    }
+    const activity = request.context.healthState?.healthScoreActivity;
+    assert.deepEqual(activity, validV17ActivityReady);
+    assert.equal(activity && 'kind' in activity && activity.kind, 'health_score_activity_component');
+    assert.equal(JSON.stringify(activity).includes('"steps"'), false);
+    assert.deepEqual(request.context.healthState?.scoreChange, {
+      status: 'ready',
+      kind: 'health_score_overall',
+      change: 6,
+      direction: 'up',
+    });
+    assert.deepEqual(request.context.healthState?.weight, {
+      status: 'ready',
+      currentKg: 80,
+      changeKg: -2,
+      direction: 'down',
+    });
+    assert.deepEqual(request.context.healthState?.waist, {
+      status: 'ready',
+      currentCm: 90,
+      changeCm: -2,
+      direction: 'down',
+    });
+  });
+
+  it('rejects unlabelled activity change as if it were +18 activity', () => {
+    assert.throws(
+      () =>
+        validateCoachAskRequest({
+          ...validV17Body,
+          context: {
+            ...validV17Body.context,
+            healthState: {
+              ...validV17Body.context.healthState,
+              healthScoreActivity: {
+                status: 'ready',
+                current: 68,
+                change: 18,
+                direction: 'up',
+              },
+            },
+          },
+        }),
+      CoachRequestValidationError,
+    );
+  });
+
+  it('preserves insufficient_history without a component trend', () => {
+    const request = validateCoachAskRequest({
+      ...validV17Body,
+      context: {
+        ...validV17Body.context,
+        healthState: {
+          ...validV17Body.context.healthState,
+          scoreChange: { status: 'insufficient_history', kind: 'health_score_overall' },
+          healthScoreActivity: {
+            status: 'insufficient_history',
+            kind: 'health_score_activity_component',
+            current: 50,
+            currentActivityLevel: 'light',
+          },
+          weight: { status: 'insufficient_history', currentKg: 80 },
+          waist: { status: 'insufficient_history', currentCm: 90 },
+        },
+        development: {
+          trend: 'insufficient_history',
+          historyStatus: 'insufficient_history',
+        },
+        availability: {
+          ...validV17Body.context.availability,
+          measurementHistoryComparable: false,
+        },
+      },
+    });
+    assert.equal(request.version, 'coach-ask-v1.7');
+    if (request.version !== 'coach-ask-v1.7') {
+      return;
+    }
+    assert.deepEqual(request.context.healthState?.scoreChange, {
+      status: 'insufficient_history',
+      kind: 'health_score_overall',
+    });
+    assert.deepEqual(request.context.healthState?.healthScoreActivity, {
+      status: 'insufficient_history',
+      kind: 'health_score_activity_component',
+      current: 50,
+      currentActivityLevel: 'light',
+    });
+    assert.equal('change' in (request.context.healthState?.healthScoreActivity ?? {}), false);
+  });
+
+  it('accepts a non-band component score with null activity levels', () => {
+    const request = validateCoachAskRequest({
+      ...validV17Body,
+      context: {
+        ...validV17Body.context,
+        healthState: {
+          ...validV17Body.context.healthState,
+          healthScoreActivity: {
+            status: 'ready',
+            kind: 'health_score_activity_component',
+            current: 58,
+            change: 8,
+            direction: 'up',
+            currentActivityLevel: null,
+            previousActivityLevel: 'light',
+          },
+        },
+      },
+    });
+    assert.equal(request.version, 'coach-ask-v1.7');
+    if (request.version !== 'coach-ask-v1.7') {
+      return;
+    }
+    assert.deepEqual(request.context.healthState?.healthScoreActivity, {
+      status: 'ready',
+      kind: 'health_score_activity_component',
+      current: 58,
+      change: 8,
+      direction: 'up',
+      currentActivityLevel: null,
+      previousActivityLevel: 'light',
+    });
+  });
+
+  it('accepts a GENERAL v1.7 plan with null numeric dose', () => {
+    const request = validateCoachAskRequest({
+      ...validV17Body,
+      context: {
+        ...validV17Body.context,
+        plan: {
+          ...validV17Body.context.plan,
+          durationMinutes: null,
+          frequencyPerWeek: null,
+        },
+      },
+    });
+    assert.equal(request.version, 'coach-ask-v1.7');
+    if (request.version !== 'coach-ask-v1.7') {
+      return;
+    }
+    assert.equal(request.context.plan.durationMinutes, null);
+    assert.equal(request.context.plan.frequencyPerWeek, null);
+    assert.equal(request.context.plan.recommendationId, validV17Body.context.plan.recommendationId);
+  });
+
+  it('still accepts frozen v1.6 payloads with the old activity shape', () => {
+    const frozen = validateCoachAskRequest(validV16Body);
+    assert.equal(frozen.version, 'coach-ask-v1.6');
+    if (frozen.version !== 'coach-ask-v1.6') {
+      return;
+    }
+    assert.deepEqual(frozen.context.healthState?.healthScoreActivity, {
+      status: 'ready',
+      current: 58,
+      change: 8,
+      direction: 'up',
+    });
+  });
+});
+

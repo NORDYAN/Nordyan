@@ -4,11 +4,13 @@ import {
   COACH_ASK_PAYLOAD_VERSION_V14,
   COACH_ASK_PAYLOAD_VERSION_V15,
   COACH_ASK_PAYLOAD_VERSION_V16,
+  COACH_ASK_PAYLOAD_VERSION_V17,
   isCoachAskRequestV12,
   isCoachAskRequestV13,
   isCoachAskRequestV14,
   isCoachAskRequestV15,
   isCoachAskRequestV16,
+  isCoachAskRequestV17,
   type CoachAskRequest,
 } from '../../../shared/coach-language';
 import { NORDYAN_COACH_ASK_V11_SYSTEM_INSTRUCTIONS } from './instructions/nordyan-coach-ask-v1.1';
@@ -17,6 +19,7 @@ import { NORDYAN_COACH_ASK_V13_SYSTEM_INSTRUCTIONS } from './instructions/nordya
 import { NORDYAN_COACH_ASK_V14_SYSTEM_INSTRUCTIONS } from './instructions/nordyan-coach-ask-v1.4';
 import { NORDYAN_COACH_ASK_V15_SYSTEM_INSTRUCTIONS } from './instructions/nordyan-coach-ask-v1.5';
 import { buildNordyanCoachAskV16SystemInstructions } from './instructions/nordyan-coach-ask-v1.6';
+import { buildNordyanCoachAskV17SystemInstructions } from './instructions/nordyan-coach-ask-v1.7';
 import {
   assessCoachAskCompleteness,
   collectCoachAskOutputText,
@@ -72,14 +75,22 @@ const V15_NOTE = `${V13_NOTE} bodyComposition.bodyFatPercent is a calculated/est
 
 const V16_NOTE = `${V15_NOTE} locale is presentation/response language only (sv-SE or nb-NO). Do not translate JSON field names, enum values, polarities, or stored meanings.`;
 
+const V17_NOTE = `${V16_NOTE} healthScoreActivity.kind health_score_activity_component is the Health Score activity component in score points, never steps or real-world activity volume. scoreChange.kind health_score_overall is overall Health Score points. weight.changeKg and waist.changeCm remain measured kilograms and centimeters.`;
+
 function getCoachAskRetryInstruction(request: CoachAskRequest): string {
-  if (isCoachAskRequestV16(request) && request.locale === 'nb-NO') {
+  if (
+    (isCoachAskRequestV16(request) || isCoachAskRequestV17(request)) &&
+    request.locale === 'nb-NO'
+  ) {
     return COACH_ASK_RETRY_INSTRUCTION_NB;
   }
   return COACH_ASK_RETRY_INSTRUCTION;
 }
 
 export function getCoachAskSystemInstructions(request: CoachAskRequest): string {
+  if (isCoachAskRequestV17(request)) {
+    return buildNordyanCoachAskV17SystemInstructions(request.locale);
+  }
   if (isCoachAskRequestV16(request)) {
     return buildNordyanCoachAskV16SystemInstructions(request.locale);
   }
@@ -101,7 +112,9 @@ export function getCoachAskSystemInstructions(request: CoachAskRequest): string 
 function buildAskUserPrompt(request: CoachAskRequest, retry = false): string {
   const payload: Record<string, unknown> = {
     note:
-      request.version === COACH_ASK_PAYLOAD_VERSION_V16
+      request.version === COACH_ASK_PAYLOAD_VERSION_V17
+        ? V17_NOTE
+        : request.version === COACH_ASK_PAYLOAD_VERSION_V16
         ? V16_NOTE
         : request.version === COACH_ASK_PAYLOAD_VERSION_V15
           ? V15_NOTE
@@ -144,7 +157,10 @@ function buildAskUserPrompt(request: CoachAskRequest, retry = false): string {
     payload.bodyFatReference = request.context.bodyFatReference;
   }
 
-  if (request.version === COACH_ASK_PAYLOAD_VERSION_V16) {
+  if (
+    request.version === COACH_ASK_PAYLOAD_VERSION_V16 ||
+    request.version === COACH_ASK_PAYLOAD_VERSION_V17
+  ) {
     payload.locale = request.locale;
     payload.weeklyCheckIn = request.context.weeklyCheckIn;
     payload.initialLifestyle = request.context.initialLifestyle;

@@ -38,6 +38,18 @@ export const COACH_QUICK_QUESTION_TOPIC_FAMILIES = [
 export type CoachQuickQuestionTopicFamily =
   (typeof COACH_QUICK_QUESTION_TOPIC_FAMILIES)[number];
 
+export const COACH_QUICK_QUESTION_INTENT_ROLES = [
+  'specific_data',
+  'behavior',
+  'priority',
+] as const;
+
+export type CoachQuickQuestionIntentRole =
+  (typeof COACH_QUICK_QUESTION_INTENT_ROLES)[number];
+
+/** Default local discovery cooldown. Selector may relax it to keep 3 chips. */
+export const COACH_QUICK_QUESTION_DEFAULT_COOLDOWN_DAYS = 7;
+
 export const COACH_QUICK_QUESTION_BODY_COMP_SUBTOPICS = [
   'waist',
   'weight',
@@ -68,10 +80,14 @@ export type CoachQuickQuestionCopyKey =
 export type CoachQuickQuestionDefinition = {
   id: CoachQuickQuestionId;
   topicFamily: CoachQuickQuestionTopicFamily;
+  intentRole: CoachQuickQuestionIntentRole;
   bodyCompSubtopic?: CoachQuickQuestionBodyCompSubtopic;
   copyKey: CoachQuickQuestionCopyKey;
   /** Lower is higher priority when scores tie. */
   bankPriority: number;
+  cooldownDays: number;
+  /** Future bank metadata. Eligibility still lives in the selector. */
+  requiredSignals?: readonly string[];
 };
 
 export type CoachQuickQuestionScaleSignal = {
@@ -112,12 +128,27 @@ export type CoachQuickQuestionSignals = {
 export type CoachQuickQuestionScored = {
   id: CoachQuickQuestionId;
   topicFamily: CoachQuickQuestionTopicFamily;
+  intentRole: CoachQuickQuestionIntentRole;
   bodyCompSubtopic?: CoachQuickQuestionBodyCompSubtopic;
   score: number;
   bankPriority: number;
+  cooldownDays: number;
+};
+
+export type CoachQuickQuestionRotationState = {
+  activeIds: readonly CoachQuickQuestionId[];
+  activeShownAt: string | null;
+  lastShownAtById: Readonly<Partial<Record<CoachQuickQuestionId, string>>>;
+};
+
+export type CoachQuickQuestionSelectorOptions = {
+  now?: Date;
+  rotation?: CoachQuickQuestionRotationState | null;
 };
 
 export type CoachQuickQuestionSelectorResult = {
   ids: readonly CoachQuickQuestionId[];
   scored: readonly CoachQuickQuestionScored[];
+  /** True when this trio should be persisted as shown (not a sticky reuse). */
+  recordShown: boolean;
 };

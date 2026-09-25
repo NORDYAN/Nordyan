@@ -12,6 +12,10 @@ import {
   NORDYAN_COACH_ASK_V16_SYSTEM_INSTRUCTIONS,
 } from './instructions/nordyan-coach-ask-v1.6';
 import {
+  buildNordyanCoachAskV17SystemInstructions,
+  NORDYAN_COACH_ASK_V17_SYSTEM_INSTRUCTIONS,
+} from './instructions/nordyan-coach-ask-v1.7';
+import {
   buildAskUserPrompt,
   generateOpenAiCoachAskAnswer,
   getCoachAskSystemInstructions,
@@ -155,6 +159,41 @@ const v16NorwegianRequest: CoachAskRequest = {
   question: 'Hvordan ligger fettprosenten min an sammenlignet med andre på min alder?',
 };
 
+const v17ActivityComponentRequest: CoachAskRequest = {
+  ...v16SwedishRequest,
+  version: 'coach-ask-v1.7',
+  context: {
+    ...v16SwedishRequest.context,
+    healthState: {
+      overallScore: 74,
+      scoreBandLabel: 'Bra hälsonivå',
+      scoreChange: {
+        status: 'ready',
+        kind: 'health_score_overall',
+        change: 6,
+        direction: 'up',
+      },
+      weight: { status: 'ready', currentKg: 80, changeKg: -2, direction: 'down' },
+      waist: { status: 'ready', currentCm: 90, changeCm: -2, direction: 'down' },
+      healthScoreActivity: {
+        status: 'ready',
+        kind: 'health_score_activity_component',
+        current: 68,
+        change: 18,
+        direction: 'up',
+        currentActivityLevel: 'moderate',
+        previousActivityLevel: 'light',
+      },
+      bodyComposition: {
+        status: 'unavailable',
+        bodyFatPercent: null,
+        estimationKind: 'unavailable',
+      },
+    },
+  },
+  question: 'Har min aktivitet ökat?',
+};
+
 describe('buildAskUserPrompt', () => {
   it('omits weeklyCheckIn from v1.1 OpenAI JSON', () => {
     const parsed = JSON.parse(buildAskUserPrompt(v11Request)) as Record<string, unknown>;
@@ -241,6 +280,17 @@ describe('getCoachAskSystemInstructions', () => {
     assert.equal(
       getCoachAskSystemInstructions(v15BodyFatReferenceRequest),
       NORDYAN_COACH_ASK_V15_SYSTEM_INSTRUCTIONS,
+    );
+  });
+
+  it('uses v1.7 prompt for v1.7 payloads and keeps v1.6 frozen', () => {
+    assert.equal(
+      getCoachAskSystemInstructions(v17ActivityComponentRequest),
+      buildNordyanCoachAskV17SystemInstructions('sv-SE'),
+    );
+    assert.equal(
+      getCoachAskSystemInstructions(v16SwedishRequest),
+      buildNordyanCoachAskV16SystemInstructions('sv-SE'),
     );
   });
 });
@@ -408,6 +458,33 @@ describe('nordyan-coach-ask-v1.5 instructions', () => {
     assert.match(text, /Svara på svenska/);
     assert.doesNotMatch(text, /nb-NO/);
     assert.doesNotMatch(text, /bokmål/i);
+  });
+});
+
+describe('nordyan-coach-ask-v1.7 instructions', () => {
+  it('forbids translating a Health Score activity-component delta into real-world activity', () => {
+    const text = NORDYAN_COACH_ASK_V17_SYSTEM_INSTRUCTIONS;
+    assert.match(text, /HÄLSOSCORE-KOMPONENTER/);
+    assert.match(text, /health_score_activity_component/);
+    assert.match(text, /health_score_overall/);
+    assert.match(text, /Säg ALDRIG "din aktivitet har ökat med 18"/);
+    assert.match(text, /light 50 → moderate 68/);
+    assert.match(text, /weight\.changeKg och waist\.changeCm är faktiska jämförbara mätningar/);
+    assert.match(text, /insufficient_history: påstå inte förbättring/);
+    assert.match(text, /plan\.durationMinutes och plan\.frequencyPerWeek/);
+    assert.match(text, /Om de är null: hitta inte på minuter/);
+    assert.doesNotMatch(text, /healthScoreActivity-utveckling/);
+  });
+
+  it('builds locale-specific v1.7 instructions', () => {
+    assert.match(
+      buildNordyanCoachAskV17SystemInstructions('sv-SE'),
+      /Answer in natural Swedish/,
+    );
+    assert.match(
+      buildNordyanCoachAskV17SystemInstructions('nb-NO'),
+      /Answer in natural Norwegian Bokmål/,
+    );
   });
 });
 
@@ -627,6 +704,40 @@ describe('generateOpenAiCoachAskAnswer store:false', () => {
       buildNordyanCoachAskV16SystemInstructions('nb-NO'),
     );
     assert.equal(getCoachAskSystemInstructions(v15BodyFatReferenceRequest), NORDYAN_COACH_ASK_V15_SYSTEM_INSTRUCTIONS);
+  });
+
+  it('sends the v1.7 prompt and labelled activity-component JSON', async () => {
+    let captured: Record<string, unknown> | undefined;
+    await generateOpenAiCoachAskAnswer(
+      v17ActivityComponentRequest,
+      {
+        openaiApiKey: 'test-key',
+        openaiCoachModel: 'gpt-test',
+        openaiTimeoutMs: 1000,
+      },
+      {
+        responses: {
+          create: async (params) => {
+            captured = params;
+            return {
+              output_text:
+                'Din rapporterade aktivitetsnivå har ändrats från light till moderate, vilket har förbättrat aktivitetsdelen i ditt Health Score.',
+            };
+          },
+        },
+      },
+    );
+
+    assert.equal(captured?.store, false);
+    const input = captured?.input as Array<{ role: string; content: string }>;
+    assert.equal(input[0]?.content, buildNordyanCoachAskV17SystemInstructions('sv-SE'));
+    assert.match(input[0]?.content ?? '', /Säg ALDRIG "din aktivitet har ökat med 18"/);
+    assert.match(input[1]?.content ?? '', /health_score_activity_component/);
+    assert.match(input[1]?.content ?? '', /"change": 18/);
+    assert.match(input[1]?.content ?? '', /"currentActivityLevel": "moderate"/);
+    assert.match(input[1]?.content ?? '', /"changeKg": -2/);
+    assert.match(input[1]?.content ?? '', /"changeCm": -2/);
+    assert.match(input[1]?.content ?? '', /health_score_activity_component is the Health Score activity component/);
   });
 
   it('sets a bounded max_output_tokens budget and keeps store false', async () => {

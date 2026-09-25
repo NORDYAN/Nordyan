@@ -285,7 +285,7 @@ export const sv = {
   'coach.frequency.many': '{count} gånger denna vecka',
   'coach.quick.healthScoreMainDriver': 'Vad påverkar mitt Health Score mest?',
   'coach.quick.healthScoreChange': 'Varför har mitt Health Score förändrats?',
-  'coach.quick.healthOverall': 'Hur ser min hälsa ut just nu?',
+  'coach.quick.healthOverall': 'Vad bör jag fokusera på för min hälsa just nu?',
   'coach.quick.developmentRecent': 'Vad säger min senaste utveckling?',
   'coach.quick.waistDevelopment': 'Hur har mitt midjemått utvecklats?',
   'coach.quick.weightDevelopment': 'Hur har min vikt utvecklats?',
@@ -678,7 +678,7 @@ export const sv = {
     'Registrera midje- och halsmått när du har möjlighet för en ännu mer träffsäker NORDYAN Health Score.',
   'home.progress.insufficient1': 'Din första hälsomätning är sparad.',
   'home.progress.insufficient2':
-    'Uppdatera din profil igen för att börja följa din utveckling.',
+    'När du lägger till nya mätningar kan du börja följa hur din hälsa utvecklas över tid.',
   'home.progress.unavailable': 'Din utveckling kan inte visas just nu.',
 
   'development.home.subtitle': 'Följ hur din hälsa utvecklas över tid.',
@@ -823,6 +823,66 @@ export const sv = {
   'plan.fallback_gentle_walk_v1.title': 'En lugn promenad',
   'plan.fallback_gentle_walk_v1.body':
     'Promenera {minutes} minuter i lugnt tempo {frequency}.',
+  'plan.default.general.title': 'En hållbar vana',
+  'plan.default.general.body':
+    'Fokusera på en enkel, återkommande vana den här veckan. Det räcker att börja i liten skala.',
+  'plan.waist_walk_after_dinner_v1.general.title': 'Promenad efter maten',
+  'plan.waist_walk_after_dinner_v1.general.body':
+    'Försök ta en promenad efter någon av dagens måltider. Det är ett lugnt sätt att få in mer rörelse.',
+  'plan.waist_increase_walking_volume_v1.general.title': 'Öka veckans promenader',
+  'plan.waist_increase_walking_volume_v1.general.body':
+    'Lägg till några extra promenader den här veckan för att stödja ditt fokus.',
+  'plan.waist_active_walk_progression_v1.general.title': 'Bygg ut dina promenader',
+  'plan.waist_active_walk_progression_v1.general.body':
+    'Håll i gång promenadvanan under veckan, i den omfattning som känns rimlig.',
+  'plan.waist_measurement_follow_up_v1.general.title': 'Följ upp dina mått',
+  'plan.waist_measurement_follow_up_v1.general.body':
+    'Mät midjan igen om cirka fyra veckor för att se hur dina vanor utvecklas.',
+  'plan.activity_sedentary_walk_start_v1.general.title': 'Börja med mer vardagsrörelse',
+  'plan.activity_sedentary_walk_start_v1.general.body':
+    'Korta, regelbundna promenader är ett tryggt sätt att komma igång.',
+  'plan.activity_light_walk_build_v1.general.title': 'Bygg en stadig promenadvana',
+  'plan.activity_light_walk_build_v1.general.body':
+    'Försök få in regelbundna promenader i lugnt tempo under veckan.',
+  'plan.activity_moderate_brisk_walk_v1.general.title': 'Regelbunden rörelse',
+  'plan.activity_moderate_brisk_walk_v1.general.body':
+    'Försök hålla i gång raskare promenader eller liknande rörelse flera gånger under veckan.',
+  'plan.activity_active_structured_movement_v1.general.title': 'Strukturerad rörelse',
+  'plan.activity_active_structured_movement_v1.general.body':
+    'Planera in några tillfällen med medveten rörelse under veckan.',
+  'plan.activity_very_active_strength_v1.general.title': 'Enkel styrketräning',
+  'plan.activity_very_active_strength_v1.general.body':
+    'Lägg till några lugna styrkepass när det passar, utan att pressa kroppen.',
+  'plan.body_comp_daily_walk_v1.general.title': 'Daglig rörelse',
+  'plan.body_comp_daily_walk_v1.general.body':
+    'Försök få in regelbunden vardagsrörelse. Det stöder både kondition och återhämtning.',
+  'plan.body_comp_walk_strength_combo_v1.general.title': 'Promenad och styrka',
+  'plan.body_comp_walk_strength_combo_v1.general.body':
+    'Kombinera vardagsrörelse med enkel styrketräning när du har tid och energi.',
+  'plan.body_comp_strength_foundation_v1.general.title': 'Styrka som grund',
+  'plan.body_comp_strength_foundation_v1.general.body':
+    'Lägg till grundläggande styrketräning i en omfattning som känns hållbar.',
+  'plan.weight_balance_gentle_nutrition_v1.general.title': 'Skapa balanserade måltider',
+  'plan.weight_balance_gentle_nutrition_v1.general.body':
+    'Prioritera regelbundna, näringsrika måltider den här veckan utan att stressa kroppen.',
+  'plan.weight_balance_walking_v1.general.title': 'Mer rörelse i vardagen',
+  'plan.weight_balance_walking_v1.general.body':
+    'Försök få in regelbunden vardagsrörelse under veckan. Små, återkommande aktiviteter kan vara ett bra sätt att komma igång.',
+  'plan.weight_balance_active_movement_v1.general.title': 'Aktiv rörelse',
+  'plan.weight_balance_active_movement_v1.general.body':
+    'Försök få in medveten rörelse under veckan, i en takt som känns hållbar.',
+  'plan.weight_balance_measurement_check_v1.general.title': 'Följ upp kroppssammansättningen',
+  'plan.weight_balance_measurement_check_v1.general.body':
+    'Uppdatera dina mått den här veckan så att rekommendationerna speglar din faktiska profil.',
+  'plan.maintain_weekly_check_in_v1.general.title': 'Veckans avstämning',
+  'plan.maintain_weekly_check_in_v1.general.body':
+    'Ta en kort stund att se hur dina vanor ser ut och vad som fungerar bra just nu.',
+  'plan.maintain_routine_consistency_v1.general.title': 'Behåll din goda rutin',
+  'plan.maintain_routine_consistency_v1.general.body':
+    'Fortsätt med de vanor som fungerar och håll en jämn nivå den här veckan.',
+  'plan.fallback_gentle_walk_v1.general.title': 'En lugn promenad',
+  'plan.fallback_gentle_walk_v1.general.body':
+    'Ta en promenad i lugnt tempo när det passar. Det är ett tryggt sätt att hålla i gång.',
 
   ...DAILY_FOCUS_I18N_SV,
 } as const;

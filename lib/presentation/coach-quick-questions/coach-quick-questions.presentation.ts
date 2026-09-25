@@ -17,8 +17,9 @@ export function localizeCoachQuickQuestion(
 export function buildCoachQuickQuestionSlots(
   signals: CoachQuickQuestionSignals,
   locale?: AppLocale,
+  options?: Parameters<typeof selectCoachQuickQuestions>[1],
 ): CoachHomeQuickQuestionSlot[] {
-  return selectCoachQuickQuestions(signals).ids.map((id) => ({
+  return selectCoachQuickQuestions(signals, options).ids.map((id) => ({
     id,
     kind: 'contextual',
     question: localizeCoachQuickQuestion(id, locale),

@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 import type { AppLocale } from '@/lib/i18n';
 import {
   COACH_ASK_PAYLOAD_VERSION_V16,
+  COACH_ASK_PAYLOAD_VERSION_V17,
   mapAppLocaleToCoachAskLocale,
   type CoachAskRequestV16,
+  type CoachAskRequestV17,
 } from '@/shared/coach-language';
 
 import { requestCoachAsk } from './client';
@@ -100,6 +102,40 @@ describe('live Coach Ask locale routing', () => {
       assert.equal(body.locale, expectedLocale);
     });
   }
+
+  it('serializes a current v1.7 payload without rewriting locale or version', async () => {
+    process.env.EXPO_PUBLIC_COACH_LANGUAGE_API_URL = 'https://coach-language.example';
+    let serializedBody = '';
+    const request: CoachAskRequestV17 = {
+      ...requestFor('sv'),
+      version: COACH_ASK_PAYLOAD_VERSION_V17,
+    };
+
+    const result = await requestCoachAsk({
+      accessToken: 'token',
+      request,
+      fetchImpl: async (_url, init) => {
+        serializedBody = String(init?.body ?? '');
+        return new Response(
+          JSON.stringify({
+            answer: 'Komplett svar.',
+            meta: {
+              source: 'ai',
+              requestId: 'coach_test',
+              latencyMs: 1,
+              promptVersion: 'nordyan-coach-ask-v1.7',
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      },
+    });
+
+    assert.equal(result.ok, true);
+    const body = JSON.parse(serializedBody) as Record<string, unknown>;
+    assert.equal(body.version, 'coach-ask-v1.7');
+    assert.equal(body.locale, 'sv-SE');
+  });
 
   it('passes I18nProvider locale explicitly through the live hook and service', () => {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');

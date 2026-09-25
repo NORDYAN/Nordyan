@@ -17,6 +17,9 @@ import {
   COACH_ASK_PAYLOAD_VERSION_V14,
   COACH_ASK_PAYLOAD_VERSION_V15,
   COACH_ASK_PAYLOAD_VERSION_V16,
+  COACH_ASK_PAYLOAD_VERSION_V17,
+  COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
+  COACH_ASK_HEALTH_SCORE_OVERALL_KIND,
   COACH_ASK_PLAN_ADHERENCE_MEANINGS,
   COACH_ASK_QUESTION_MAX_LENGTH,
   COACH_ASK_SLEEP_QUALITY_MEANINGS,
@@ -29,6 +32,7 @@ import {
   COACH_ASK_WEEKLY_CHECK_IN_OBJECT_KEYS,
   COACH_ASK_WEEKLY_CHECK_IN_SCALE_ENTRY_KEYS,
   COACH_ASK_WEEKLY_CHECK_IN_SOURCE,
+  type CoachAskActivityLevel,
   type CoachAskAgeBand,
   type CoachAskAvailability,
   type CoachAskBodyComposition,
@@ -36,13 +40,16 @@ import {
   type CoachAskBodyFatReferenceTableSex,
   type CoachAskDevelopmentState,
   type CoachAskHealthScoreActivity,
+  type CoachAskHealthScoreActivityV17,
   type CoachAskHealthState,
   type CoachAskHealthStateV14,
+  type CoachAskHealthStateV17,
   type CoachAskInitialLifestyle,
   type CoachAskPayloadVersion,
   type CoachAskPresentationLocale,
   type CoachAskRequest,
   type CoachAskScoreChange,
+  type CoachAskScoreChangeV17,
   type CoachAskSex,
   type CoachAskWaistState,
   type CoachAskWeeklyCheckIn,
@@ -50,6 +57,7 @@ import {
   isCoachAskAlcoholConsumptionValue,
   isCoachAskChangeDirection,
   isCoachAskDevelopmentTrend,
+  isCoachAskActivityLevel,
   isCoachAskAgeBand,
   isCoachAskBodyFatReferenceAgeGroup,
   isCoachAskBodyFatReferenceMedianComparison,
@@ -122,12 +130,52 @@ const ALLOWED_BODY_FAT_REFERENCE_UNAVAILABLE = new Set(['status', 'unavailableRe
 const ALLOWED_DEVELOPMENT = new Set(['trend', 'historyStatus']);
 const ALLOWED_SCORE_CHANGE_READY = new Set(['status', 'change', 'direction']);
 const ALLOWED_SCORE_CHANGE_INSUFFICIENT = new Set(['status']);
+const ALLOWED_SCORE_CHANGE_V17_READY = new Set(['status', 'kind', 'change', 'direction']);
+const ALLOWED_SCORE_CHANGE_V17_INSUFFICIENT = new Set(['status', 'kind']);
 const ALLOWED_WEIGHT_READY = new Set(['status', 'currentKg', 'changeKg', 'direction']);
 const ALLOWED_WEIGHT_INSUFFICIENT = new Set(['status', 'currentKg']);
 const ALLOWED_WAIST_READY = new Set(['status', 'currentCm', 'changeCm', 'direction']);
 const ALLOWED_WAIST_INSUFFICIENT = new Set(['status', 'currentCm']);
 const ALLOWED_ACTIVITY_READY = new Set(['status', 'current', 'change', 'direction']);
 const ALLOWED_ACTIVITY_INSUFFICIENT = new Set(['status', 'current']);
+const ALLOWED_ACTIVITY_V17_READY = new Set([
+  'status',
+  'kind',
+  'current',
+  'change',
+  'direction',
+  'currentActivityLevel',
+  'previousActivityLevel',
+]);
+const ALLOWED_ACTIVITY_V17_INSUFFICIENT = new Set([
+  'status',
+  'kind',
+  'current',
+  'currentActivityLevel',
+]);
+
+function isV17Payload(version: CoachAskPayloadVersion): boolean {
+  return version === COACH_ASK_PAYLOAD_VERSION_V17;
+}
+
+function isBodyCompositionVersion(version: CoachAskPayloadVersion): boolean {
+  return (
+    version === COACH_ASK_PAYLOAD_VERSION_V14 ||
+    version === COACH_ASK_PAYLOAD_VERSION_V15 ||
+    version === COACH_ASK_PAYLOAD_VERSION_V16 ||
+    version === COACH_ASK_PAYLOAD_VERSION_V17
+  );
+}
+
+function optionalActivityLevel(value: unknown, field: string): CoachAskActivityLevel | null {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== 'string' || !isCoachAskActivityLevel(value)) {
+    throw new CoachRequestValidationError(`${field} is invalid.`);
+  }
+  return value;
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -217,9 +265,46 @@ function assertBoolean(value: unknown, field: string): boolean {
   return value;
 }
 
-function validateScoreChange(value: unknown): CoachAskScoreChange {
+function validateScoreChange(
+  value: unknown,
+  version: CoachAskPayloadVersion,
+): CoachAskScoreChange | CoachAskScoreChangeV17 {
   if (!isPlainObject(value)) {
     throw new CoachRequestValidationError('context.healthState.scoreChange must be an object.');
+  }
+  if (isV17Payload(version)) {
+    if (value.kind !== COACH_ASK_HEALTH_SCORE_OVERALL_KIND) {
+      throw new CoachRequestValidationError(
+        'context.healthState.scoreChange.kind must be health_score_overall.',
+      );
+    }
+    if (value.status === 'insufficient_history') {
+      const unexpected = hasUnexpectedKeys(value, ALLOWED_SCORE_CHANGE_V17_INSUFFICIENT);
+      if (unexpected.length > 0) {
+        throw new CoachRequestValidationError(
+          `Unexpected scoreChange fields: ${unexpected.join(', ')}`,
+        );
+      }
+      return { status: 'insufficient_history', kind: COACH_ASK_HEALTH_SCORE_OVERALL_KIND };
+    }
+    if (value.status !== 'ready') {
+      throw new CoachRequestValidationError('context.healthState.scoreChange.status is invalid.');
+    }
+    const unexpected = hasUnexpectedKeys(value, ALLOWED_SCORE_CHANGE_V17_READY);
+    if (unexpected.length > 0) {
+      throw new CoachRequestValidationError(
+        `Unexpected scoreChange fields: ${unexpected.join(', ')}`,
+      );
+    }
+    if (typeof value.direction !== 'string' || !isCoachAskChangeDirection(value.direction)) {
+      throw new CoachRequestValidationError('context.healthState.scoreChange.direction is invalid.');
+    }
+    return {
+      status: 'ready',
+      kind: COACH_ASK_HEALTH_SCORE_OVERALL_KIND,
+      change: assertFiniteNumber(value.change, 'context.healthState.scoreChange.change', -100, 100),
+      direction: value.direction,
+    };
   }
   if (value.status === 'insufficient_history') {
     const unexpected = hasUnexpectedKeys(value, ALLOWED_SCORE_CHANGE_INSUFFICIENT);
@@ -323,11 +408,84 @@ function validateWaist(value: unknown): CoachAskWaistState {
   };
 }
 
-function validateHealthScoreActivity(value: unknown): CoachAskHealthScoreActivity {
+function validateHealthScoreActivity(
+  value: unknown,
+  version: CoachAskPayloadVersion,
+): CoachAskHealthScoreActivity | CoachAskHealthScoreActivityV17 {
   if (!isPlainObject(value)) {
     throw new CoachRequestValidationError(
       'context.healthState.healthScoreActivity must be an object.',
     );
+  }
+  if (isV17Payload(version)) {
+    if (value.kind !== COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND) {
+      throw new CoachRequestValidationError(
+        'context.healthState.healthScoreActivity.kind must be health_score_activity_component.',
+      );
+    }
+    if (value.status === 'insufficient_history') {
+      const unexpected = hasUnexpectedKeys(value, ALLOWED_ACTIVITY_V17_INSUFFICIENT);
+      if (unexpected.length > 0) {
+        throw new CoachRequestValidationError(
+          `Unexpected healthScoreActivity fields: ${unexpected.join(', ')}`,
+        );
+      }
+      return {
+        status: 'insufficient_history',
+        kind: COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
+        current: assertNullableFiniteNumber(
+          value.current,
+          'context.healthState.healthScoreActivity.current',
+          0,
+          100,
+        ),
+        currentActivityLevel: optionalActivityLevel(
+          value.currentActivityLevel,
+          'context.healthState.healthScoreActivity.currentActivityLevel',
+        ),
+      };
+    }
+    if (value.status !== 'ready') {
+      throw new CoachRequestValidationError(
+        'context.healthState.healthScoreActivity.status is invalid.',
+      );
+    }
+    const unexpected = hasUnexpectedKeys(value, ALLOWED_ACTIVITY_V17_READY);
+    if (unexpected.length > 0) {
+      throw new CoachRequestValidationError(
+        `Unexpected healthScoreActivity fields: ${unexpected.join(', ')}`,
+      );
+    }
+    if (typeof value.direction !== 'string' || !isCoachAskChangeDirection(value.direction)) {
+      throw new CoachRequestValidationError(
+        'context.healthState.healthScoreActivity.direction is invalid.',
+      );
+    }
+    return {
+      status: 'ready',
+      kind: COACH_ASK_HEALTH_SCORE_ACTIVITY_COMPONENT_KIND,
+      current: assertFiniteNumber(
+        value.current,
+        'context.healthState.healthScoreActivity.current',
+        0,
+        100,
+      ),
+      change: assertFiniteNumber(
+        value.change,
+        'context.healthState.healthScoreActivity.change',
+        -100,
+        100,
+      ),
+      direction: value.direction,
+      currentActivityLevel: optionalActivityLevel(
+        value.currentActivityLevel,
+        'context.healthState.healthScoreActivity.currentActivityLevel',
+      ),
+      previousActivityLevel: optionalActivityLevel(
+        value.previousActivityLevel,
+        'context.healthState.healthScoreActivity.previousActivityLevel',
+      ),
+    };
   }
   if (value.status === 'insufficient_history') {
     const unexpected = hasUnexpectedKeys(value, ALLOWED_ACTIVITY_INSUFFICIENT);
@@ -438,17 +596,14 @@ function validateBodyComposition(value: unknown): CoachAskBodyComposition {
 function validateHealthState(
   value: unknown,
   version: CoachAskPayloadVersion,
-): CoachAskHealthState | CoachAskHealthStateV14 {
+): CoachAskHealthState | CoachAskHealthStateV14 | CoachAskHealthStateV17 {
   if (!isPlainObject(value)) {
     throw new CoachRequestValidationError('context.healthState must be an object.');
   }
   assertNoForbiddenKeys(value, 'context.healthState.');
-  const allowed =
-    version === COACH_ASK_PAYLOAD_VERSION_V14 ||
-    version === COACH_ASK_PAYLOAD_VERSION_V15 ||
-    version === COACH_ASK_PAYLOAD_VERSION_V16
-      ? ALLOWED_HEALTH_STATE_V14
-      : ALLOWED_HEALTH_STATE;
+  const allowed = isBodyCompositionVersion(version)
+    ? ALLOWED_HEALTH_STATE_V14
+    : ALLOWED_HEALTH_STATE;
   const unexpected = hasUnexpectedKeys(value, allowed);
   if (unexpected.length > 0) {
     throw new CoachRequestValidationError(
@@ -456,25 +611,21 @@ function validateHealthState(
     );
   }
 
-  const base: CoachAskHealthState = {
+  const base = {
     overallScore: assertFiniteNumber(value.overallScore, 'context.healthState.overallScore', 0, 100),
     scoreBandLabel: assertBoundedString(
       value.scoreBandLabel,
       'context.healthState.scoreBandLabel',
       COACH_ASK_BAND_LABEL_MAX_LENGTH,
     ),
-    scoreChange: validateScoreChange(value.scoreChange),
+    scoreChange: validateScoreChange(value.scoreChange, version),
     weight: validateWeight(value.weight),
     waist: validateWaist(value.waist),
-    healthScoreActivity: validateHealthScoreActivity(value.healthScoreActivity),
+    healthScoreActivity: validateHealthScoreActivity(value.healthScoreActivity, version),
   };
 
-  if (
-    version !== COACH_ASK_PAYLOAD_VERSION_V14 &&
-    version !== COACH_ASK_PAYLOAD_VERSION_V15 &&
-    version !== COACH_ASK_PAYLOAD_VERSION_V16
-  ) {
-    return base;
+  if (!isBodyCompositionVersion(version)) {
+    return base as CoachAskHealthState;
   }
 
   if (!('bodyComposition' in value)) {
@@ -972,7 +1123,7 @@ function validateAskLocale(
   version: CoachAskPayloadVersion,
   locale: unknown,
 ): 'sv-SE' | CoachAskPresentationLocale {
-  if (version === COACH_ASK_PAYLOAD_VERSION_V16) {
+  if (version === COACH_ASK_PAYLOAD_VERSION_V16 || version === COACH_ASK_PAYLOAD_VERSION_V17) {
     if (!isCoachAskPresentationLocale(locale)) {
       throw new CoachRequestValidationError('Unsupported locale.');
     }
@@ -987,7 +1138,11 @@ function validateAskLocale(
 }
 
 function allowedContextKeys(version: CoachAskPayloadVersion): Set<string> {
-  if (version === COACH_ASK_PAYLOAD_VERSION_V16 || version === COACH_ASK_PAYLOAD_VERSION_V15) {
+  if (
+    version === COACH_ASK_PAYLOAD_VERSION_V17 ||
+    version === COACH_ASK_PAYLOAD_VERSION_V16 ||
+    version === COACH_ASK_PAYLOAD_VERSION_V15
+  ) {
     return ALLOWED_CONTEXT_V15;
   }
   if (version === COACH_ASK_PAYLOAD_VERSION_V14) {
@@ -1256,11 +1411,21 @@ export function validateCoachAskRequest(body: unknown): CoachAskRequest {
     throw new CoachRequestValidationError('Unsupported locale.');
   }
 
+  if (payloadVersion === COACH_ASK_PAYLOAD_VERSION_V16) {
+    return {
+      version: COACH_ASK_PAYLOAD_VERSION_V16,
+      locale,
+      generatedAt: body.generatedAt,
+      context: v15Context,
+      question,
+    };
+  }
+
   return {
-    version: COACH_ASK_PAYLOAD_VERSION_V16,
+    version: COACH_ASK_PAYLOAD_VERSION_V17,
     locale,
     generatedAt: body.generatedAt,
-    context: v15Context,
+    context: v15Context as CoachAskRequest['context'],
     question,
   };
 }

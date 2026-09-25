@@ -393,6 +393,64 @@ describe('coach language HTTP auth + rate limit', () => {
     assert.equal(json.meta.promptVersion, 'nordyan-coach-ask-v1.6');
   });
 
+  it('returns unavailable ask response for v1.7 with labelled activity component', async () => {
+    rateLimiter.reset();
+    const sampleAskV17 = {
+      ...sampleAsk,
+      version: 'coach-ask-v1.7',
+      locale: 'sv-SE',
+      context: {
+        ...sampleAsk.context,
+        weeklyCheckIn: null,
+        initialLifestyle: null,
+        healthState: {
+          ...sampleAsk.context.healthState,
+          scoreChange: {
+            status: 'ready',
+            kind: 'health_score_overall',
+            change: 6,
+            direction: 'up',
+          },
+          healthScoreActivity: {
+            status: 'ready',
+            kind: 'health_score_activity_component',
+            current: 68,
+            change: 18,
+            direction: 'up',
+            currentActivityLevel: 'moderate',
+            previousActivityLevel: 'light',
+          },
+          bodyComposition: {
+            status: 'unavailable',
+            bodyFatPercent: null,
+            estimationKind: 'unavailable',
+          },
+        },
+        ageBand: null,
+        sex: null,
+        bodyFatReference: {
+          status: 'unavailable',
+          unavailableReason: 'missing_body_fat_percent',
+        },
+      },
+    };
+    const response = await fetch(`${baseUrl}/api/coach/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer valid-token',
+      },
+      body: JSON.stringify(sampleAskV17),
+    });
+    assert.equal(response.status, 200);
+    const json = (await response.json()) as {
+      answer: string;
+      meta: { source: string; requestId: string; promptVersion?: string };
+    };
+    assert.equal(json.meta.source, 'unavailable');
+    assert.equal(json.meta.promptVersion, 'nordyan-coach-ask-v1.7');
+  });
+
   it('rejects nb-NO on a frozen v1.5 ask payload', async () => {
     rateLimiter.reset();
     const response = await fetch(`${baseUrl}/api/coach/ask`, {

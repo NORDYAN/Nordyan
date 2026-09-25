@@ -217,8 +217,9 @@ describe('Home coach language flow contracts', () => {
       30,
       4,
     );
-    assert.equal(deterministic.title, 'Gåtur etter middagen');
-    assert.match(deterministic.description, /Gå 30 minutter etter middagen/);
+    assert.equal(deterministic.title, 'Gåtur etter maten');
+    assert.match(deterministic.description, /gåtur etter et av dagens måltider/i);
+    assert.equal(deterministic.description.includes('30 minutter'), false);
   });
 
   it('does not show cached Swedish /generate copy while the UI locale is nb', () => {

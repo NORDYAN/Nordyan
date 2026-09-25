@@ -35,11 +35,11 @@ describe('Coach quick-question presentation', () => {
   it('keeps IDs language-independent', () => {
     assert.equal(
       localizeCoachQuickQuestion('health_overall', 'sv'),
-      'Hur ser min hälsa ut just nu?',
+      'Vad bör jag fokusera på för min hälsa just nu?',
     );
     assert.equal(
       localizeCoachQuickQuestion('health_overall', 'nb'),
-      'Hvordan ser helsen min ut akkurat nå?',
+      'Hva bør jeg fokusere på for helsen min akkurat nå?',
     );
   });
 

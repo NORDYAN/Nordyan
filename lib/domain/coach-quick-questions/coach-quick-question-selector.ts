@@ -3,10 +3,16 @@ import {
   COACH_QUICK_QUESTION_BANK,
   COACH_QUICK_QUESTION_FALLBACK_ORDER,
 } from './coach-quick-question-bank';
+import {
+  isCoachQuickQuestionOnCooldown,
+  shouldReuseActiveQuickQuestionTrio,
+} from './coach-quick-question-rotation';
 import type {
   CoachQuickQuestionDefinition,
   CoachQuickQuestionId,
+  CoachQuickQuestionIntentRole,
   CoachQuickQuestionScored,
+  CoachQuickQuestionSelectorOptions,
   CoachQuickQuestionSelectorResult,
   CoachQuickQuestionSignals,
   CoachQuickQuestionTopicFamily,
@@ -238,26 +244,18 @@ function unusedFamilyExists(
 function canSelect(
   candidate: CoachQuickQuestionScored,
   selected: readonly CoachQuickQuestionScored[],
-  remainingSlots: number,
-  unusedFamilies: boolean,
 ): boolean {
   const sameFamily = selected.filter((entry) => entry.topicFamily === candidate.topicFamily);
   if (sameFamily.length === 0) {
     return true;
   }
 
-  if (
-    candidate.id === 'recovery_understand' &&
-    selected.some((entry) => entry.id === 'stress_energy')
-  ) {
+  const unusedFamilies = unusedFamilyExists([candidate], selected);
+  if (!unusedFamilies && GENERIC_FAMILIES.has(candidate.topicFamily)) {
     return true;
   }
 
-  if (GENERIC_FAMILIES.has(candidate.topicFamily) && remainingSlots === 1 && !unusedFamilies) {
-    return true;
-  }
-
-  if (candidate.topicFamily === 'body_composition' && !unusedFamilies) {
+  if (candidate.topicFamily === 'body_composition') {
     const usedSubtopics = new Set(
       sameFamily
         .map((entry) => entry.bodyCompSubtopic)
@@ -275,26 +273,81 @@ function canSelect(
   return false;
 }
 
-function pickNextSurfaced(
+function freshnessRank(
+  entry: CoachQuickQuestionScored,
+  cooledIds: ReadonlySet<CoachQuickQuestionId>,
+  avoidIds: ReadonlySet<CoachQuickQuestionId>,
+): number {
+  if (cooledIds.has(entry.id)) {
+    return 2;
+  }
+  if (avoidIds.has(entry.id)) {
+    return 1;
+  }
+  return 0;
+}
+
+function pickBest(
   pool: readonly CoachQuickQuestionScored[],
   selected: readonly CoachQuickQuestionScored[],
-  remainingSlots: number,
+  options: {
+    role?: CoachQuickQuestionIntentRole;
+    preferFresh: boolean;
+    allowBelowSurface: boolean;
+    cooledIds: ReadonlySet<CoachQuickQuestionId>;
+    avoidIds: ReadonlySet<CoachQuickQuestionId>;
+  },
 ): CoachQuickQuestionScored | null {
   const selectedIds = new Set(selected.map((entry) => entry.id));
-  const remaining = pool.filter((entry) => !selectedIds.has(entry.id) && canSurface(entry));
+  const remaining = pool.filter((entry) => {
+    if (selectedIds.has(entry.id)) {
+      return false;
+    }
+    if (options.role && entry.intentRole !== options.role) {
+      return false;
+    }
+    if (
+      options.preferFresh &&
+      (options.cooledIds.has(entry.id) || options.avoidIds.has(entry.id))
+    ) {
+      return false;
+    }
+    if (!options.allowBelowSurface && !canSurface(entry)) {
+      return false;
+    }
+    return canSelect(entry, selected);
+  });
+
+  if (remaining.length === 0) {
+    return null;
+  }
+
   const unusedFamilies = unusedFamilyExists(remaining, selected);
-
-  const eligibleNext = remaining.filter((entry) =>
-    canSelect(entry, selected, remainingSlots, unusedFamilies),
-  );
-
-  const ranked = [...eligibleNext].sort(compareScored);
+  const ranked = [...remaining].sort((a, b) => {
+    const unusedA = unusedFamilies && !selected.some((entry) => entry.topicFamily === a.topicFamily);
+    const unusedB = unusedFamilies && !selected.some((entry) => entry.topicFamily === b.topicFamily);
+    if (unusedA !== unusedB) {
+      return unusedA ? -1 : 1;
+    }
+    const fresh =
+      freshnessRank(a, options.cooledIds, options.avoidIds) -
+      freshnessRank(b, options.cooledIds, options.avoidIds);
+    if (fresh !== 0) {
+      return fresh;
+    }
+    return compareScored(a, b);
+  });
   return ranked[0] ?? null;
 }
 
 function appendGenericFallback(
   selected: CoachQuickQuestionScored[],
   scored: readonly CoachQuickQuestionScored[],
+  options: {
+    preferFresh: boolean;
+    cooledIds: ReadonlySet<CoachQuickQuestionId>;
+    avoidIds: ReadonlySet<CoachQuickQuestionId>;
+  },
 ): void {
   const hasSpecific = selected.some((entry) => isSpecificQuestion(entry));
   const order = hasSpecific
@@ -309,6 +362,12 @@ function appendGenericFallback(
     if (!candidate || selected.some((entry) => entry.id === candidate.id)) {
       continue;
     }
+    if (
+      options.preferFresh &&
+      (options.cooledIds.has(candidate.id) || options.avoidIds.has(candidate.id))
+    ) {
+      continue;
+    }
     if (!canSurface(candidate)) {
       continue;
     }
@@ -316,12 +375,64 @@ function appendGenericFallback(
   }
 }
 
+function fillIntentRoles(
+  scored: readonly CoachQuickQuestionScored[],
+  options: {
+    preferFresh: boolean;
+    allowBelowSurface: boolean;
+    cooledIds: ReadonlySet<CoachQuickQuestionId>;
+    avoidIds: ReadonlySet<CoachQuickQuestionId>;
+  },
+  selected: CoachQuickQuestionScored[],
+): void {
+  const roles: CoachQuickQuestionIntentRole[] = ['specific_data', 'behavior', 'priority'];
+  for (const role of roles) {
+    if (selected.length >= MAX_SLOTS) {
+      return;
+    }
+    if (selected.some((entry) => entry.intentRole === role)) {
+      continue;
+    }
+    const picked = pickBest(scored, selected, { ...options, role });
+    if (picked) {
+      selected.push(picked);
+    }
+  }
+}
+
+function fillRemainingSlots(
+  scored: readonly CoachQuickQuestionScored[],
+  options: {
+    preferFresh: boolean;
+    allowBelowSurface: boolean;
+    cooledIds: ReadonlySet<CoachQuickQuestionId>;
+    avoidIds: ReadonlySet<CoachQuickQuestionId>;
+  },
+  selected: CoachQuickQuestionScored[],
+): void {
+  while (selected.length < MAX_SLOTS) {
+    const picked = pickBest(scored, selected, { ...options, role: undefined });
+    if (!picked) {
+      break;
+    }
+    selected.push(picked);
+  }
+
+  if (selected.length < MAX_SLOTS) {
+    appendGenericFallback(selected, scored, options);
+  }
+}
+
 export function selectCoachQuickQuestions(
   signals: CoachQuickQuestionSignals,
+  options: CoachQuickQuestionSelectorOptions = {},
 ): CoachQuickQuestionSelectorResult {
   if (!signals.hasHealthContext) {
-    return { ids: [], scored: [] };
+    return { ids: [], scored: [], recordShown: false };
   }
+
+  const now = options.now ?? new Date();
+  const rotation = options.rotation ?? null;
 
   const scored = COACH_QUICK_QUESTION_BANK.filter((definition) =>
     isCoachQuickQuestionEligible(definition.id, signals),
@@ -329,39 +440,66 @@ export function selectCoachQuickQuestions(
     .map((definition) => ({
       id: definition.id,
       topicFamily: definition.topicFamily,
+      intentRole: definition.intentRole,
       bodyCompSubtopic: definition.bodyCompSubtopic,
       score: scoreCoachQuickQuestion(definition, signals),
       bankPriority: definition.bankPriority,
+      cooldownDays: definition.cooldownDays,
     }))
     .sort(compareScored);
 
-  const selected: CoachQuickQuestionScored[] = [];
-  const slot1 = pickNextSurfaced(scored, selected, MAX_SLOTS);
-  if (slot1) {
-    selected.push(slot1);
+  const eligibleIds = new Set(scored.map((entry) => entry.id));
+  if (shouldReuseActiveQuickQuestionTrio(eligibleIds, rotation, now)) {
+    return {
+      ids: rotation!.activeIds,
+      scored,
+      recordShown: false,
+    };
   }
 
-  const slot2Pool = scored.filter(
-    (entry) => !selected.some((selectedEntry) => selectedEntry.id === entry.id) && canSurface(entry),
+  const cooledIds = new Set(
+    scored
+      .map((entry) => entry.id)
+      .filter((id) => isCoachQuickQuestionOnCooldown(id, rotation, now)),
   );
-  const unusedFamiliesForSlot2 = unusedFamilyExists(slot2Pool, selected);
-  const specificSlot2 = [...slot2Pool]
-    .filter(
-      (entry) =>
-        isSpecificQuestion(entry) &&
-        canSelect(entry, selected, MAX_SLOTS - selected.length, unusedFamiliesForSlot2),
-    )
-    .sort(compareScored)[0];
-  if (specificSlot2) {
-    selected.push(specificSlot2);
-  }
+  const avoidIds = new Set(rotation?.activeIds ?? []);
 
-  if (selected.length < MAX_SLOTS) {
-    appendGenericFallback(selected, scored);
+  const selected: CoachQuickQuestionScored[] = [];
+  const freshSurfaced = {
+    preferFresh: true,
+    allowBelowSurface: false,
+    cooledIds,
+    avoidIds,
+  };
+  const freshAny = { ...freshSurfaced, allowBelowSurface: true };
+  const cooledSurfaced = { ...freshSurfaced, preferFresh: false };
+  const cooledAny = { ...freshAny, preferFresh: false };
+
+  fillIntentRoles(scored, freshSurfaced, selected);
+  fillIntentRoles(scored, freshAny, selected);
+  fillRemainingSlots(scored, freshSurfaced, selected);
+  fillRemainingSlots(scored, freshAny, selected);
+  fillIntentRoles(scored, cooledSurfaced, selected);
+  fillIntentRoles(scored, cooledAny, selected);
+  fillRemainingSlots(scored, cooledSurfaced, selected);
+  fillRemainingSlots(scored, cooledAny, selected);
+
+  const ordered: CoachQuickQuestionScored[] = [];
+  for (const role of ['specific_data', 'behavior', 'priority'] as const) {
+    const match = selected.find((entry) => entry.intentRole === role && !ordered.includes(entry));
+    if (match) {
+      ordered.push(match);
+    }
+  }
+  for (const entry of selected) {
+    if (!ordered.includes(entry)) {
+      ordered.push(entry);
+    }
   }
 
   return {
-    ids: selected.map((entry) => entry.id),
+    ids: ordered.map((entry) => entry.id),
     scored,
+    recordShown: ordered.length > 0,
   };
 }
