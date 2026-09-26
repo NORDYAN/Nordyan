@@ -469,11 +469,30 @@ describe('nordyan-coach-ask-v1.7 instructions', () => {
     assert.match(text, /health_score_overall/);
     assert.match(text, /Säg ALDRIG "din aktivitet har ökat med 18"/);
     assert.match(text, /light 50 → moderate 68/);
+    assert.match(text, /Volunteer ALDRIG healthScoreActivity\.change/);
+    assert.match(text, /"Hur är min aktivitetsnivå\?" är INTE en sådan fråga/);
+    assert.match(text, /78 → 82 \/ \+4/);
+    assert.match(text, /\+14 i aktivitetsdelen är INTE \+14 i total Health Score/);
+    assert.doesNotMatch(
+      text,
+      /Föredra: "Din rapporterade aktivitetsnivå har ändrats från light till moderate, vilket har förbättrat aktivitetsdelen/,
+    );
     assert.match(text, /weight\.changeKg och waist\.changeCm är faktiska jämförbara mätningar/);
     assert.match(text, /insufficient_history: påstå inte förbättring/);
     assert.match(text, /plan\.durationMinutes och plan\.frequencyPerWeek/);
     assert.match(text, /Om de är null: hitta inte på minuter/);
     assert.doesNotMatch(text, /healthScoreActivity-utveckling/);
+  });
+
+  it('forbids volunteering +14 activity-component points on an activity-level question', () => {
+    const text = NORDYAN_COACH_ASK_V17_SYSTEM_INSTRUCTIONS;
+    assert.match(text, /Hur är min aktivitetsnivå\?/);
+    assert.match(text, /currentActivityLevel \/ previousActivityLevel/);
+    assert.match(text, /Nämn INTE healthScoreActivity\.change \(t\.ex\. \+14\)/);
+    assert.match(text, /moderate/);
+    assert.match(text, /active/);
+    assert.match(text, /78 → 82/);
+    assert.match(text, /\+14/);
   });
 
   it('builds locale-specific v1.7 instructions', () => {
@@ -721,7 +740,7 @@ describe('generateOpenAiCoachAskAnswer store:false', () => {
             captured = params;
             return {
               output_text:
-                'Din rapporterade aktivitetsnivå har ändrats från light till moderate, vilket har förbättrat aktivitetsdelen i ditt Health Score.',
+                'Din aktivitetsnivå är nu aktiv, jämfört med tidigare moderat. Det har bidragit positivt till Health Score, som gick från 78 till 82.',
             };
           },
         },
@@ -732,6 +751,8 @@ describe('generateOpenAiCoachAskAnswer store:false', () => {
     const input = captured?.input as Array<{ role: string; content: string }>;
     assert.equal(input[0]?.content, buildNordyanCoachAskV17SystemInstructions('sv-SE'));
     assert.match(input[0]?.content ?? '', /Säg ALDRIG "din aktivitet har ökat med 18"/);
+    assert.match(input[0]?.content ?? '', /Volunteer ALDRIG healthScoreActivity\.change/);
+    assert.match(input[0]?.content ?? '', /"Hur är min aktivitetsnivå\?" är INTE en sådan fråga/);
     assert.match(input[1]?.content ?? '', /health_score_activity_component/);
     assert.match(input[1]?.content ?? '', /"change": 18/);
     assert.match(input[1]?.content ?? '', /"currentActivityLevel": "moderate"/);
